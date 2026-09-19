@@ -140,4 +140,15 @@ export const api = {
     getAll: () => request('/api/sizing-sets'),
     create: (data) => request('/api/sizing-sets', { method: 'POST', body: JSON.stringify(data) }),
   },
+
+  // Beam Inward API
+  beamInward: {
+    getAll: () => request('/api/beam-inward'),
+    getById: (id) => request(`/api/beam-inward/${id}`),
+    getBySizingSet: (sizingSetId) => request(`/api/beam-inward/sizing-set/${sizingSetId}`),
+    getByOrder: (orderId) => request(`/api/beam-inward/order/${orderId}`),
+    create: (data) => request('/api/beam-inward', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => request(`/api/beam-inward/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => request(`/api/beam-inward/${id}`, { method: 'DELETE' }),
+  },
 };

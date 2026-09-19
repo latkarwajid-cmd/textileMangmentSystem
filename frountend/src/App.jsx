@@ -14,6 +14,7 @@ import { YarnInwardView } from './views/YarnInwardView';
 import { YarnOutSizingView } from './views/YarnOutSizingView';
 import { SizingYarnInwardView } from './views/SizingYarnInwardView';
 import { SizingSetsView } from './views/SizingSetsView';
+import { BeamInwardView } from './views/BeamInwardView';
 
 const MainContent = () => {
   const { currentTab } = useApp();
@@ -27,6 +28,7 @@ const MainContent = () => {
       case 'yarn-counts': return <YarnCountsView />;
       case 'sizing-units': return <SizingUnitsView />;
       case 'sizing-sets': return <SizingSetsView />;
+      case 'beam-inward': return <BeamInwardView />;
       case 'yarn-inward': return <YarnInwardView />;
       case 'yarn-out-sizing': return <YarnOutSizingView />;
       case 'sizing-yarn-inward': return <SizingYarnInwardView />;

@@ -26,6 +26,7 @@ export const Sidebar = () => {
     { id: 'sizing-units', label: 'Sizing Units', icon: Factory, section: 'Masters' },
     { id: 'sizing-sets', label: 'Sizing Sets', icon: Layers3, section: 'Masters' },
     { id: 'yarn-inward', label: 'Yarn Inward', icon: ArrowDownLeft, section: 'Transactions' },
+    { id: 'beam-inward', label: 'Beam Inward', icon: ArrowDownLeft, section: 'Transactions' },
     { id: 'yarn-out-sizing', label: 'Yarn Out Sizing', icon: ArrowUpRight, section: 'Transactions' },
     { id: 'sizing-yarn-inward', label: 'Sizing Yarn Inward', icon: RotateCcw, section: 'Transactions' },
   ];
