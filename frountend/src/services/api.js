@@ -140,4 +140,15 @@ export const api = {
     getAll: () => request('/api/sizing-sets'),
     create: (data) => request('/api/sizing-sets', { method: 'POST', body: JSON.stringify(data) }),
   },
+
+  // Yarn Out For Dyeing API
+  yarnOutDyeing: {
+    getAll: () => request('/api/yarn-out-dyeing'),
+    getById: (id) => request(`/api/yarn-out-dyeing/${id}`),
+    getBySizingSet: (sizingSetId) => request(`/api/yarn-out-dyeing/sizing-set/${sizingSetId}`),
+    getByOrder: (orderId) => request(`/api/yarn-out-dyeing/order/${orderId}`),
+    create: (data) => request('/api/yarn-out-dyeing', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => request(`/api/yarn-out-dyeing/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => request(`/api/yarn-out-dyeing/${id}`, { method: 'DELETE' }),
+  },
 };

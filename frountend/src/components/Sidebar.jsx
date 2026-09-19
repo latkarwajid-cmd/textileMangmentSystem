@@ -12,6 +12,7 @@ import {
   ArrowUpRight, 
   RotateCcw
   ,Layers3
+  ,Droplets
 } from 'lucide-react';
 
 export const Sidebar = () => {
@@ -27,6 +28,7 @@ export const Sidebar = () => {
     { id: 'sizing-sets', label: 'Sizing Sets', icon: Layers3, section: 'Masters' },
     { id: 'yarn-inward', label: 'Yarn Inward', icon: ArrowDownLeft, section: 'Transactions' },
     { id: 'yarn-out-sizing', label: 'Yarn Out Sizing', icon: ArrowUpRight, section: 'Transactions' },
+    { id: 'yarn-out-dyeing', label: 'Yarn Out Dyeing', icon: Droplets, section: 'Transactions' },
     { id: 'sizing-yarn-inward', label: 'Sizing Yarn Inward', icon: RotateCcw, section: 'Transactions' },
   ];
 
