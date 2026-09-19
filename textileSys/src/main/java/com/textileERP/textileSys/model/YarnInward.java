@@ -78,9 +78,33 @@ public class YarnInward {
     @Column(name = "bill_amount", precision = 14, scale = 2)
     private BigDecimal billAmount;
 
+//NEW CHANGES IN DB
+    @Column(name = "days")
+    private Integer days;
+
+    @Column(name = "receivable", precision = 14, scale = 2)
+    private BigDecimal receivable;
+
+    @Column(name = "tcs", precision = 14, scale = 2)
+    private BigDecimal tcs;
+
+    @Column(name = "add_amount", precision = 14, scale = 2)
+    private BigDecimal addAmount;
+
+    @Column(name = "gst", precision = 14, scale = 2)
+    private BigDecimal gst;
+
+    @Column(name = "tds", precision = 14, scale = 2)
+    private BigDecimal tds;
+
+    @Column(name = "interest", precision = 14, scale = 2)
+    private BigDecimal interest;
+
     @Column(name = "remark", columnDefinition = "TEXT")
     private String remark;
 
     @Column(name = "remark2", columnDefinition = "TEXT")
     private String remark2;
+
+
 }

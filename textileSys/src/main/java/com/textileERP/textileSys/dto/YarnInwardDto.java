@@ -29,6 +29,15 @@ public class YarnInwardDto {
     private BigDecimal paidAmount;
     private BigDecimal receivedPayment;
     private BigDecimal billAmount;
+
+    private Integer days;
+    private BigDecimal receivable;
+    private BigDecimal tcs;
+    private BigDecimal addAmount;
+    private BigDecimal gst;
+    private BigDecimal tds;
+    private BigDecimal interest;
+
     private String remark;
     private String remark2;
 }

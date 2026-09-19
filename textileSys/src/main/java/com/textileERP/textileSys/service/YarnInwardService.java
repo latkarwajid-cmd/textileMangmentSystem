@@ -147,6 +147,13 @@ public class YarnInwardService {
         entity.setPaidAmount(dto.getPaidAmount() != null ? dto.getPaidAmount() : BigDecimal.ZERO);
         entity.setReceivedPayment(dto.getReceivedPayment() != null ? dto.getReceivedPayment() : BigDecimal.ZERO);
         entity.setBillAmount(dto.getBillAmount());
+        entity.setDays(dto.getDays());
+        entity.setReceivable(dto.getReceivable());
+        entity.setTcs(dto.getTcs());
+        entity.setAddAmount(dto.getAddAmount());
+        entity.setGst(dto.getGst());
+        entity.setTds(dto.getTds());
+        entity.setInterest(dto.getInterest());
         entity.setRemark(dto.getRemark());
         entity.setRemark2(dto.getRemark2());
     }

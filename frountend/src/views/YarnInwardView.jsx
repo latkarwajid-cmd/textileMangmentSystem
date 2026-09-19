@@ -53,6 +53,13 @@ export const YarnInwardView = () => {
     actualAmount: '',
     billNo: '',
     billAmount: '',
+    days: '',
+    receivable: '',
+    tcs: '',
+    addAmount: '',
+    gst: '',
+    tds: '',
+    interest: '',
     paymentStatus: 'UNPAID',
     paidDate: '',
     paidAmount: '0',
@@ -119,6 +126,13 @@ export const YarnInwardView = () => {
       actualAmount: '',
       billNo: '',
       billAmount: '',
+      days: '',
+      receivable: '',
+      tcs: '',
+      addAmount: '',
+      gst: '',
+      tds: '',
+      interest: '',
       paymentStatus: 'UNPAID',
       paidDate: '',
       paidAmount: '0',
@@ -145,6 +159,13 @@ export const YarnInwardView = () => {
       actualAmount: item.actualAmount || '',
       billNo: item.billNo || '',
       billAmount: item.billAmount || '',
+      days: item.days ?? '',
+      receivable: item.receivable ?? '',
+      tcs: item.tcs ?? '',
+      addAmount: item.addAmount ?? '',
+      gst: item.gst ?? '',
+      tds: item.tds ?? '',
+      interest: item.interest ?? '',
       paymentStatus: item.paymentStatus || 'UNPAID',
       paidDate: formatDate(item.paidDate),
       paidAmount: item.paidAmount || '0',
@@ -172,6 +193,15 @@ export const YarnInwardView = () => {
         actualAmount: formData.actualAmount ? Number(formData.actualAmount) : null,
         billNo: formData.billNo,
         billAmount: formData.billAmount ? Number(formData.billAmount) : null,
+
+        days: formData.days ? Number(formData.days) : null,
+        receivable: formData.receivable ? Number(formData.receivable) : null,
+        tcs: formData.tcs ? Number(formData.tcs) : null,
+        addAmount: formData.addAmount ? Number(formData.addAmount) : null,
+        gst: formData.gst ? Number(formData.gst) : null,
+        tds: formData.tds ? Number(formData.tds) : null,
+        interest: formData.interest ? Number(formData.interest) : null,
+
         paymentStatus: formData.paymentStatus,
         paidDate: formData.paidDate || null,
         paidAmount: formData.paidAmount ? Number(formData.paidAmount) : 0,
@@ -287,6 +317,13 @@ export const YarnInwardView = () => {
                 <th>Rate (₹)</th>
                 <th>Amount (₹)</th>
                 <th>Bill No</th>
+                <th>Days</th>
+                <th>Receivable (₹)</th>
+                <th>TCS (₹)</th>
+                <th>Add (₹)</th>
+                <th>GST (₹)</th>
+                <th>TDS (₹)</th>
+                <th>Interest (₹)</th>
                 <th>Payment</th>
                 <th style={{ textAlign: 'right' }}>Actions</th>
               </tr>
@@ -294,13 +331,13 @@ export const YarnInwardView = () => {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="12" style={{ textAlign: 'center', padding: '32px' }}>
+                  <td colSpan="19" style={{ textAlign: 'center', padding: '32px' }}>
                     <div className="spinner" style={{ margin: '0 auto' }}></div>
                   </td>
                 </tr>
               ) : filteredList.length === 0 ? (
                 <tr>
-                  <td colSpan="12" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
+                  <td colSpan="19" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
                     No inward records found. Click 'New Yarn Inward' to record a shipment.
                   </td>
                 </tr>
@@ -327,6 +364,13 @@ export const YarnInwardView = () => {
                       ₹{item.actualAmount || item.calculatedAmount || '-'}
                     </td>
                     <td>{item.billNo || '-'}</td>
+                    <td>{item.days ?? '-'}</td>
+                    <td>{item.receivable != null ? `₹${item.receivable}` : '-'}</td>
+                    <td>{item.tcs != null ? `₹${item.tcs}` : '-'}</td>
+                    <td>{item.addAmount != null ? `₹${item.addAmount}` : '-'}</td>
+                    <td>{item.gst != null ? `₹${item.gst}` : '-'}</td>
+                    <td>{item.tds != null ? `₹${item.tds}` : '-'}</td>
+                    <td>{item.interest != null ? `₹${item.interest}` : '-'}</td>
                     <td>
                       <span className={`badge ${item.paymentStatus === 'PAID' ? 'badge-success' : (item.paymentStatus === 'PARTIAL' ? 'badge-info' : 'badge-warning')}`}>
                         {item.paymentStatus || 'UNPAID'}
@@ -577,6 +621,89 @@ export const YarnInwardView = () => {
             </div>
 
             <div className="form-group">
+              <label>Days</label>
+              <input
+                type="number"
+                className="form-control"
+                value={formData.days}
+                onChange={(e) => setFormData({ ...formData, days: e.target.value })}
+                placeholder="e.g. 30"
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Receivable (₹)</label>
+              <input
+                type="number"
+                step="0.01"
+                className="form-control"
+                value={formData.receivable}
+                onChange={(e) => setFormData({ ...formData, receivable: e.target.value })}
+                placeholder="0.00"
+              />
+            </div>
+
+            <div className="form-group">
+              <label>TCS (₹)</label>
+              <input
+                type="number"
+                step="0.01"
+                className="form-control"
+                value={formData.tcs}
+                onChange={(e) => setFormData({ ...formData, tcs: e.target.value })}
+                placeholder="0.00"
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Add Amount (₹)</label>
+              <input
+                type="number"
+                step="0.01"
+                className="form-control"
+                value={formData.addAmount}
+                onChange={(e) => setFormData({ ...formData, addAmount: e.target.value })}
+                placeholder="0.00"
+              />
+            </div>
+
+            <div className="form-group">
+              <label>GST (₹)</label>
+              <input
+                type="number"
+                step="0.01"
+                className="form-control"
+                value={formData.gst}
+                onChange={(e) => setFormData({ ...formData, gst: e.target.value })}
+                placeholder="0.00"
+              />
+            </div>
+
+            <div className="form-group">
+              <label>TDS (₹)</label>
+              <input
+                type="number"
+                step="0.01"
+                className="form-control"
+                value={formData.tds}
+                onChange={(e) => setFormData({ ...formData, tds: e.target.value })}
+                placeholder="0.00"
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Interest (₹)</label>
+              <input
+                type="number"
+                step="0.01"
+                className="form-control"
+                value={formData.interest}
+                onChange={(e) => setFormData({ ...formData, interest: e.target.value })}
+                placeholder="0.00"
+              />
+            </div>
+
+            <div className="form-group">
               <label>Payment Status</label>
               <select
                 className="form-control"
@@ -725,6 +852,41 @@ export const YarnInwardView = () => {
               <div>
                 <strong style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>ACTUAL BILL AMOUNT</strong>
                 <div style={{ fontWeight: 700 }}>₹{viewDetailItem.actualAmount || viewDetailItem.billAmount || '-'}</div>
+              </div>
+
+              <div>
+                <strong style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>DAYS</strong>
+                <div>{viewDetailItem.days ?? '-'}</div>
+              </div>
+
+              <div>
+                <strong style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>RECEIVABLE</strong>
+                <div>₹{viewDetailItem.receivable ?? 0}</div>
+              </div>
+
+              <div>
+                <strong style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>TCS</strong>
+                <div>₹{viewDetailItem.tcs ?? 0}</div>
+              </div>
+
+              <div>
+                <strong style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>ADD AMOUNT</strong>
+                <div>₹{viewDetailItem.addAmount ?? 0}</div>
+              </div>
+
+              <div>
+                <strong style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>GST</strong>
+                <div>₹{viewDetailItem.gst ?? 0}</div>
+              </div>
+
+              <div>
+                <strong style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>TDS</strong>
+                <div>₹{viewDetailItem.tds ?? 0}</div>
+              </div>
+
+              <div>
+                <strong style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>INTEREST</strong>
+                <div>₹{viewDetailItem.interest ?? 0}</div>
               </div>
               <div>
                 <strong style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>PAYMENT STATUS</strong>
