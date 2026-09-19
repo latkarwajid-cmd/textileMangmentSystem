@@ -1,0 +1,55 @@
+import React from 'react';
+import { AppProvider, useApp } from './context/AppContext';
+import { Sidebar } from './components/Sidebar';
+import { Header } from './components/Header';
+import { ToastContainer } from './components/Toast';
+
+import { DashboardView } from './views/DashboardView';
+import { PartiesView } from './views/PartiesView';
+import { FabricOrdersView } from './views/FabricOrdersView';
+import { TickitsView } from './views/TickitsView';
+import { YarnCountsView } from './views/YarnCountsView';
+import { SizingUnitsView } from './views/SizingUnitsView';
+import { YarnInwardView } from './views/YarnInwardView';
+import { YarnOutSizingView } from './views/YarnOutSizingView';
+import { SizingYarnInwardView } from './views/SizingYarnInwardView';
+
+const MainContent = () => {
+  const { currentTab } = useApp();
+
+  const renderActiveView = () => {
+    switch (currentTab) {
+      case 'dashboard': return <DashboardView />;
+      case 'parties': return <PartiesView />;
+      case 'fabric-orders': return <FabricOrdersView />;
+      case 'tickits': return <TickitsView />;
+      case 'yarn-counts': return <YarnCountsView />;
+      case 'sizing-units': return <SizingUnitsView />;
+      case 'yarn-inward': return <YarnInwardView />;
+      case 'yarn-out-sizing': return <YarnOutSizingView />;
+      case 'sizing-yarn-inward': return <SizingYarnInwardView />;
+      default: return <DashboardView />;
+    }
+  };
+
+  return (
+    <div className="app-layout">
+      <Sidebar />
+      <div className="main-wrapper">
+        <Header />
+        {renderActiveView()}
+      </div>
+      <ToastContainer />
+    </div>
+  );
+};
+
+export function App() {
+  return (
+    <AppProvider>
+      <MainContent />
+    </AppProvider>
+  );
+}
+
+export default App;

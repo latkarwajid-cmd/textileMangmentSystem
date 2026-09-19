@@ -1,0 +1,13 @@
+package com.textileERP.textileSys.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class SizingUnitDto {
+    private String sizingName;
+    private Long partyId;
+}
