@@ -134,4 +134,10 @@ export const api = {
     update: (id, data) => request(`/api/sizing-yarn-inward/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id) => request(`/api/sizing-yarn-inward/${id}`, { method: 'DELETE' }),
   },
+
+  // Sizing Sets API
+  sizingSets: {
+    getAll: () => request('/api/sizing-sets'),
+    create: (data) => request('/api/sizing-sets', { method: 'POST', body: JSON.stringify(data) }),
+  },
 };

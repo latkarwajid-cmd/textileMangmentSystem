@@ -5,7 +5,7 @@ import { Plus, Search, Edit2, Trash2, RotateCcw, Factory, Building2 } from 'luci
 import { Modal } from '../components/Modal';
 
 export const SizingYarnInwardView = () => {
-  const { parties, tickits, yarnCounts, sizingUnits, addToast } = useApp();
+  const { parties, fabricOrders, tickits, yarnCounts, sizingUnits, addToast } = useApp();
   const [inwardList, setInwardList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
@@ -14,6 +14,7 @@ export const SizingYarnInwardView = () => {
   const [editingItem, setEditingItem] = useState(null);
   const [formData, setFormData] = useState({
     sizingSetId: '1',
+    orderNo: '',
     orderId: '',
     sizingId: '',
     inwardDate: new Date().toISOString().split('T')[0],
@@ -48,6 +49,7 @@ export const SizingYarnInwardView = () => {
     setEditingItem(null);
     setFormData({
       sizingSetId: '1',
+      orderNo: '',
       orderId: '',
       sizingId: sizingUnits.length > 0 ? sizingUnits[0].sizingId : '',
       inwardDate: new Date().toISOString().split('T')[0],
@@ -65,6 +67,7 @@ export const SizingYarnInwardView = () => {
     setEditingItem(item);
     setFormData({
       sizingSetId: item.sizingSet?.sizingSetId || '1',
+      orderNo: item.order?.orderNo || '',
       orderId: item.order?.orderId || '',
       sizingId: item.sizingUnit?.sizingId || '',
       inwardDate: item.inwardDate || '',
@@ -83,6 +86,7 @@ export const SizingYarnInwardView = () => {
     try {
       const payload = {
         sizingSetId: formData.sizingSetId ? Number(formData.sizingSetId) : null,
+        orderNo: formData.orderNo || null,
         orderId: formData.orderId ? Number(formData.orderId) : null,
         sizingId: formData.sizingId ? Number(formData.sizingId) : null,
         inwardDate: formData.inwardDate,
@@ -123,6 +127,7 @@ export const SizingYarnInwardView = () => {
 
   const filteredList = inwardList.filter(item => 
     item.party?.partyName?.toLowerCase().includes(search.toLowerCase()) ||
+    item.order?.orderNo?.toLowerCase().includes(search.toLowerCase()) ||
     item.sizingUnit?.sizingName?.toLowerCase().includes(search.toLowerCase()) ||
     item.count?.countName?.toLowerCase().includes(search.toLowerCase()) ||
     item.tickit?.tickitName?.toLowerCase().includes(search.toLowerCase())
@@ -161,6 +166,7 @@ export const SizingYarnInwardView = () => {
             <thead>
               <tr>
                 <th>ID</th>
+                <th>Order No</th>
                 <th>Inward Date</th>
                 <th>Sizing Unit</th>
                 <th>Party</th>
@@ -175,13 +181,13 @@ export const SizingYarnInwardView = () => {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="10" style={{ textAlign: 'center', padding: '32px' }}>
+                  <td colSpan="11" style={{ textAlign: 'center', padding: '32px' }}>
                     <div className="spinner" style={{ margin: '0 auto' }}></div>
                   </td>
                 </tr>
               ) : filteredList.length === 0 ? (
                 <tr>
-                  <td colSpan="10" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-dim)' }}>
+                  <td colSpan="11" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-dim)' }}>
                     No sizing yarn inward records found. Record your first shipment above.
                   </td>
                 </tr>
@@ -189,6 +195,9 @@ export const SizingYarnInwardView = () => {
                 filteredList.map((item) => (
                   <tr key={item.sizingInwardId}>
                     <td>#{item.sizingInwardId}</td>
+                    <td style={{ fontWeight: 600, color: 'var(--accent-cyan)' }}>
+                      {item.order?.orderNo || '-'}
+                    </td>
                     <td>{item.inwardDate || '-'}</td>
                     <td style={{ fontWeight: 600, color: 'var(--accent-amber)' }}>
                       {item.sizingUnit?.sizingName || '-'}
@@ -235,6 +244,30 @@ export const SizingYarnInwardView = () => {
       >
         <form onSubmit={handleSubmit}>
           <div className="form-grid">
+            <div className="form-group">
+              <label>Order No *</label>
+              <select
+                className="form-control"
+                value={formData.orderNo}
+                onChange={(e) => {
+                  const selectedOrder = fabricOrders.find(order => order.orderNo === e.target.value);
+                  setFormData({
+                    ...formData,
+                    orderNo: e.target.value,
+                    orderId: selectedOrder?.orderId || '',
+                  });
+                }}
+                required
+              >
+                <option value="">-- Select Order No --</option>
+                {fabricOrders.map(order => (
+                  <option key={order.orderId} value={order.orderNo}>
+                    {order.orderNo}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div className="form-group">
               <label>Inward Date *</label>
               <input

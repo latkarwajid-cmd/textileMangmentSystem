@@ -104,7 +104,11 @@ public class SizingYarnInwardService {
         }
 
         // Order mapping
-        if (dto.getOrderId() != null) {
+        if (dto.getOrderNo() != null && !dto.getOrderNo().isBlank()) {
+            FabricOrder order = fabricOrderRepository.findByOrderNoIgnoreCase(dto.getOrderNo().trim())
+                    .orElseThrow(() -> new RuntimeException("Fabric order not found with order no: " + dto.getOrderNo()));
+            entity.setOrder(order);
+        } else if (dto.getOrderId() != null) {
             FabricOrder order = fabricOrderRepository.findById(dto.getOrderId())
                     .orElseThrow(() -> new RuntimeException("Fabric order not found with id: " + dto.getOrderId()));
             entity.setOrder(order);

@@ -7,6 +7,7 @@ import { Modal } from '../components/Modal';
 export const YarnOutSizingView = () => {
   const { addToast } = useApp();
   const [outList, setOutList] = useState([]);
+  const [sizingSets, setSizingSets] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
 
@@ -38,8 +39,18 @@ export const YarnOutSizingView = () => {
     }
   };
 
+  const fetchSizingSets = async () => {
+    try {
+      const data = await api.sizingSets.getAll();
+      setSizingSets(Array.isArray(data) ? data : []);
+    } catch (err) {
+      addToast(err.message || 'Failed to fetch sizing sets', 'error');
+    }
+  };
+
   useEffect(() => {
     fetchOutList();
+    fetchSizingSets();
   }, []);
 
   // Real-time calculation effect
@@ -59,7 +70,7 @@ export const YarnOutSizingView = () => {
   const openCreateModal = () => {
     setEditingItem(null);
     setFormData({
-      sizingSetId: '1',
+      sizingSetId: '',
       outDate: new Date().toISOString().split('T')[0],
       bags: '',
       cone: '',
@@ -74,7 +85,7 @@ export const YarnOutSizingView = () => {
   const openEditModal = (item) => {
     setEditingItem(item);
     setFormData({
-      sizingSetId: item.sizingSet?.sizingSetId || '1',
+      sizingSetId: item.sizingSet?.sizingSetId || '',
       outDate: item.outDate || '',
       bags: item.bags || '',
       cone: item.cone || '',
@@ -238,14 +249,19 @@ export const YarnOutSizingView = () => {
           <div className="form-grid">
             <div className="form-group">
               <label>Sizing Set ID *</label>
-              <input
-                type="number"
+              <select
                 className="form-control"
                 value={formData.sizingSetId}
                 onChange={(e) => setFormData({ ...formData, sizingSetId: e.target.value })}
-                placeholder="e.g. 1"
                 required
-              />
+              >
+                <option value="">-- Select Sizing Set --</option>
+                {sizingSets.map(sizingSet => (
+                  <option key={sizingSet.sizingSetId} value={sizingSet.sizingSetId}>
+                    {sizingSet.setNo} (ID: {sizingSet.sizingSetId})
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="form-group">
