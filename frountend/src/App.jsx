@@ -28,6 +28,7 @@ const MainContent = () => {
       case 'yarn-counts': return <YarnCountsView />;
       case 'sizing-units': return <SizingUnitsView />;
       case 'sizing-sets': return <SizingSetsView />;
+      case 'beam-inward': return <BeamInwardView />;
       case 'yarn-inward': return <YarnInwardView />;
       case 'yarn-out-sizing': return <YarnOutSizingView />;
       case 'yarn-out-dyeing': return <YarnOutDyeingView />;

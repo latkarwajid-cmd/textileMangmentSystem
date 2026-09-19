@@ -141,12 +141,19 @@ export const api = {
     create: (data) => request('/api/sizing-sets', { method: 'POST', body: JSON.stringify(data) }),
   },
 
-  // Yarn Out For Dyeing API
+  // Beam Inward API (Teammate's changes)
+  beamInward: {
+    getAll: () => request('/api/beam-inward'),
+    getById: (id) => request(`/api/beam-inward/${id}`),
+    create: (data) => request('/api/beam-inward', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => request(`/api/beam-inward/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => request(`/api/beam-inward/${id}`, { method: 'DELETE' }),
+  },
+
+  // Yarn Out For Dyeing API (Your changes)
   yarnOutDyeing: {
     getAll: () => request('/api/yarn-out-dyeing'),
     getById: (id) => request(`/api/yarn-out-dyeing/${id}`),
-    getBySizingSet: (sizingSetId) => request(`/api/yarn-out-dyeing/sizing-set/${sizingSetId}`),
-    getByOrder: (orderId) => request(`/api/yarn-out-dyeing/order/${orderId}`),
     create: (data) => request('/api/yarn-out-dyeing', { method: 'POST', body: JSON.stringify(data) }),
     update: (id, data) => request(`/api/yarn-out-dyeing/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id) => request(`/api/yarn-out-dyeing/${id}`, { method: 'DELETE' }),
