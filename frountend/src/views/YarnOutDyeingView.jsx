@@ -3,9 +3,10 @@ import { ArrowUpRight, Edit2, Plus, Search, Trash2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { api } from '../services/api';
 import { Modal } from '../components/Modal';
+import { OrderNumberField } from '../components/OrderNumberField';
 
 const emptyForm = {
-  sizingSetId: '', orderId: '', outDate: new Date().toISOString().split('T')[0],
+  sizingSetId: '', orderNo: '', orderId: '', outDate: new Date().toISOString().split('T')[0],
   countId: '', tickitId: '', sizingId: '', partyId: '', bags: '', weightKg: '',
   quality: '', totalEnds: '', sizingMeters: '', sizingReceivedWeight: '',
   freshBagsReceived: '', balanceInSizing: '', sizingConsumptionKg: '', sizingCount: '',
@@ -69,7 +70,7 @@ export const YarnOutDyeingView = () => {
   const openEditModal = (item) => {
     setEditingItem(item);
     setFormData({
-      sizingSetId: item.sizingSet?.sizingSetId || '', orderId: item.order?.orderId || '',
+      sizingSetId: item.sizingSet?.sizingSetId || '', orderNo: item.order?.orderNo || '', orderId: item.order?.orderId || '',
       outDate: item.outDate || '', countId: item.count?.countId || '',
       tickitId: item.tickit?.tickitId || '', sizingId: item.sizingUnit?.sizingId || '',
       partyId: item.party?.partyId || '', bags: item.bags || '', weightKg: item.weightKg || '',
@@ -97,12 +98,26 @@ export const YarnOutDyeingView = () => {
     }));
   };
 
+  const handleOrderChange = orderNo => {
+    const order = fabricOrders.find(item => item.orderNo?.trim().toLowerCase() === orderNo.trim().toLowerCase());
+    setFormData(prev => ({
+      ...prev,
+      orderNo,
+      orderId: order?.orderId || '',
+      countId: order?.count?.countId || '',
+      tickitId: order?.tickit?.tickitId || '',
+      partyId: order?.party?.partyId || '',
+      quality: order?.quality || '',
+    }));
+  };
+
   const handleSubmit = async event => {
     event.preventDefault();
     try {
       const numericFields = ['sizingSetId', 'orderId', 'countId', 'tickitId', 'sizingId', 'partyId', 'totalEnds'];
       const decimalFields = ['bags', 'weightKg', 'sizingMeters', 'sizingReceivedWeight', 'freshBagsReceived', 'balanceInSizing', 'sizingConsumptionKg'];
       const payload = { ...formData };
+      delete payload.orderNo;
       numericFields.forEach(field => { payload[field] = formData[field] ? Number(formData[field]) : null; });
       decimalFields.forEach(field => { payload[field] = formData[field] ? Number(formData[field]) : null; });
       if (editingItem) {
@@ -170,7 +185,7 @@ export const YarnOutDyeingView = () => {
           <div className="form-group"><label>Weight (Kg)</label><input type="number" step="0.001" className="form-control" value={formData.weightKg} onChange={event => updateField('weightKg', event.target.value)} /></div>
           <div className="form-group"><label>Sizing Name</label><select className="form-control" value={formData.sizingId} onChange={event => updateField('sizingId', event.target.value)}><option value="">-- Select Sizing --</option>{selectOptions(sizingUnits, 'sizingId', 'sizingName')}</select></div>
           <div className="form-group"><label>Party Name</label><select className="form-control" value={formData.partyId} onChange={event => updateField('partyId', event.target.value)}><option value="">-- Select Party --</option>{selectOptions(parties, 'partyId', 'partyName')}</select></div>
-          <div className="form-group"><label>Order No</label><select className="form-control" value={formData.orderId} onChange={event => updateField('orderId', event.target.value)}><option value="">-- Select Order --</option>{selectOptions(fabricOrders, 'orderId', 'orderNo')}</select></div>
+          <OrderNumberField orders={fabricOrders} value={formData.orderNo || ''} onChange={handleOrderChange} />
           <div className="form-group"><label>Quality</label><input className="form-control" value={formData.quality} onChange={event => updateField('quality', event.target.value)} /></div>
           <div className="form-group"><label>Total Ends</label><input type="number" className="form-control" value={formData.totalEnds} onChange={event => updateField('totalEnds', event.target.value)} /></div>
           <div className="form-group"><label>Sizing Mtr</label><input type="number" step="0.001" className="form-control" value={formData.sizingMeters} onChange={event => updateField('sizingMeters', event.target.value)} /></div>

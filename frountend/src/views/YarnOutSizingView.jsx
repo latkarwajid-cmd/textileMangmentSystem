@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { api } from '../services/api';
 import { Plus, Search, Edit2, Trash2, ArrowUpRight, Calculator } from 'lucide-react';
 import { Modal } from '../components/Modal';
+import { OrderNumberField } from '../components/OrderNumberField';
 
 export const YarnOutSizingView = () => {
   const { addToast } = useApp();
@@ -18,8 +19,9 @@ export const YarnOutSizingView = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [formData, setFormData] = useState({
-    sizingSetId: '1',
+    sizingSetId: '',
     tickitId: '',
+    orderNo: '',
     orderId: '',
     countId: '',
     partyId: '',
@@ -127,8 +129,8 @@ export const YarnOutSizingView = () => {
     setEditingItem(null);
     setFormData({
       sizingSetId: '',
-      sizingSetId: '1',
       tickitId: '',
+      orderNo: '',
       orderId: '',
       countId: '',
       partyId: '',
@@ -155,8 +157,8 @@ export const YarnOutSizingView = () => {
     setEditingItem(item);
     setFormData({
       sizingSetId: item.sizingSet?.sizingSetId || '',
-      sizingSetId: item.sizingSet?.sizingSetId || '1',
       tickitId: item.tickit?.tickitId || '',
+      orderNo: item.order?.orderNo || '',
       orderId: item.order?.orderId || '',
       countId: item.yarnCount?.countId || '',
       partyId: item.party?.partyId || '',
@@ -177,6 +179,20 @@ export const YarnOutSizingView = () => {
       status: item.status ?? '',
     });
     setIsModalOpen(true);
+  };
+
+  const handleOrderChange = orderNo => {
+    const order = orders.find(item => item.orderNo?.trim().toLowerCase() === orderNo.trim().toLowerCase());
+    const linkedSizingSet = sizingSets.find(item => String(item.order?.orderId) === String(order?.orderId));
+    setFormData(prev => ({
+      ...prev,
+      orderNo,
+      orderId: order?.orderId || '',
+      sizingSetId: linkedSizingSet?.sizingSetId || '',
+      countId: order?.count?.countId || '',
+      tickitId: order?.tickit?.tickitId || '',
+      partyId: order?.party?.partyId || '',
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -373,8 +389,10 @@ export const YarnOutSizingView = () => {
       >
         <form onSubmit={handleSubmit}>
           <div className="form-grid">
+            <OrderNumberField orders={orders} value={formData.orderNo} onChange={handleOrderChange} />
+
             <div className="form-group">
-              <label>Sizing Set ID *</label>
+              <label>Sizing Set No *</label>
               <select
                 className="form-control"
                 value={formData.sizingSetId}
@@ -384,7 +402,7 @@ export const YarnOutSizingView = () => {
                 <option value="">-- Select Sizing Set --</option>
                 {sizingSets.map(sizingSet => (
                   <option key={sizingSet.sizingSetId} value={sizingSet.sizingSetId}>
-                    {sizingSet.setNo} (ID: {sizingSet.sizingSetId})
+                    {sizingSet.setNo}
                   </option>
                 ))}
               </select>
@@ -400,20 +418,6 @@ export const YarnOutSizingView = () => {
                 <option value="">-- Select Tickit --</option>
                 {tickits.map(t => (
                   <option key={t.tickitId} value={t.tickitId}>{t.tickitName} (ID: {t.tickitId})</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label>Order No</label>
-              <select
-                className="form-control"
-                value={formData.orderId}
-                onChange={(e) => setFormData({ ...formData, orderId: e.target.value })}
-              >
-                <option value="">-- Select Order --</option>
-                {orders.map(o => (
-                  <option key={o.orderId} value={o.orderId}>{o.orderNo} (ID: {o.orderId})</option>
                 ))}
               </select>
             </div>

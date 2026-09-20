@@ -9,6 +9,9 @@ import com.textileERP.textileSys.repository.BeamInwardRepository;
 import com.textileERP.textileSys.repository.FabricOrderRepository;
 import com.textileERP.textileSys.repository.SizingSetRepository;
 import com.textileERP.textileSys.repository.SizingUnitRepository;
+import com.textileERP.textileSys.repository.YarnCountRepository;
+import com.textileERP.textileSys.repository.TickitsRepository;
+import com.textileERP.textileSys.repository.PartiesRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -21,15 +24,24 @@ public class BeamInwardService {
     private final SizingSetRepository sizingSetRepository;
     private final FabricOrderRepository fabricOrderRepository;
     private final SizingUnitRepository sizingUnitRepository;
+    private final YarnCountRepository yarnCountRepository;
+    private final TickitsRepository tickitsRepository;
+    private final PartiesRepository partiesRepository;
 
     public BeamInwardService(BeamInwardRepository beamInwardRepository,
                              SizingSetRepository sizingSetRepository,
                              FabricOrderRepository fabricOrderRepository,
-                             SizingUnitRepository sizingUnitRepository) {
+                             SizingUnitRepository sizingUnitRepository,
+                             YarnCountRepository yarnCountRepository,
+                             TickitsRepository tickitsRepository,
+                             PartiesRepository partiesRepository) {
         this.beamInwardRepository = beamInwardRepository;
         this.sizingSetRepository = sizingSetRepository;
         this.fabricOrderRepository = fabricOrderRepository;
         this.sizingUnitRepository = sizingUnitRepository;
+        this.yarnCountRepository = yarnCountRepository;
+        this.tickitsRepository = tickitsRepository;
+        this.partiesRepository = partiesRepository;
     }
 
     public List<BeamInward> getAll() {
@@ -70,15 +82,7 @@ public class BeamInwardService {
             b.setSizingUnit(sizing);
         }
 
-        b.setDate(request.getDate() != null ? request.getDate() : LocalDate.now());
-        b.setBeams(request.getBeams());
-        b.setDNo(request.getDNo());
-        b.setCut(request.getCut());
-        b.setMtrs(request.getMtrs());
-        b.setPick(request.getPick());
-        b.setFold(request.getFold());
-        b.setRs(request.getRs());
-        b.setLasa(request.getLasa());
+        mapTransactionFields(request, b);
 
         return beamInwardRepository.save(b);
     }
@@ -104,17 +108,31 @@ public class BeamInwardService {
             b.setSizingUnit(sizing);
         }
 
-        if (request.getDate() != null) b.setDate(request.getDate());
-        if (request.getBeams() != null) b.setBeams(request.getBeams());
-        b.setDNo(request.getDNo());
-        if (request.getCut() != null) b.setCut(request.getCut());
-        if (request.getMtrs() != null) b.setMtrs(request.getMtrs());
-        if (request.getPick() != null) b.setPick(request.getPick());
-        if (request.getFold() != null) b.setFold(request.getFold());
-        if (request.getRs() != null) b.setRs(request.getRs());
-        if (request.getLasa() != null) b.setLasa(request.getLasa());
+        mapTransactionFields(request, b);
 
         return beamInwardRepository.save(b);
+    }
+
+    private void mapTransactionFields(BeamInwardDto request, BeamInward entity) {
+        entity.setInwardDate(request.getInwardDate() != null ? request.getInwardDate() : LocalDate.now());
+        entity.setBeamNo(request.getBeamNo());
+        entity.setMeter(request.getMeter());
+        entity.setWeightKg(request.getWeightKg());
+        entity.setStatus(request.getStatus() == null || request.getStatus().isBlank() ? "OPEN" : request.getStatus());
+        entity.setRemark(request.getRemark());
+
+        if (request.getCountId() != null) {
+            entity.setCount(yarnCountRepository.findById(request.getCountId())
+                    .orElseThrow(() -> new RuntimeException("Yarn count not found: " + request.getCountId())));
+        }
+        if (request.getTickitId() != null) {
+            entity.setTickit(tickitsRepository.findById(request.getTickitId())
+                    .orElseThrow(() -> new RuntimeException("Tickit not found: " + request.getTickitId())));
+        }
+        if (request.getPartyId() != null) {
+            entity.setParty(partiesRepository.findById(request.getPartyId())
+                    .orElseThrow(() -> new RuntimeException("Party not found: " + request.getPartyId())));
+        }
     }
 
     public void delete(Long id) {

@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { api } from '../services/api';
 import { Plus, Search, Edit2, Trash2, RotateCcw, Factory, Building2 } from 'lucide-react';
 import { Modal } from '../components/Modal';
+import { OrderNumberField } from '../components/OrderNumberField';
 
 export const SizingYarnInwardView = () => {
   const { parties, fabricOrders, tickits, yarnCounts, sizingUnits, addToast } = useApp();
@@ -110,6 +111,18 @@ export const SizingYarnInwardView = () => {
     } catch (err) {
       addToast(err.message || 'Error saving transaction', 'error');
     }
+  };
+
+  const handleOrderChange = orderNo => {
+    const order = fabricOrders.find(item => item.orderNo?.trim().toLowerCase() === orderNo.trim().toLowerCase());
+    setFormData(prev => ({
+      ...prev,
+      orderNo,
+      orderId: order?.orderId || '',
+      countId: order?.count?.countId || '',
+      tickitId: order?.tickit?.tickitId || '',
+      partyId: order?.party?.partyId || '',
+    }));
   };
 
   const handleDelete = async () => {
@@ -244,29 +257,7 @@ export const SizingYarnInwardView = () => {
       >
         <form onSubmit={handleSubmit}>
           <div className="form-grid">
-            <div className="form-group">
-              <label>Order No *</label>
-              <select
-                className="form-control"
-                value={formData.orderNo}
-                onChange={(e) => {
-                  const selectedOrder = fabricOrders.find(order => order.orderNo === e.target.value);
-                  setFormData({
-                    ...formData,
-                    orderNo: e.target.value,
-                    orderId: selectedOrder?.orderId || '',
-                  });
-                }}
-                required
-              >
-                <option value="">-- Select Order No --</option>
-                {fabricOrders.map(order => (
-                  <option key={order.orderId} value={order.orderNo}>
-                    {order.orderNo}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <OrderNumberField orders={fabricOrders} value={formData.orderNo} onChange={handleOrderChange} required />
 
             <div className="form-group">
               <label>Inward Date *</label>

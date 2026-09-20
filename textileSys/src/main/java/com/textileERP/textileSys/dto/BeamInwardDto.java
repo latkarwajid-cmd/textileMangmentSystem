@@ -18,21 +18,21 @@ public class BeamInwardDto {
 
     private Long sizingId;
 
-    private LocalDate date;
+    private LocalDate inwardDate;
 
-    private Integer beams;
+    private String beamNo;
 
-    private String dNo;
+    private Long countId;
 
-    private BigDecimal cut;
+    private Long tickitId;
 
-    private BigDecimal mtrs;
+    private BigDecimal meter;
 
-    private BigDecimal pick;
+    private BigDecimal weightKg;
 
-    private BigDecimal fold;
+    private Long partyId;
 
-    private BigDecimal rs;
+    private String status;
 
-    private BigDecimal lasa;
+    private String remark;
 }
