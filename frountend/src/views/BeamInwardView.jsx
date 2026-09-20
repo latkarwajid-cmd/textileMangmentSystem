@@ -21,7 +21,9 @@ export const BeamInwardView = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({
-    sizingSetId: '', orderNo: '', orderId: '', sizingId: '', inwardDate: new Date().toISOString().split('T')[0], beamNo: '', countId: '', tickitId: '', partyId: '', meter: '', weightKg: '', status: 'OPEN', remark: ''
+    sizingSetId: '', orderNo: '', orderId: '', sizingId: '', inwardDate: new Date().toISOString().split('T')[0], beamNo: '', quality: '',
+    // countId: '', tickitId: '',
+     partyId: '', meter: '', weightKg: '', status: 'OPEN', remark: ''
   });
 
   const fetchList = async () => {
@@ -45,7 +47,9 @@ export const BeamInwardView = () => {
 
   useEffect(() => { fetchList(); fetchSizingSets(); }, []);
 
-  const openCreate = () => { setEditing(null); setForm({ sizingSetId:'', orderNo:'', orderId:'', sizingId:'', inwardDate:new Date().toISOString().split('T')[0], beamNo:'', countId:'', tickitId:'', partyId:'', meter:'', weightKg:'', status:'OPEN', remark:'' }); setIsModalOpen(true); };
+  const openCreate = () => { setEditing(null); setForm({ sizingSetId:'', orderNo:'', orderId:'', sizingId:'', inwardDate:new Date().toISOString().split('T')[0], beamNo:'', quality:'',
+    //  countId:'', tickitId:'',
+     partyId:'', meter:'', weightKg:'', status:'OPEN', remark:'' }); setIsModalOpen(true); };
   const openEdit = (item) => {
     setEditing(item);
     setForm({
@@ -54,7 +58,7 @@ export const BeamInwardView = () => {
       orderId: item.order?.orderId || '',
       sizingId: item.sizingUnit?.sizingId || '',
       inwardDate: formatDate(item.inwardDate),
-      beamNo: item.beamNo || '', countId: item.count?.countId || '', tickitId: item.tickit?.tickitId || '', partyId: item.party?.partyId || '', meter: item.meter || '', weightKg: item.weightKg || '', status: item.status || 'OPEN', remark: item.remark || ''
+      beamNo: item.beamNo || '', quality: item.quality || '', countId: item.count?.countId || '', tickitId: item.tickit?.tickitId || '', partyId: item.party?.partyId || '', meter: item.meter || '', weightKg: item.weightKg || '', status: item.status || 'OPEN', remark: item.remark || ''
     });
     setIsModalOpen(true);
   };
@@ -67,9 +71,10 @@ export const BeamInwardView = () => {
       orderNo: sizingSet?.order?.orderNo || '',
       orderId: sizingSet?.order?.orderId || '',
       sizingId: sizingSet?.sizingUnit?.sizingId || '',
-      countId: sizingSet?.count?.countId || '',
-      tickitId: sizingSet?.tickit?.tickitId || '',
-      partyId: sizingSet?.party?.partyId || '',
+      // countId: sizingSet?.count?.countId || '',
+      // tickitId: sizingSet?.tickit?.tickitId || '',
+      quality: sizingSet?.quality || sizingSet?.order?.quality || prev.quality || '',
+      partyId: sizingSet?.party?.partyId || sizingSet?.order?.party?.partyId || prev.partyId || '',
     }));
   };
 
@@ -82,8 +87,9 @@ export const BeamInwardView = () => {
         sizingId: form.sizingId ? Number(form.sizingId) : null,
         inwardDate: form.inwardDate || null,
         beamNo: form.beamNo || null,
-        countId: form.countId ? Number(form.countId) : null,
-        tickitId: form.tickitId ? Number(form.tickitId) : null,
+        quality: form.quality || null,
+        // countId: form.countId ? Number(form.countId) : null,
+        // tickitId: form.tickitId ? Number(form.tickitId) : null,
         partyId: form.partyId ? Number(form.partyId) : null,
         meter: form.meter ? Number(form.meter) : null,
         weightKg: form.weightKg ? Number(form.weightKg) : null,
@@ -138,8 +144,9 @@ export const BeamInwardView = () => {
                 <th>Order</th>
                 <th>Sizing Set</th>
                 <th>Sizing Unit</th>
+                <th>Quality</th>
                 <th>Date</th>
-                <th>Beam No</th>
+                <th>No. Of Beams</th>
                 <th>Meter</th>
                 <th style={{textAlign:'right'}}>Actions</th>
               </tr>
@@ -156,6 +163,7 @@ export const BeamInwardView = () => {
                     <td>{item.order?.orderNo || '-'}</td>
                     <td>{item.sizingSet?.setNo || '-'}</td>
                     <td>{item.sizingUnit?.sizingName || '-'}</td>
+                    <td>{item.quality || item.order?.quality || '-'}</td>
                     <td>{formatDate(item.inwardDate)}</td>
                     <td>{item.beamNo || '-'}</td>
                     <td>{item.meter || '-'}</td>
@@ -204,11 +212,16 @@ export const BeamInwardView = () => {
             </div>
 
             <div className="form-group">
-              <label>Beam No</label>
+              <label>No. Of Beams </label>
               <input type="text" className="form-control" value={form.beamNo} onChange={e => setForm({...form, beamNo: e.target.value})} />
             </div>
 
             <div className="form-group">
+              <label>Quality</label>
+              <input type="text" className="form-control" value={form.quality} onChange={e => setForm({...form, quality: e.target.value})} placeholder="Filled from order quality" />
+            </div>
+
+            {/* <div className="form-group">
               <label>Count</label>
               <select className="form-control" value={form.countId} onChange={e => setForm({...form, countId: e.target.value})}><option value="">-- Select Count --</option>{yarnCounts.map(c => <option key={c.countId} value={c.countId}>{c.countName}</option>)}</select>
             </div>
@@ -216,7 +229,7 @@ export const BeamInwardView = () => {
             <div className="form-group">
               <label>Tickit</label>
               <select className="form-control" value={form.tickitId} onChange={e => setForm({...form, tickitId: e.target.value})}><option value="">-- Select Tickit --</option>{tickits.map(t => <option key={t.tickitId} value={t.tickitId}>{t.tickitName}</option>)}</select>
-            </div>
+            </div> */}
 
             <div className="form-group">
               <label>Party</label>

@@ -5,6 +5,26 @@ import { api } from '../services/api';
 import { Modal } from '../components/Modal';
 import { OrderNumberField } from '../components/OrderNumberField';
 
+const getNextSetNo = (existingSets = []) => {
+  const values = existingSets
+    .map(item => item?.setNo)
+    .filter(value => value !== null && value !== undefined && value !== '');
+
+  let maxNumber = 0;
+
+  values.forEach(value => {
+    const match = String(value).match(/(\d+)$/);
+    if (match) {
+      const parsed = Number(match[1]);
+      if (!Number.isNaN(parsed) && parsed > maxNumber) {
+        maxNumber = parsed;
+      }
+    }
+  });
+
+  return String(maxNumber + 1);
+};
+
 export const SizingSetsView = () => {
   const { parties, fabricOrders, tickits, yarnCounts, sizingUnits, addToast } = useApp();
   const [sizingSets, setSizingSets] = useState([]);
@@ -39,8 +59,9 @@ export const SizingSetsView = () => {
   }, []);
 
   const openCreateModal = () => {
+    const nextSetNo = getNextSetNo(sizingSets);
     setFormData({
-      setNo: '',
+      setNo: nextSetNo,
       orderNo: '',
       orderId: '',
       countId: '',

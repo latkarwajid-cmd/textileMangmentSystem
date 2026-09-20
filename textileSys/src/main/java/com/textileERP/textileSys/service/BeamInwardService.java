@@ -116,6 +116,9 @@ public class BeamInwardService {
     private void mapTransactionFields(BeamInwardDto request, BeamInward entity) {
         entity.setInwardDate(request.getInwardDate() != null ? request.getInwardDate() : LocalDate.now());
         entity.setBeamNo(request.getBeamNo());
+        entity.setQuality(request.getQuality() != null && !request.getQuality().isBlank()
+                ? request.getQuality()
+                : (entity.getOrder() != null ? entity.getOrder().getQuality() : null));
         entity.setMeter(request.getMeter());
         entity.setWeightKg(request.getWeightKg());
         entity.setStatus(request.getStatus() == null || request.getStatus().isBlank() ? "OPEN" : request.getStatus());

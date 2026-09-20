@@ -25,12 +25,12 @@ export const Sidebar = () => {
     { id: 'yarn-counts', label: 'Yarn Counts', icon: Layers, section: 'Masters' },
     { id: 'sizing-units', label: 'Sizing Units', icon: Factory, section: 'Masters' },
     { id: 'fabric-orders', label: 'Fabric Orders', icon: ShoppingBag, section: 'Transactions' },
-    { id: 'sizing-sets', label: 'Sizing Sets', icon: Layers3, section: 'Transactions' },
     { id: 'yarn-inward', label: 'Yarn Inward', icon: ArrowDownLeft, section: 'Transactions' },
+    { id: 'sizing-sets', label: 'Sizing Sets', icon: Layers3, section: 'Transactions' },
     { id: 'beam-inward', label: 'Beam Inward', icon: ArrowDownLeft, section: 'Transactions' },
-    { id: 'yarn-out-sizing', label: 'Yarn Out Sizing', icon: ArrowUpRight, section: 'Transactions' },
+    // { id: 'yarn-out-sizing', label: 'Yarn Out Sizing', icon: ArrowUpRight, section: 'Transactions' },
+    { id: 'yarn-inward-from-sizing', label: 'Yarn Inward From Sizing', icon: RotateCcw, section: 'Transactions' },
     { id: 'yarn-out-dyeing', label: 'Yarn Out Dyeing', icon: Droplets, section: 'Transactions' },
-    { id: 'sizing-yarn-inward', label: 'Sizing Yarn Inward', icon: RotateCcw, section: 'Transactions' },
   ];
 
   const sections = ['Overview', 'Masters', 'Transactions'];
