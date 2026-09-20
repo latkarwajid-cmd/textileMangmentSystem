@@ -1,7 +1,9 @@
 const DEFAULT_BASE_URL = 'http://localhost:8080';
+const LEGACY_BASE_URL = 'http://localhost:8081';
 
 export const getBaseUrl = () => {
-  return localStorage.getItem('textile_api_url') || DEFAULT_BASE_URL;
+  const savedUrl = localStorage.getItem('textile_api_url');
+  return savedUrl === LEGACY_BASE_URL ? DEFAULT_BASE_URL : (savedUrl || DEFAULT_BASE_URL);
 };
 
 export const setBaseUrl = (url) => {
@@ -98,6 +100,11 @@ export const api = {
     create: (data) => request('/api/sizing-units', { method: 'POST', body: JSON.stringify(data) }),
     update: (id, data) => request(`/api/sizing-units/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id) => request(`/api/sizing-units/${id}`, { method: 'DELETE' }),
+  },
+
+  // Yarn storage locations API
+  yarnStorageLocations: {
+    getAll: () => request('/api/yarn-storage-locations'),
   },
 
   // Yarn Inward API

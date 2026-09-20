@@ -53,6 +53,20 @@ CREATE TABLE yarn_counts (
 );
 
 
+CREATE TABLE yarn_storage_locations (
+    storage_location_id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    location_name VARCHAR(100) NOT NULL UNIQUE,
+    active BOOLEAN DEFAULT TRUE
+);
+
+INSERT INTO yarn_storage_locations (location_name) VALUES
+    ('Factory Warehouse'),
+    ('Gate Pass'),
+    ('Weaver'),
+    ('Sizing'),
+    ('Other');
+
+
 -- =========================================================
 -- 4. SIZING UNITS
 -- Sizing belongs to a Party
@@ -128,6 +142,8 @@ CREATE TABLE yarn_inward (
 
     supplier_id BIGINT,
 
+    storage_location_id BIGINT,
+
     bill_no VARCHAR(50),
 
     rate DECIMAL(12,2),
@@ -160,7 +176,11 @@ CREATE TABLE yarn_inward (
 
     CONSTRAINT fk_yarn_inward_supplier
         FOREIGN KEY (supplier_id)
-        REFERENCES parties(party_id)
+        REFERENCES parties(party_id),
+
+    CONSTRAINT fk_yarn_inward_storage_location
+        FOREIGN KEY (storage_location_id)
+        REFERENCES yarn_storage_locations(storage_location_id)
 );
 
 

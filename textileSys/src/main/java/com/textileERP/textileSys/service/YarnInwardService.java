@@ -18,18 +18,21 @@ public class YarnInwardService {
     private final YarnCountRepository yarnCountRepository;
     private final TickitsRepository tickitsRepository;
     private final PartiesRepository partiesRepository;
+    private final YarnStorageLocationRepository yarnStorageLocationRepository;
 
     public YarnInwardService(
             YarnInwardRepository yarnInwardRepository,
             FabricOrderRepository fabricOrderRepository,
             YarnCountRepository yarnCountRepository,
             TickitsRepository tickitsRepository,
-            PartiesRepository partiesRepository) {
+            PartiesRepository partiesRepository,
+            YarnStorageLocationRepository yarnStorageLocationRepository) {
         this.yarnInwardRepository = yarnInwardRepository;
         this.fabricOrderRepository = fabricOrderRepository;
         this.yarnCountRepository = yarnCountRepository;
         this.tickitsRepository = tickitsRepository;
         this.partiesRepository = partiesRepository;
+        this.yarnStorageLocationRepository = yarnStorageLocationRepository;
     }
 
     // Get all yarn inwards
@@ -119,6 +122,14 @@ public class YarnInwardService {
             entity.setSupplier(supplier);
         } else {
             entity.setSupplier(null);
+        }
+
+        if (dto.getStorageLocationId() != null) {
+            YarnStorageLocation storageLocation = yarnStorageLocationRepository.findById(dto.getStorageLocationId())
+                    .orElseThrow(() -> new RuntimeException("Storage location not found with id: " + dto.getStorageLocationId()));
+            entity.setStorageLocation(storageLocation);
+        } else {
+            entity.setStorageLocation(null);
         }
 
         entity.setBags(dto.getBags());
