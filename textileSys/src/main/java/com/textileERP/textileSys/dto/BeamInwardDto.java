@@ -22,6 +22,8 @@ public class BeamInwardDto {
 
     private String beamNo;
 
+    private String quality;
+
     private Long countId;
 
     private Long tickitId;
