@@ -30,7 +30,7 @@ const formatDate = (date) => {
 };
 
 export const YarnInwardView = () => {
-  const { parties, fabricOrders, tickits, yarnCounts, addToast } = useApp();
+  const { parties, fabricOrders, tickits, yarnCounts, yarnStorageLocations, addToast } = useApp();
   const [inwardList, setInwardList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
@@ -45,6 +45,7 @@ export const YarnInwardView = () => {
     countId: '',
     tickitId: '',
     supplierId: '',
+    storageLocationId: '',
     bags: '',
     weightKg: '',
     rate: '',
@@ -115,6 +116,7 @@ export const YarnInwardView = () => {
       countId: '',
       tickitId: '',
       supplierId: '',
+      storageLocationId: '',
       bags: '',
       weightKg: '',
       rate: '',
@@ -134,6 +136,7 @@ export const YarnInwardView = () => {
       countId: item.count?.countId || '',
       tickitId: item.tickit?.tickitId || '',
       supplierId: item.supplier?.partyId || '',
+      storageLocationId: item.storageLocation?.storageLocationId || '',
       bags: item.bags || '',
       weightKg: item.weightKg || '',
       rate: item.rate || '',
@@ -154,6 +157,7 @@ export const YarnInwardView = () => {
         countId: formData.countId ? Number(formData.countId) : null,
         tickitId: formData.tickitId ? Number(formData.tickitId) : null,
         supplierId: formData.supplierId ? Number(formData.supplierId) : null,
+        storageLocationId: formData.storageLocationId ? Number(formData.storageLocationId) : null,
         bags: formData.bags ? Number(formData.bags) : null,
         weightKg: formData.weightKg ? Number(formData.weightKg) : null,
         rate: formData.rate ? Number(formData.rate) : null,
@@ -196,7 +200,8 @@ export const YarnInwardView = () => {
       item.order?.orderNo?.toLowerCase().includes(search.toLowerCase()) ||
       item.supplier?.partyName?.toLowerCase().includes(search.toLowerCase()) ||
       item.count?.countName?.toLowerCase().includes(search.toLowerCase()) ||
-      item.tickit?.tickitName?.toLowerCase().includes(search.toLowerCase());
+      item.tickit?.tickitName?.toLowerCase().includes(search.toLowerCase()) ||
+      item.storageLocation?.locationName?.toLowerCase().includes(search.toLowerCase());
     const matchesStatus = statusFilter === 'ALL' || item.paymentStatus?.toUpperCase() === statusFilter;
     const matchesOrder = orderFilter === 'ALL' || String(item.order?.orderId) === String(orderFilter);
     return matchesSearch && matchesStatus && matchesOrder;
@@ -263,6 +268,7 @@ export const YarnInwardView = () => {
                 <th>Order No</th>
                 <th>Inward Date</th>
                 <th>Supplier Party</th>
+                <th>Stored At</th>
                 <th>Yarn Count</th>
                 <th>Tickit</th>
                 <th>Bags</th>
@@ -300,6 +306,7 @@ export const YarnInwardView = () => {
                     </td>
                     <td>{formatDate(item.inwardDate)}</td>
                     <td style={{ fontWeight: 600 }}>{item.supplier?.partyName || '-'}</td>
+                    <td>{item.storageLocation?.locationName || '-'}</td>
                     <td>{item.count?.countName || '-'}</td>
                     <td>{item.tickit?.tickitName || '-'}</td>
                     <td>{item.bags || '-'}</td>
@@ -405,6 +412,23 @@ export const YarnInwardView = () => {
                 {parties.map(p => (
                   <option key={p.partyId} value={p.partyId}>
                     {p.partyName} ({p.partyType || 'Supplier'})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label>Stored At *</label>
+              <select
+                className="form-control"
+                value={formData.storageLocationId}
+                onChange={(e) => setFormData({ ...formData, storageLocationId: e.target.value })}
+                required
+              >
+                <option value="">-- Select Storage Location --</option>
+                {yarnStorageLocations.map(location => (
+                  <option key={location.storageLocationId} value={location.storageLocationId}>
+                    {location.locationName}
                   </option>
                 ))}
               </select>
@@ -571,6 +595,10 @@ export const YarnInwardView = () => {
               <div>
                 <strong style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>SUPPLIER PARTY</strong>
                 <div style={{ fontWeight: 600 }}>{viewDetailItem.supplier?.partyName || '-'}</div>
+              </div>
+              <div>
+                <strong style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>STORED AT</strong>
+                <div style={{ fontWeight: 600 }}>{viewDetailItem.storageLocation?.locationName || '-'}</div>
               </div>
               <div>
                 <strong style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>BILL NO</strong>

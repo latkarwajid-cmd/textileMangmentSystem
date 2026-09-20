@@ -15,6 +15,7 @@ export const AppProvider = ({ children }) => {
   const [tickits, setTickits] = useState([]);
   const [yarnCounts, setYarnCounts] = useState([]);
   const [sizingUnits, setSizingUnits] = useState([]);
+  const [yarnStorageLocations, setYarnStorageLocations] = useState([]);
   const [loadingMasters, setLoadingMasters] = useState(false);
 
   useEffect(() => {
@@ -48,12 +49,13 @@ export const AppProvider = ({ children }) => {
   const refreshMasters = async () => {
     setLoadingMasters(true);
     try {
-      const [partiesRes, ordersRes, tickitsRes, countsRes, sizingRes] = await Promise.allSettled([
+      const [partiesRes, ordersRes, tickitsRes, countsRes, sizingRes, storageLocationsRes] = await Promise.allSettled([
         api.parties.getAll(),
         api.fabricOrders.getAll(),
         api.tickits.getAll(),
         api.yarnCounts.getAll(),
         api.sizingUnits.getAll(),
+        api.yarnStorageLocations.getAll(),
       ]);
 
       if (partiesRes.status === 'fulfilled' && Array.isArray(partiesRes.value)) {
@@ -70,6 +72,9 @@ export const AppProvider = ({ children }) => {
       }
       if (sizingRes.status === 'fulfilled' && Array.isArray(sizingRes.value)) {
         setSizingUnits(sizingRes.value);
+      }
+      if (storageLocationsRes.status === 'fulfilled' && Array.isArray(storageLocationsRes.value)) {
+        setYarnStorageLocations(storageLocationsRes.value);
       }
     } catch (error) {
       console.error('Failed to load master data:', error);
@@ -99,6 +104,7 @@ export const AppProvider = ({ children }) => {
         tickits,
         yarnCounts,
         sizingUnits,
+        yarnStorageLocations,
         loadingMasters,
         refreshMasters,
       }}

@@ -19,6 +19,7 @@ public class YarnInwardDto {
     private BigDecimal bags;
     private BigDecimal weightKg;
     private Long supplierId;
+    private Long storageLocationId;
     private String billNo;
     private BigDecimal rate;
     private BigDecimal gstPercent;
