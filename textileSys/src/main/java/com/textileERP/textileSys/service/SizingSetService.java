@@ -70,6 +70,40 @@ public class SizingSetService {
         return sizingSetRepository.save(sizingSet);
     }
 
+    public SizingSet updateSizingSet(Long id, SizingSetDto request) {
+        SizingSet existing = sizingSetRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Sizing set not found: " + id));
+
+        if (request.getSetNo() != null && !request.getSetNo().isBlank()) {
+            if (!existing.getSetNo().equalsIgnoreCase(request.getSetNo()) && sizingSetRepository.existsBySetNoIgnoreCase(request.getSetNo().trim())) {
+                throw new RuntimeException("Sizing set already exists with number: " + request.getSetNo());
+            }
+            existing.setSetNo(request.getSetNo().trim());
+        }
+
+        existing.setOrder(findOrder(request.getOrderId()));
+        existing.setCount(findCount(request.getCountId()));
+        existing.setTickit(findTickit(request.getTickitId()));
+        existing.setSizingUnit(findSizingUnit(request.getSizingId()));
+        existing.setParty(findParty(request.getPartyId()));
+        existing.setQuality(request.getQuality());
+        existing.setTotalEnds(request.getTotalEnds());
+        existing.setSizingMeters(request.getSizingMeters());
+        existing.setSizingCount(request.getSizingCount());
+        if (request.getStatus() != null && !request.getStatus().isBlank()) {
+            existing.setStatus(request.getStatus());
+        }
+
+        return sizingSetRepository.save(existing);
+    }
+
+    public void softDeleteSizingSet(Long id) {
+        SizingSet existing = sizingSetRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Sizing set not found: " + id));
+        existing.setStatus("DELETED");
+        sizingSetRepository.save(existing);
+    }
+
     private FabricOrder findOrder(Long id) {
         return id == null ? null : fabricOrderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Fabric order not found with id: " + id));
