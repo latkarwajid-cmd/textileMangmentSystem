@@ -3,6 +3,7 @@ import { Plus, Search, Layers } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { api } from '../services/api';
 import { Modal } from '../components/Modal';
+import { OrderNumberField } from '../components/OrderNumberField';
 
 export const SizingSetsView = () => {
   const { parties, fabricOrders, tickits, yarnCounts, sizingUnits, addToast } = useApp();
@@ -11,6 +12,7 @@ export const SizingSetsView = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     setNo: '',
+    orderNo: '',
     orderId: '',
     countId: '',
     tickitId: '',
@@ -38,11 +40,12 @@ export const SizingSetsView = () => {
   const openCreateModal = () => {
     setFormData({
       setNo: '',
-      orderId: fabricOrders[0]?.orderId || '',
-      countId: yarnCounts[0]?.countId || '',
-      tickitId: tickits[0]?.tickitId || '',
-      sizingId: sizingUnits[0]?.sizingId || '',
-      partyId: parties[0]?.partyId || '',
+      orderNo: '',
+      orderId: '',
+      countId: '',
+      tickitId: '',
+      sizingId: '',
+      partyId: '',
       quality: '',
       totalEnds: '',
       sizingMeters: '',
@@ -56,7 +59,7 @@ export const SizingSetsView = () => {
     try {
       await api.sizingSets.create({
         setNo: formData.setNo,
-        orderId: formData.orderId ? Number(formData.orderId) : null,
+      orderId: formData.orderId ? Number(formData.orderId) : null,
         countId: formData.countId ? Number(formData.countId) : null,
         tickitId: formData.tickitId ? Number(formData.tickitId) : null,
         sizingId: formData.sizingId ? Number(formData.sizingId) : null,
@@ -82,6 +85,18 @@ export const SizingSetsView = () => {
   );
 
   const updateField = (field, value) => setFormData(prev => ({ ...prev, [field]: value }));
+  const handleOrderChange = orderNo => {
+    const order = fabricOrders.find(item => item.orderNo?.trim().toLowerCase() === orderNo.trim().toLowerCase());
+    setFormData(prev => ({
+      ...prev,
+      orderNo,
+      orderId: order?.orderId || '',
+      countId: order?.count?.countId || '',
+      tickitId: order?.tickit?.tickitId || '',
+      partyId: order?.party?.partyId || '',
+      quality: order?.quality || '',
+    }));
+  };
 
   return (
     <div className="content-area">
@@ -152,13 +167,7 @@ export const SizingSetsView = () => {
               <label>Set No *</label>
               <input className="form-control" value={formData.setNo} onChange={event => updateField('setNo', event.target.value)} placeholder="e.g. SET-001" required />
             </div>
-            <div className="form-group">
-              <label>Fabric Order</label>
-              <select className="form-control" value={formData.orderId} onChange={event => updateField('orderId', event.target.value)}>
-                <option value="">-- Select Order --</option>
-                {fabricOrders.map(order => <option key={order.orderId} value={order.orderId}>{order.orderNo}</option>)}
-              </select>
-            </div>
+            <OrderNumberField orders={fabricOrders} value={formData.orderNo} onChange={handleOrderChange} />
             <div className="form-group">
               <label>Party</label>
               <select className="form-control" value={formData.partyId} onChange={event => updateField('partyId', event.target.value)}>

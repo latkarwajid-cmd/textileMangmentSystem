@@ -16,8 +16,8 @@ public class BeamInward {
 
         @Id
         @GeneratedValue(strategy = GenerationType.IDENTITY)
-        @Column(name = "beam_inward_id")
-        private Long beamInwardId;
+        @Column(name = "beam_id")
+        private Long beamId;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "sizing_set_id")
@@ -31,34 +31,37 @@ public class BeamInward {
     @JoinColumn(name = "sizing_id")
     private SizingUnit sizingUnit;
 
-    @Column(name = "inward_date", nullable = false)
+    @Column(name = "inward_date")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
-        private LocalDate date;
+        private LocalDate inwardDate;
 
 
 
-        @Column(name = "beams")
-        private Integer beams;
+        @Column(name = "beam_no", length = 50)
+        private String beamNo;
 
-        @Column(name = "d_no")
-        private String dNo;
+        @ManyToOne(fetch = FetchType.EAGER)
+        @JoinColumn(name = "count_id")
+        private YarnCount count;
 
-        @Column(name = "cut", precision = 14, scale = 2)
-        private BigDecimal cut;
+        @ManyToOne(fetch = FetchType.EAGER)
+        @JoinColumn(name = "tickit_id")
+        private Tickits tickit;
 
-        @Column(name = "mtrs", precision = 14, scale = 2)
-        private BigDecimal mtrs;
+        @Column(name = "meter", precision = 12, scale = 3)
+        private BigDecimal meter;
 
-        @Column(name = "pick", precision = 14, scale = 2)
-        private BigDecimal pick;
+        @Column(name = "weight_kg", precision = 12, scale = 3)
+        private BigDecimal weightKg;
 
-        @Column(name = "fold", precision = 14, scale = 2)
-        private BigDecimal fold;
+        @ManyToOne(fetch = FetchType.EAGER)
+        @JoinColumn(name = "party_id")
+        private Parties party;
 
-        @Column(name = "rs", precision = 14, scale = 2)
-        private BigDecimal rs;
+        @Column(name = "status", length = 30)
+        private String status;
 
-        @Column(name = "lasa", precision = 14, scale = 2)
-        private BigDecimal lasa;
+        @Column(name = "remark", columnDefinition = "TEXT")
+        private String remark;
     }
 

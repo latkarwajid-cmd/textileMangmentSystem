@@ -3,8 +3,12 @@ package com.textileERP.textileSys.service;
 import com.textileERP.textileSys.dto.FabricOrderDto;
 import com.textileERP.textileSys.model.FabricOrder;
 import com.textileERP.textileSys.model.Parties;
+import com.textileERP.textileSys.model.Tickits;
+import com.textileERP.textileSys.model.YarnCount;
 import com.textileERP.textileSys.repository.FabricOrderRepository;
 import com.textileERP.textileSys.repository.PartiesRepository;
+import com.textileERP.textileSys.repository.TickitsRepository;
+import com.textileERP.textileSys.repository.YarnCountRepository;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -16,10 +20,15 @@ public class FabricOrderService {
 
     private final FabricOrderRepository fabricOrderRepository;
     private final PartiesRepository partiesRepository;
+    private final YarnCountRepository yarnCountRepository;
+    private final TickitsRepository tickitsRepository;
 
-    public FabricOrderService(FabricOrderRepository fabricOrderRepository, PartiesRepository partiesRepository) {
+    public FabricOrderService(FabricOrderRepository fabricOrderRepository, PartiesRepository partiesRepository,
+            YarnCountRepository yarnCountRepository, TickitsRepository tickitsRepository) {
         this.fabricOrderRepository = fabricOrderRepository;
         this.partiesRepository = partiesRepository;
+        this.yarnCountRepository = yarnCountRepository;
+        this.tickitsRepository = tickitsRepository;
     }
 
     // Get all orders
@@ -60,6 +69,9 @@ public class FabricOrderService {
         order.setOrderNo(request.getOrderNo());
         order.setOrderDate(request.getOrderDate() != null ? request.getOrderDate() : LocalDate.now());
         order.setParty(party);
+        order.setCount(findCount(request.getCountId()));
+        order.setTickit(findTickit(request.getTickitId()));
+        order.setSupplier(findParty(request.getSupplierId()));
         order.setQuality(request.getQuality());
         order.setRate(request.getRate());
         order.setOrderedMeters(request.getOrderedMeters());
@@ -86,6 +98,10 @@ public class FabricOrderService {
             order.setParty(party);
         }
 
+        order.setCount(findCount(request.getCountId()));
+        order.setTickit(findTickit(request.getTickitId()));
+        order.setSupplier(findParty(request.getSupplierId()));
+
         order.setOrderNo(request.getOrderNo());
         if (request.getOrderDate() != null) {
             order.setOrderDate(request.getOrderDate());
@@ -104,6 +120,21 @@ public class FabricOrderService {
         }
 
         return fabricOrderRepository.save(order);
+    }
+
+    private YarnCount findCount(Long id) {
+        return id == null ? null : yarnCountRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Yarn count not found with id: " + id));
+    }
+
+    private Tickits findTickit(Long id) {
+        return id == null ? null : tickitsRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Tickit not found with id: " + id));
+    }
+
+    private Parties findParty(Long id) {
+        return id == null ? null : partiesRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Supplier party not found with id: " + id));
     }
 
     // Delete Order

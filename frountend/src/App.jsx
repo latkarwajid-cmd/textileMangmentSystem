@@ -15,6 +15,7 @@ import { YarnOutSizingView } from './views/YarnOutSizingView';
 import { SizingYarnInwardView } from './views/SizingYarnInwardView';
 import { SizingSetsView } from './views/SizingSetsView';
 import { YarnOutDyeingView } from './views/YarnOutDyeingView';
+import { BeamInwardView } from './views/BeamInwardView';
 
 const MainContent = () => {
   const { currentTab } = useApp();

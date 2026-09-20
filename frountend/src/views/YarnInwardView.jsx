@@ -7,7 +7,6 @@ import {
   Edit2, 
   Trash2, 
   ArrowDownLeft, 
-  ShoppingBag,
   Building2,
   Info,
   Calendar,
@@ -18,6 +17,7 @@ import {
   DollarSign
 } from 'lucide-react';
 import { Modal } from '../components/Modal';
+import { OrderNumberField } from '../components/OrderNumberField';
 
 // Normalize date from backend: handles both "2024-09-18" string and [2024,9,18] array
 const formatDate = (date) => {
@@ -109,6 +109,17 @@ export const YarnInwardView = () => {
   }, [formData.weightKg, formData.rate, formData.gstPercent]);
 
   const selectedOrder = fabricOrders.find(o => String(o.orderId) === String(formData.orderId));
+
+  const handleOrderChange = orderNo => {
+    const order = fabricOrders.find(item => item.orderNo?.trim().toLowerCase() === orderNo.trim().toLowerCase());
+    setFormData(prev => ({
+      ...prev,
+      orderId: order?.orderId || '',
+      countId: order?.count?.countId || '',
+      tickitId: order?.tickit?.tickitId || '',
+      supplierId: order?.supplier?.partyId || '',
+    }));
+  };
 
   const openCreateModal = () => {
     setEditingItem(null);
@@ -412,25 +423,12 @@ export const YarnInwardView = () => {
         <form onSubmit={handleSubmit}>
           <div className="form-grid">
             {/* Order Selection at Top */}
-            <div className="form-group col-span-2">
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <ShoppingBag size={16} color="var(--primary-blue)" />
-                <strong>Reference Fabric Order (Select Order No)</strong>
-              </label>
-              <select
-                className="form-control"
-                value={formData.orderId}
-                onChange={(e) => setFormData({ ...formData, orderId: e.target.value })}
-                style={{ borderColor: 'var(--primary-blue)' }}
-              >
-                <option value="">-- No Order / General Inward Lot --</option>
-                {fabricOrders.map(o => (
-                  <option key={o.orderId} value={o.orderId}>
-                    {o.orderNo} | Customer: {o.party?.partyName} | Quality: {o.quality || 'N/A'} | Ordered: {o.orderedMeters}m | Status: {o.status}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <OrderNumberField
+              orders={fabricOrders}
+              value={selectedOrder?.orderNo || ''}
+              onChange={handleOrderChange}
+              className="col-span-2"
+            />
 
             {/* Instant Order Summary Info Box */}
             {selectedOrder && (

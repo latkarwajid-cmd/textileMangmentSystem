@@ -26,6 +26,9 @@ CREATE TABLE tickits (
     tickit_id BIGINT PRIMARY KEY AUTO_INCREMENT,
     tickit_name VARCHAR(100) NOT NULL,
     party_id BIGINT NOT NULL,
+    count_id BIGINT,
+    tickit_id BIGINT,
+    supplier_id BIGINT,
     active BOOLEAN DEFAULT TRUE,
 
     CONSTRAINT fk_tickit_party
@@ -93,6 +96,15 @@ CREATE TABLE fabric_orders (
 
     CONSTRAINT fk_order_party
         FOREIGN KEY (party_id)
+        REFERENCES parties(party_id),
+    CONSTRAINT fk_order_count
+        FOREIGN KEY (count_id)
+        REFERENCES yarn_counts(count_id),
+    CONSTRAINT fk_order_tickit
+        FOREIGN KEY (tickit_id)
+        REFERENCES tickits(tickit_id),
+    CONSTRAINT fk_order_supplier
+        FOREIGN KEY (supplier_id)
         REFERENCES parties(party_id)
 );
 

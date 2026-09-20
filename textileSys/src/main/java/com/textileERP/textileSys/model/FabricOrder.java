@@ -32,6 +32,18 @@ public class FabricOrder {
     @JoinColumn(name = "party_id", nullable = false)
     private Parties party;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "count_id")
+    private YarnCount count;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "tickit_id")
+    private Tickits tickit;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "supplier_id")
+    private Parties supplier;
+
     @Column(name = "quality", length = 255)
     private String quality;
 

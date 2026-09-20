@@ -13,7 +13,7 @@ const formatDate = (d) => {
 };
 
 export const BeamInwardView = () => {
-  const { fabricOrders, sizingUnits, addToast } = useApp();
+  const { parties, tickits, yarnCounts, sizingUnits, addToast } = useApp();
   const [sizingSets, setSizingSets] = useState([]);
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -21,7 +21,7 @@ export const BeamInwardView = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({
-    sizingSetId: '', orderId: '', sizingId: '', date: new Date().toISOString().split('T')[0], beams: '', dNo: '', cut: '', mtrs: '', pick: '', fold: '', rs: '', lasa: ''
+    sizingSetId: '', orderNo: '', orderId: '', sizingId: '', inwardDate: new Date().toISOString().split('T')[0], beamNo: '', countId: '', tickitId: '', partyId: '', meter: '', weightKg: '', status: 'OPEN', remark: ''
   });
 
   const fetchList = async () => {
@@ -45,17 +45,32 @@ export const BeamInwardView = () => {
 
   useEffect(() => { fetchList(); fetchSizingSets(); }, []);
 
-  const openCreate = () => { setEditing(null); setForm({ sizingSetId:'', orderId:'', sizingId:'', date:new Date().toISOString().split('T')[0], beams:'', dNo:'', cut:'', mtrs:'', pick:'', fold:'', rs:'', lasa:'' }); setIsModalOpen(true); };
+  const openCreate = () => { setEditing(null); setForm({ sizingSetId:'', orderNo:'', orderId:'', sizingId:'', inwardDate:new Date().toISOString().split('T')[0], beamNo:'', countId:'', tickitId:'', partyId:'', meter:'', weightKg:'', status:'OPEN', remark:'' }); setIsModalOpen(true); };
   const openEdit = (item) => {
     setEditing(item);
     setForm({
       sizingSetId: item.sizingSet?.sizingSetId || '',
+      orderNo: item.order?.orderNo || '',
       orderId: item.order?.orderId || '',
       sizingId: item.sizingUnit?.sizingId || '',
-      date: formatDate(item.date),
-      beams: item.beams || '', dNo: item.dNo || '', cut: item.cut || '', mtrs: item.mtrs || '', pick: item.pick || '', fold: item.fold || '', rs: item.rs || '', lasa: item.lasa || ''
+      inwardDate: formatDate(item.inwardDate),
+      beamNo: item.beamNo || '', countId: item.count?.countId || '', tickitId: item.tickit?.tickitId || '', partyId: item.party?.partyId || '', meter: item.meter || '', weightKg: item.weightKg || '', status: item.status || 'OPEN', remark: item.remark || ''
     });
     setIsModalOpen(true);
+  };
+
+  const handleSizingSetChange = sizingSetId => {
+    const sizingSet = sizingSets.find(item => String(item.sizingSetId) === String(sizingSetId));
+    setForm(prev => ({
+      ...prev,
+      sizingSetId,
+      orderNo: sizingSet?.order?.orderNo || '',
+      orderId: sizingSet?.order?.orderId || '',
+      sizingId: sizingSet?.sizingUnit?.sizingId || '',
+      countId: sizingSet?.count?.countId || '',
+      tickitId: sizingSet?.tickit?.tickitId || '',
+      partyId: sizingSet?.party?.partyId || '',
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -65,19 +80,19 @@ export const BeamInwardView = () => {
         sizingSetId: form.sizingSetId ? Number(form.sizingSetId) : null,
         orderId: form.orderId ? Number(form.orderId) : null,
         sizingId: form.sizingId ? Number(form.sizingId) : null,
-        date: form.date || null,
-        beams: form.beams ? Number(form.beams) : null,
-        dNo: form.dNo || null,
-        cut: form.cut ? Number(form.cut) : null,
-        mtrs: form.mtrs ? Number(form.mtrs) : null,
-        pick: form.pick ? Number(form.pick) : null,
-        fold: form.fold ? Number(form.fold) : null,
-        rs: form.rs ? Number(form.rs) : null,
-        lasa: form.lasa ? Number(form.lasa) : null,
+        inwardDate: form.inwardDate || null,
+        beamNo: form.beamNo || null,
+        countId: form.countId ? Number(form.countId) : null,
+        tickitId: form.tickitId ? Number(form.tickitId) : null,
+        partyId: form.partyId ? Number(form.partyId) : null,
+        meter: form.meter ? Number(form.meter) : null,
+        weightKg: form.weightKg ? Number(form.weightKg) : null,
+        status: form.status,
+        remark: form.remark || null,
       };
 
       if (editing) {
-        await api.beamInward.update(editing.beamInwardId, payload);
+        await api.beamInward.update(editing.beamId, payload);
         addToast('Beam inward updated', 'success');
       } else {
         await api.beamInward.create(payload);
@@ -93,7 +108,7 @@ export const BeamInwardView = () => {
   const handleDelete = async (item) => {
     if (!item) return;
     try {
-      await api.beamInward.delete(item.beamInwardId);
+      await api.beamInward.delete(item.beamId);
       addToast('Deleted successfully', 'success');
       fetchList();
     } catch (err) {
@@ -119,12 +134,13 @@ export const BeamInwardView = () => {
           <table className="data-table">
             <thead>
               <tr>
+                <th>Beam ID</th>
                 <th>Order</th>
                 <th>Sizing Set</th>
                 <th>Sizing Unit</th>
                 <th>Date</th>
-                <th>Beams</th>
-                <th>Mtrs</th>
+                <th>Beam No</th>
+                <th>Meter</th>
                 <th style={{textAlign:'right'}}>Actions</th>
               </tr>
             </thead>
@@ -135,13 +151,14 @@ export const BeamInwardView = () => {
                 <tr><td colSpan="7" style={{textAlign:'center', padding:'24px'}}>No records</td></tr>
               ) : (
                 list.map(item => (
-                  <tr key={item.beamInwardId}>
+                  <tr key={item.beamId}>
+                    <td>#{item.beamId}</td>
                     <td>{item.order?.orderNo || '-'}</td>
                     <td>{item.sizingSet?.setNo || '-'}</td>
                     <td>{item.sizingUnit?.sizingName || '-'}</td>
-                    <td>{formatDate(item.date)}</td>
-                    <td>{item.beams || '-'}</td>
-                    <td>{item.mtrs || '-'}</td>
+                    <td>{formatDate(item.inwardDate)}</td>
+                    <td>{item.beamNo || '-'}</td>
+                    <td>{item.meter || '-'}</td>
                     <td style={{textAlign:'right'}}>
                       <div style={{display:'flex', justifyContent:'flex-end', gap:6}}>
                         <button className="btn-icon" onClick={() => openEdit(item)} title="Edit"><Edit2 size={14}/></button>
@@ -157,23 +174,20 @@ export const BeamInwardView = () => {
         </div>
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editing ? `Edit Beam #${editing.beamInwardId}` : 'New Beam Inward'}>
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editing ? `Edit Beam #${editing.beamId}` : 'New Beam Inward'}>
         <form onSubmit={handleSubmit}>
           <div className="form-grid">
             <div className="form-group">
-              <label>Fabric Order</label>
-              <select className="form-control" value={form.orderId} onChange={e => setForm({...form, orderId: e.target.value})}>
-                <option value="">-- Select Order --</option>
-                {fabricOrders.map(o => (<option key={o.orderId} value={o.orderId}>{o.orderNo}</option>))}
+              <label>Sizing Set No *</label>
+              <select className="form-control" value={form.sizingSetId} onChange={e => handleSizingSetChange(e.target.value)} required>
+                <option value="">-- Select Sizing Set No --</option>
+                {sizingSets.map(s => (<option key={s.sizingSetId} value={s.sizingSetId}>{s.setNo}</option>))}
               </select>
             </div>
 
             <div className="form-group">
-              <label>Sizing Set</label>
-              <select className="form-control" value={form.sizingSetId} onChange={e => setForm({...form, sizingSetId: e.target.value})}>
-                <option value="">-- Select Sizing Set --</option>
-                {sizingSets.map(s => (<option key={s.sizingSetId} value={s.sizingSetId}>{s.setNo}</option>))}
-              </select>
+              <label>Order No</label>
+              <input className="form-control" value={form.orderNo} readOnly placeholder="Filled from sizing set" />
             </div>
 
             <div className="form-group">
@@ -185,48 +199,48 @@ export const BeamInwardView = () => {
             </div>
 
             <div className="form-group">
-              <label>Date</label>
-              <input type="date" className="form-control" value={form.date} onChange={e => setForm({...form, date: e.target.value})} />
+              <label>Inward Date</label>
+              <input type="date" className="form-control" value={form.inwardDate} onChange={e => setForm({...form, inwardDate: e.target.value})} />
             </div>
 
             <div className="form-group">
-              <label>Beams</label>
-              <input type="number" className="form-control" value={form.beams} onChange={e => setForm({...form, beams: e.target.value})} />
+              <label>Beam No</label>
+              <input type="text" className="form-control" value={form.beamNo} onChange={e => setForm({...form, beamNo: e.target.value})} />
             </div>
 
             <div className="form-group">
-              <label>D No</label>
-              <input type="text" className="form-control" value={form.dNo} onChange={e => setForm({...form, dNo: e.target.value})} />
+              <label>Count</label>
+              <select className="form-control" value={form.countId} onChange={e => setForm({...form, countId: e.target.value})}><option value="">-- Select Count --</option>{yarnCounts.map(c => <option key={c.countId} value={c.countId}>{c.countName}</option>)}</select>
             </div>
 
             <div className="form-group">
-              <label>Mtrs</label>
-              <input type="number" step="0.001" className="form-control" value={form.mtrs} onChange={e => setForm({...form, mtrs: e.target.value})} />
+              <label>Tickit</label>
+              <select className="form-control" value={form.tickitId} onChange={e => setForm({...form, tickitId: e.target.value})}><option value="">-- Select Tickit --</option>{tickits.map(t => <option key={t.tickitId} value={t.tickitId}>{t.tickitName}</option>)}</select>
             </div>
 
             <div className="form-group">
-              <label>Cut</label>
-              <input type="number" step="0.01" className="form-control" value={form.cut} onChange={e => setForm({...form, cut: e.target.value})} />
+              <label>Party</label>
+              <select className="form-control" value={form.partyId} onChange={e => setForm({...form, partyId: e.target.value})}><option value="">-- Select Party --</option>{parties.map(p => <option key={p.partyId} value={p.partyId}>{p.partyName}</option>)}</select>
             </div>
 
             <div className="form-group">
-              <label>Pick</label>
-              <input type="number" step="0.01" className="form-control" value={form.pick} onChange={e => setForm({...form, pick: e.target.value})} />
+              <label>Meter</label>
+              <input type="number" step="0.001" className="form-control" value={form.meter} onChange={e => setForm({...form, meter: e.target.value})} />
             </div>
 
             <div className="form-group">
-              <label>Fold</label>
-              <input type="number" step="0.01" className="form-control" value={form.fold} onChange={e => setForm({...form, fold: e.target.value})} />
+              <label>Weight (Kg)</label>
+              <input type="number" step="0.001" className="form-control" value={form.weightKg} onChange={e => setForm({...form, weightKg: e.target.value})} />
             </div>
 
             <div className="form-group">
-              <label>Rs</label>
-              <input type="number" step="0.01" className="form-control" value={form.rs} onChange={e => setForm({...form, rs: e.target.value})} />
+              <label>Status</label>
+              <select className="form-control" value={form.status} onChange={e => setForm({...form, status: e.target.value})}><option value="OPEN">Open</option><option value="IN_PROGRESS">In Progress</option><option value="COMPLETED">Completed</option><option value="CANCELLED">Cancelled</option></select>
             </div>
 
             <div className="form-group">
-              <label>Lasa</label>
-              <input type="number" step="0.01" className="form-control" value={form.lasa} onChange={e => setForm({...form, lasa: e.target.value})} />
+              <label>Remark</label>
+              <input type="text" className="form-control" value={form.remark} onChange={e => setForm({...form, remark: e.target.value})} />
             </div>
           </div>
 
