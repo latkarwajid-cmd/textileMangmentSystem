@@ -21,11 +21,11 @@ export const Sidebar = () => {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, section: 'Overview' },
     { id: 'parties', label: 'Parties Master', icon: Users, section: 'Masters' },
-    { id: 'fabric-orders', label: 'Fabric Orders', icon: ShoppingBag, section: 'Masters' },
     { id: 'tickits', label: 'Tickits Master', icon: Ticket, section: 'Masters' },
     { id: 'yarn-counts', label: 'Yarn Counts', icon: Layers, section: 'Masters' },
     { id: 'sizing-units', label: 'Sizing Units', icon: Factory, section: 'Masters' },
-    { id: 'sizing-sets', label: 'Sizing Sets', icon: Layers3, section: 'Masters' },
+    { id: 'fabric-orders', label: 'Fabric Orders', icon: ShoppingBag, section: 'Transactions' },
+    { id: 'sizing-sets', label: 'Sizing Sets', icon: Layers3, section: 'Transactions' },
     { id: 'yarn-inward', label: 'Yarn Inward', icon: ArrowDownLeft, section: 'Transactions' },
     { id: 'beam-inward', label: 'Beam Inward', icon: ArrowDownLeft, section: 'Transactions' },
     { id: 'yarn-out-sizing', label: 'Yarn Out Sizing', icon: ArrowUpRight, section: 'Transactions' },

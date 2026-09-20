@@ -51,21 +51,7 @@ export const YarnInwardView = () => {
     gstPercent: '5.0',
     calculatedAmount: '',
     actualAmount: '',
-    billNo: '',
-    billAmount: '',
-    days: '',
-    receivable: '',
-    tcs: '',
-    addAmount: '',
-    gst: '',
-    tds: '',
-    interest: '',
-    paymentStatus: 'UNPAID',
-    paidDate: '',
-    paidAmount: '0',
-    receivedPayment: '0',
-    remark: '',
-    remark2: '',
+
   });
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -135,21 +121,7 @@ export const YarnInwardView = () => {
       gstPercent: '5.0',
       calculatedAmount: '',
       actualAmount: '',
-      billNo: '',
-      billAmount: '',
-      days: '',
-      receivable: '',
-      tcs: '',
-      addAmount: '',
-      gst: '',
-      tds: '',
-      interest: '',
-      paymentStatus: 'UNPAID',
-      paidDate: '',
-      paidAmount: '0',
-      receivedPayment: '0',
-      remark: '',
-      remark2: '',
+
     });
     setIsModalOpen(true);
   };
@@ -168,21 +140,7 @@ export const YarnInwardView = () => {
       gstPercent: item.gstPercent || '5.0',
       calculatedAmount: item.calculatedAmount || '',
       actualAmount: item.actualAmount || '',
-      billNo: item.billNo || '',
-      billAmount: item.billAmount || '',
-      days: item.days ?? '',
-      receivable: item.receivable ?? '',
-      tcs: item.tcs ?? '',
-      addAmount: item.addAmount ?? '',
-      gst: item.gst ?? '',
-      tds: item.tds ?? '',
-      interest: item.interest ?? '',
-      paymentStatus: item.paymentStatus || 'UNPAID',
-      paidDate: formatDate(item.paidDate),
-      paidAmount: item.paidAmount || '0',
-      receivedPayment: item.receivedPayment || '0',
-      remark: item.remark || '',
-      remark2: item.remark2 || '',
+
     });
     setIsModalOpen(true);
   };
@@ -202,23 +160,7 @@ export const YarnInwardView = () => {
         gstPercent: formData.gstPercent ? Number(formData.gstPercent) : null,
         calculatedAmount: formData.calculatedAmount ? Number(formData.calculatedAmount) : null,
         actualAmount: formData.actualAmount ? Number(formData.actualAmount) : null,
-        billNo: formData.billNo,
-        billAmount: formData.billAmount ? Number(formData.billAmount) : null,
-
-        days: formData.days ? Number(formData.days) : null,
-        receivable: formData.receivable ? Number(formData.receivable) : null,
-        tcs: formData.tcs ? Number(formData.tcs) : null,
-        addAmount: formData.addAmount ? Number(formData.addAmount) : null,
-        gst: formData.gst ? Number(formData.gst) : null,
-        tds: formData.tds ? Number(formData.tds) : null,
-        interest: formData.interest ? Number(formData.interest) : null,
-
-        paymentStatus: formData.paymentStatus,
-        paidDate: formData.paidDate || null,
-        paidAmount: formData.paidAmount ? Number(formData.paidAmount) : 0,
-        receivedPayment: formData.receivedPayment ? Number(formData.receivedPayment) : 0,
-        remark: formData.remark,
-        remark2: formData.remark2,
+ 
       };
 
       if (editingItem) {
@@ -327,15 +269,7 @@ export const YarnInwardView = () => {
                 <th>Weight (Kg)</th>
                 <th>Rate (₹)</th>
                 <th>Amount (₹)</th>
-                <th>Bill No</th>
-                <th>Days</th>
-                <th>Receivable (₹)</th>
-                <th>TCS (₹)</th>
-                <th>Add (₹)</th>
-                <th>GST (₹)</th>
-                <th>TDS (₹)</th>
-                <th>Interest (₹)</th>
-                <th>Payment</th>
+
                 <th style={{ textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
@@ -374,19 +308,7 @@ export const YarnInwardView = () => {
                     <td style={{ color: 'var(--primary-blue-dark)', fontWeight: 700 }}>
                       ₹{item.actualAmount || item.calculatedAmount || '-'}
                     </td>
-                    <td>{item.billNo || '-'}</td>
-                    <td>{item.days ?? '-'}</td>
-                    <td>{item.receivable != null ? `₹${item.receivable}` : '-'}</td>
-                    <td>{item.tcs != null ? `₹${item.tcs}` : '-'}</td>
-                    <td>{item.addAmount != null ? `₹${item.addAmount}` : '-'}</td>
-                    <td>{item.gst != null ? `₹${item.gst}` : '-'}</td>
-                    <td>{item.tds != null ? `₹${item.tds}` : '-'}</td>
-                    <td>{item.interest != null ? `₹${item.interest}` : '-'}</td>
-                    <td>
-                      <span className={`badge ${item.paymentStatus === 'PAID' ? 'badge-success' : (item.paymentStatus === 'PARTIAL' ? 'badge-info' : 'badge-warning')}`}>
-                        {item.paymentStatus || 'UNPAID'}
-                      </span>
-                    </td>
+
                     <td style={{ textAlign: 'right' }}>
                       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px' }}>
                         <button className="btn-icon" onClick={() => setViewDetailItem(item)} title="View All Details">
@@ -595,180 +517,7 @@ export const YarnInwardView = () => {
               />
             </div>
 
-            <div className="form-group">
-              <label>Supplier Bill / Invoice No</label>
-              <input
-                type="text"
-                className="form-control"
-                value={formData.billNo}
-                onChange={(e) => setFormData({ ...formData, billNo: e.target.value })}
-                placeholder="e.g. INV-9021"
-              />
-            </div>
 
-            <div className="form-group">
-              <label>Bill Total Amount (₹)</label>
-              <input
-                type="number"
-                step="0.01"
-                className="form-control"
-                value={formData.billAmount}
-                onChange={(e) => setFormData({ ...formData, billAmount: e.target.value })}
-                placeholder="e.g. 139125.00"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Days</label>
-              <input
-                type="number"
-                className="form-control"
-                value={formData.days}
-                onChange={(e) => setFormData({ ...formData, days: e.target.value })}
-                placeholder="e.g. 30"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Receivable (₹)</label>
-              <input
-                type="number"
-                step="0.01"
-                className="form-control"
-                value={formData.receivable}
-                onChange={(e) => setFormData({ ...formData, receivable: e.target.value })}
-                placeholder="0.00"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>TCS (₹)</label>
-              <input
-                type="number"
-                step="0.01"
-                className="form-control"
-                value={formData.tcs}
-                onChange={(e) => setFormData({ ...formData, tcs: e.target.value })}
-                placeholder="0.00"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Add Amount (₹)</label>
-              <input
-                type="number"
-                step="0.01"
-                className="form-control"
-                value={formData.addAmount}
-                onChange={(e) => setFormData({ ...formData, addAmount: e.target.value })}
-                placeholder="0.00"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>GST (₹)</label>
-              <input
-                type="number"
-                step="0.01"
-                className="form-control"
-                value={formData.gst}
-                onChange={(e) => setFormData({ ...formData, gst: e.target.value })}
-                placeholder="0.00"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>TDS (₹)</label>
-              <input
-                type="number"
-                step="0.01"
-                className="form-control"
-                value={formData.tds}
-                onChange={(e) => setFormData({ ...formData, tds: e.target.value })}
-                placeholder="0.00"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Interest (₹)</label>
-              <input
-                type="number"
-                step="0.01"
-                className="form-control"
-                value={formData.interest}
-                onChange={(e) => setFormData({ ...formData, interest: e.target.value })}
-                placeholder="0.00"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Payment Status</label>
-              <select
-                className="form-control"
-                value={formData.paymentStatus}
-                onChange={(e) => setFormData({ ...formData, paymentStatus: e.target.value })}
-              >
-                <option value="UNPAID">Unpaid</option>
-                <option value="PAID">Paid</option>
-                <option value="PARTIAL">Partial</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label>Paid Amount (₹)</label>
-              <input
-                type="number"
-                step="0.01"
-                className="form-control"
-                value={formData.paidAmount}
-                onChange={(e) => setFormData({ ...formData, paidAmount: e.target.value })}
-                placeholder="0.00"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Payment Date</label>
-              <input
-                type="date"
-                className="form-control"
-                value={formData.paidDate}
-                onChange={(e) => setFormData({ ...formData, paidDate: e.target.value })}
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Received Payment Amount (₹)</label>
-              <input
-                type="number"
-                step="0.01"
-                className="form-control"
-                value={formData.receivedPayment}
-                onChange={(e) => setFormData({ ...formData, receivedPayment: e.target.value })}
-                placeholder="0.00"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Primary Remarks</label>
-              <input
-                type="text"
-                className="form-control"
-                value={formData.remark}
-                onChange={(e) => setFormData({ ...formData, remark: e.target.value })}
-                placeholder="Vehicle no, lot number, batch..."
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Secondary Remarks (Remark 2)</label>
-              <input
-                type="text"
-                className="form-control"
-                value={formData.remark2}
-                onChange={(e) => setFormData({ ...formData, remark2: e.target.value })}
-                placeholder="Additional notes, quality report..."
-              />
-            </div>
           </div>
 
           <div className="modal-footer" style={{ padding: '20px 0 0', marginTop: '20px' }}>
@@ -847,71 +596,7 @@ export const YarnInwardView = () => {
                 <strong style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>CALCULATED AMOUNT</strong>
                 <div style={{ color: 'var(--primary-blue-dark)', fontWeight: 700 }}>₹{viewDetailItem.calculatedAmount || '-'}</div>
               </div>
-              <div>
-                <strong style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>ACTUAL BILL AMOUNT</strong>
-                <div style={{ fontWeight: 700 }}>₹{viewDetailItem.actualAmount || viewDetailItem.billAmount || '-'}</div>
-              </div>
 
-              <div>
-                <strong style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>DAYS</strong>
-                <div>{viewDetailItem.days ?? '-'}</div>
-              </div>
-
-              <div>
-                <strong style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>RECEIVABLE</strong>
-                <div>₹{viewDetailItem.receivable ?? 0}</div>
-              </div>
-
-              <div>
-                <strong style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>TCS</strong>
-                <div>₹{viewDetailItem.tcs ?? 0}</div>
-              </div>
-
-              <div>
-                <strong style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>ADD AMOUNT</strong>
-                <div>₹{viewDetailItem.addAmount ?? 0}</div>
-              </div>
-
-              <div>
-                <strong style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>GST</strong>
-                <div>₹{viewDetailItem.gst ?? 0}</div>
-              </div>
-
-              <div>
-                <strong style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>TDS</strong>
-                <div>₹{viewDetailItem.tds ?? 0}</div>
-              </div>
-
-              <div>
-                <strong style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>INTEREST</strong>
-                <div>₹{viewDetailItem.interest ?? 0}</div>
-              </div>
-              <div>
-                <strong style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>PAYMENT STATUS</strong>
-                <div>
-                  <span className={`badge ${viewDetailItem.paymentStatus === 'PAID' ? 'badge-success' : 'badge-warning'}`}>
-                    {viewDetailItem.paymentStatus || 'UNPAID'}
-                  </span>
-                </div>
-              </div>
-              <div>
-                <strong style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>PAID AMOUNT / DATE</strong>
-                <div>₹{viewDetailItem.paidAmount || 0} ({formatDate(viewDetailItem.paidDate) || 'N/A'})</div>
-              </div>
-              <div>
-                <strong style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>RECEIVED PAYMENT</strong>
-                <div>₹{viewDetailItem.receivedPayment || 0}</div>
-              </div>
-              <div style={{ gridColumn: 'span 3' }}>
-                <strong style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>REMARKS:</strong>
-                <div>{viewDetailItem.remark || 'None'}</div>
-              </div>
-              {viewDetailItem.remark2 && (
-                <div style={{ gridColumn: 'span 3' }}>
-                  <strong style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>REMARK 2:</strong>
-                  <div>{viewDetailItem.remark2}</div>
-                </div>
-              )}
             </div>
 
             <div className="modal-footer" style={{ padding: '0', border: 'none', background: 'transparent' }}>

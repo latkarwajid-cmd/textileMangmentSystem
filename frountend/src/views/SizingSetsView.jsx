@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Search, Layers } from 'lucide-react';
+import { Plus, Search, Layers, Edit2, Trash2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { api } from '../services/api';
 import { Modal } from '../components/Modal';
@@ -10,6 +10,7 @@ export const SizingSetsView = () => {
   const [sizingSets, setSizingSets] = useState([]);
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingSet, setEditingSet] = useState(null);
   const [formData, setFormData] = useState({
     setNo: '',
     orderNo: '',
@@ -52,12 +53,29 @@ export const SizingSetsView = () => {
       sizingCount: '',
     });
     setIsModalOpen(true);
+    setEditingSet(null);
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     try {
-      await api.sizingSets.create({
+      if (editingSet) {
+        await api.sizingSets.update(editingSet.sizingSetId, {
+          setNo: formData.setNo,
+          orderId: formData.orderId ? Number(formData.orderId) : null,
+          countId: formData.countId ? Number(formData.countId) : null,
+          tickitId: formData.tickitId ? Number(formData.tickitId) : null,
+          sizingId: formData.sizingId ? Number(formData.sizingId) : null,
+          partyId: formData.partyId ? Number(formData.partyId) : null,
+          quality: formData.quality,
+          totalEnds: formData.totalEnds ? Number(formData.totalEnds) : null,
+          sizingMeters: formData.sizingMeters ? Number(formData.sizingMeters) : null,
+          sizingCount: formData.sizingCount,
+          status: 'OPEN',
+        });
+        addToast('Sizing set updated successfully', 'success');
+      } else {
+        await api.sizingSets.create({
         setNo: formData.setNo,
       orderId: formData.orderId ? Number(formData.orderId) : null,
         countId: formData.countId ? Number(formData.countId) : null,
@@ -69,12 +87,42 @@ export const SizingSetsView = () => {
         sizingMeters: formData.sizingMeters ? Number(formData.sizingMeters) : null,
         sizingCount: formData.sizingCount,
         status: 'OPEN',
-      });
-      addToast('Sizing set created successfully', 'success');
+        });
+        addToast('Sizing set created successfully', 'success');
+      }
       setIsModalOpen(false);
+      setEditingSet(null);
       fetchSizingSets();
     } catch (err) {
       addToast(err.message || 'Error creating sizing set', 'error');
+    }
+  };
+
+  const openEditModal = (set) => {
+    setEditingSet(set);
+    setFormData({
+      setNo: set.setNo || '',
+      orderId: set.order?.orderId || '',
+      countId: set.count?.countId || '',
+      tickitId: set.tickit?.tickitId || '',
+      sizingId: set.sizingUnit?.sizingId || '',
+      partyId: set.party?.partyId || '',
+      quality: set.quality || '',
+      totalEnds: set.totalEnds || '',
+      sizingMeters: set.sizingMeters || '',
+      sizingCount: set.sizingCount || '',
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = async (set) => {
+    if (!set) return;
+    try {
+      await api.sizingSets.delete(set.sizingSetId);
+      addToast('Sizing set deleted', 'success');
+      fetchSizingSets();
+    } catch (err) {
+      addToast(err.message || 'Failed to delete sizing set', 'error');
     }
   };
 
@@ -135,6 +183,7 @@ export const SizingSetsView = () => {
                 <th>Sizing Unit</th>
                 <th>Yarn Count</th>
                 <th>Status</th>
+                <th style={{ textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -153,6 +202,12 @@ export const SizingSetsView = () => {
                   <td>{sizingSet.sizingUnit?.sizingName || '-'}</td>
                   <td>{sizingSet.count?.countName || '-'}</td>
                   <td>{sizingSet.status || 'OPEN'}</td>
+                  <td style={{ textAlign: 'right' }}>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
+                      <button className="btn-icon" onClick={() => openEditModal(sizingSet)} title="Edit"><Edit2 size={15} /></button>
+                      <button className="btn-icon" style={{ color: 'var(--color-danger)' }} onClick={() => handleDelete(sizingSet)} title="Delete"><Trash2 size={15} /></button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -160,7 +215,7 @@ export const SizingSetsView = () => {
         </div>
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="New Sizing Set" size="lg">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingSet ? `Edit Sizing Set #${editingSet.sizingSetId}` : 'New Sizing Set'} size="lg">
         <form onSubmit={handleSubmit}>
           <div className="form-grid">
             <div className="form-group">
@@ -215,8 +270,10 @@ export const SizingSetsView = () => {
           </div>
           <div className="modal-footer" style={{ padding: '20px 0 0', marginTop: '20px' }}>
             <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>Cancel</button>
-            <button type="submit" className="btn btn-primary">Create Sizing Set</button>
-          </div>
+            <button type="submit" className="btn btn-primary">
+              {editingSet ? 'Update Sizing Set' : 'Create Sizing Set'}
+            </button>
+            </div>
         </form>
       </Modal>
     </div>

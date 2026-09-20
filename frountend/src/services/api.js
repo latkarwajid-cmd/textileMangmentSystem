@@ -139,6 +139,8 @@ export const api = {
   sizingSets: {
     getAll: () => request('/api/sizing-sets'),
     create: (data) => request('/api/sizing-sets', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => request(`/api/sizing-sets/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => request(`/api/sizing-sets/${id}`, { method: 'DELETE' }),
   },
 
   // Beam Inward API (Teammate's changes)
