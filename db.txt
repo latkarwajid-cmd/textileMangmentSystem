@@ -1,6 +1,11 @@
 CREATE DATABASE IF NOT EXISTS textile_db;
 USE textile_db;
 
+-- =========================================================
+-- RUN THIS to remove the deleted YarnOutSizing table:
+-- =========================================================
+-- ALTER TABLE yarn_out_sizing DROP FOREIGN KEY fk_sizing_out_set;  -- (if needed)
+-- DROP TABLE IF EXISTS yarn_out_sizing;
 
 -- =========================================================
 -- 1. PARTIES
@@ -227,6 +232,9 @@ CREATE TABLE sizing_sets (
     sizing_set_id BIGINT PRIMARY KEY AUTO_INCREMENT,
 
     set_no VARCHAR(50) NOT NULL UNIQUE,
+    set_date DATE,
+    part_no VARCHAR(50),
+    lasa VARCHAR(255),
 
     order_id BIGINT,
     count_id BIGINT,
@@ -240,7 +248,21 @@ CREATE TABLE sizing_sets (
     sizing_meters DECIMAL(12,3),
     sizing_count VARCHAR(50),
 
-    status VARCHAR(30) DEFAULT 'OPEN',
+    out_date DATE,
+    bags DECIMAL(12,3),
+    cone DECIMAL(12,3),
+    weight_kg DECIMAL(12,3),
+    rate DECIMAL(12,2),
+    bill_no VARCHAR(50),
+    amount DECIMAL(14,2),
+    total_end DECIMAL(14,2),
+    sizing_mtr DECIMAL(14,3),
+    sizing_received_khard DECIMAL(14,3),
+    sizing_fresh_yarn_received DECIMAL(14,3),
+    balance_in_sizing DECIMAL(14,3),
+    sizing_consumption DECIMAL(14,3),
+
+    status VARCHAR(50) DEFAULT 'OPEN',
 
     CONSTRAINT fk_set_order
         FOREIGN KEY (order_id)
@@ -265,27 +287,40 @@ CREATE TABLE sizing_sets (
 
 
 -- =========================================================
--- 10. YARN OUT FOR SIZING
+-- 10. SIZING SET YARN LINES (ALLOCATIONS)
 -- =========================================================
 
-CREATE TABLE yarn_out_sizing (
-    yarn_out_sizing_id BIGINT PRIMARY KEY AUTO_INCREMENT,
+CREATE TABLE sizing_set_yarn_lines (
+    yarn_line_id BIGINT PRIMARY KEY AUTO_INCREMENT,
 
     sizing_set_id BIGINT NOT NULL,
-
-    out_date DATE NOT NULL,
-
+    sr_no INT,
+    source_from VARCHAR(40),
+    fresh_winding VARCHAR(20),
+    count_id BIGINT,
+    tickit_id BIGINT,
     bags DECIMAL(12,3),
-    cone DECIMAL(12,3),
-    weight_kg DECIMAL(12,3),
+    cones DECIMAL(12,3),
+    weight_kg DECIMAL(10,2),
+    remark VARCHAR(500),
+    yarn_inward_id BIGINT,
 
-    rate DECIMAL(12,2),
-    bill_no VARCHAR(50),
-    amount DECIMAL(14,2),
-
-    CONSTRAINT fk_sizing_out_set
+    CONSTRAINT fk_yarn_line_set
         FOREIGN KEY (sizing_set_id)
         REFERENCES sizing_sets(sizing_set_id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_yarn_line_count
+        FOREIGN KEY (count_id)
+        REFERENCES yarn_counts(count_id),
+
+    CONSTRAINT fk_yarn_line_tickit
+        FOREIGN KEY (tickit_id)
+        REFERENCES tickits(tickit_id),
+
+    CONSTRAINT fk_yarn_line_inward
+        FOREIGN KEY (yarn_inward_id)
+        REFERENCES yarn_inward(yarn_inward_id)
 );
 
 

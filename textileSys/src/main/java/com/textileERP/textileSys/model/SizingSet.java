@@ -2,17 +2,24 @@ package com.textileERP.textileSys.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(exclude = "yarnLines")
+@ToString(exclude = "yarnLines")
 @Table(name = "sizing_sets")
 public class SizingSet {
 
@@ -23,6 +30,16 @@ public class SizingSet {
 
     @Column(name = "set_no", length = 50, nullable = false, unique = true)
     private String setNo;
+
+    @Column(name = "set_date")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+    private LocalDate setDate;
+
+    @Column(name = "part_no", length = 50)
+    private String partNo;
+
+    @Column(name = "lasa", length = 255)
+    private String lasa;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "order_id")
@@ -93,9 +110,13 @@ public class SizingSet {
     @Column(name = "sizing_consumption", precision = 14, scale = 3)
     private BigDecimal sizingConsumption;
 
-    @Column(name = "sizing_count", precision = 14, scale = 3)
-    private BigDecimal sizingCount;
+    @Column(name = "sizing_count", length = 50)
+    private String sizingCount;
 
     @Column(name = "status", length = 50)
     private String status;
+
+    @OneToMany(mappedBy = "sizingSet", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @JsonManagedReference
+    private List<SizingSetYarnLine> yarnLines = new ArrayList<>();
 }

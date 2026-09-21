@@ -9,7 +9,6 @@ import {
   Layers, 
   Factory, 
   ArrowDownLeft, 
-  ArrowUpRight, 
   RotateCcw
   ,Layers3
   ,Droplets
@@ -28,7 +27,6 @@ export const Sidebar = () => {
     { id: 'yarn-inward', label: 'Yarn Inward', icon: ArrowDownLeft, section: 'Transactions' },
     { id: 'sizing-sets', label: 'Sizing Sets', icon: Layers3, section: 'Transactions' },
     { id: 'beam-inward', label: 'Beam Inward', icon: ArrowDownLeft, section: 'Transactions' },
-    // { id: 'yarn-out-sizing', label: 'Yarn Out Sizing', icon: ArrowUpRight, section: 'Transactions' },
     { id: 'sizing-yarn-inward', label: 'Yarn Return from Sizing', icon: RotateCcw, section: 'Transactions' },
     { id: 'yarn-out-dyeing', label: 'Yarn Out Dyeing', icon: Droplets, section: 'Transactions' },
   ];

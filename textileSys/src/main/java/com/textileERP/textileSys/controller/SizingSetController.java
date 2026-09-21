@@ -14,9 +14,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/sizing-sets")
@@ -32,6 +32,16 @@ public class SizingSetController {
     @GetMapping
     public ResponseEntity<List<SizingSet>> getAllSizingSets() {
         return ResponseEntity.ok(sizingSetService.getAllSizingSets());
+    }
+
+    @GetMapping("/next-set-no")
+    public ResponseEntity<Map<String, String>> getNextSetNo() {
+        return ResponseEntity.ok(Map.of("setNo", sizingSetService.generateNextSetNo()));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<SizingSet> getSizingSetById(@PathVariable Long id) {
+        return ResponseEntity.ok(sizingSetService.getSizingSetById(id));
     }
 
     @PostMapping
