@@ -116,11 +116,14 @@ export const YarnCountsView = () => {
               />
             </div>
 
-            <button className="btn btn-primary" onClick={openCreateModal}>
-              <Plus size={18} />
-              <span>Add Yarn Count</span>
-            </button>
           </div>
+        </div>
+
+        <div style={{ margin: '16px 0', display: 'flex', justifyContent: 'flex-start' }}>
+          <button className="btn btn-primary" onClick={openCreateModal}>
+            <Plus size={18} />
+            <span>Add Yarn Count</span>
+          </button>
         </div>
 
         <div className="table-responsive">

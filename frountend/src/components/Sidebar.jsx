@@ -29,7 +29,7 @@ export const Sidebar = () => {
     { id: 'sizing-sets', label: 'Sizing Sets', icon: Layers3, section: 'Transactions' },
     { id: 'beam-inward', label: 'Beam Inward', icon: ArrowDownLeft, section: 'Transactions' },
     // { id: 'yarn-out-sizing', label: 'Yarn Out Sizing', icon: ArrowUpRight, section: 'Transactions' },
-    { id: 'yarn-inward-from-sizing', label: 'Yarn Inward From Sizing', icon: RotateCcw, section: 'Transactions' },
+    { id: 'sizing-yarn-inward', label: 'Yarn Return from Sizing', icon: RotateCcw, section: 'Transactions' },
     { id: 'yarn-out-dyeing', label: 'Yarn Out Dyeing', icon: Droplets, section: 'Transactions' },
   ];
 

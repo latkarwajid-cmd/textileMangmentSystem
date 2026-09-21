@@ -152,7 +152,7 @@ export const SizingYarnInwardView = () => {
         <div className="section-card-header">
           <div className="section-card-title">
             <RotateCcw size={20} color="var(--accent-emerald)" />
-            <h3>Sizing Yarn Inward</h3>
+            <h3>Yarn Return from Sizing</h3>
             <span className="badge badge-info">{filteredList.length} Records</span>
           </div>
 
@@ -167,11 +167,14 @@ export const SizingYarnInwardView = () => {
               />
             </div>
 
-            <button className="btn btn-primary" onClick={openCreateModal}>
-              <Plus size={18} />
-              <span>Record Inward</span>
-            </button>
           </div>
+        </div>
+
+        <div style={{ margin: '16px 0', display: 'flex', justifyContent: 'flex-start' }}>
+          <button className="btn btn-primary" onClick={openCreateModal}>
+            <Plus size={18} />
+            <span>Record Yarn Return</span>
+          </button>
         </div>
 
         <div className="table-responsive">
@@ -201,7 +204,7 @@ export const SizingYarnInwardView = () => {
               ) : filteredList.length === 0 ? (
                 <tr>
                   <td colSpan="11" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-dim)' }}>
-                    No sizing yarn inward records found. Record your first shipment above.
+                    No yarn returns from sizing found. Record the first return above.
                   </td>
                 </tr>
               ) : (
@@ -252,7 +255,7 @@ export const SizingYarnInwardView = () => {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={editingItem ? `Edit Sizing Inward #${editingItem.sizingInwardId}` : 'New Sizing Yarn Inward'}
+        title={editingItem ? `Edit Yarn Return #${editingItem.sizingInwardId}` : 'New Yarn Return from Sizing'}
         size="lg"
       >
         <form onSubmit={handleSubmit}>

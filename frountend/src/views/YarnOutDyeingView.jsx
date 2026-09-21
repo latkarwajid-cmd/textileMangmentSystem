@@ -160,9 +160,16 @@ export const YarnOutDyeingView = () => {
           <div className="section-card-title"><ArrowUpRight size={20} color="var(--accent-rose)" /><h3>Yarn Out for Dyeing</h3><span className="badge badge-info">{filteredRecords.length} Records</span></div>
           <div className="section-card-actions">
             <div className="search-box"><Search size={16} /><input placeholder="Search set, order, party, bill..." value={search} onChange={event => setSearch(event.target.value)} /></div>
-            <button className="btn btn-primary" onClick={openCreateModal}><Plus size={18} /><span>Record Yarn Out</span></button>
           </div>
         </div>
+
+        <div style={{ margin: '16px 0', display: 'flex', justifyContent: 'flex-start' }}>
+          <button className="btn btn-primary" onClick={openCreateModal}>
+            <Plus size={18} />
+            <span>Record Yarn Out</span>
+          </button>
+        </div>
+
         <div className="table-responsive">
           <table className="data-table"><thead><tr>
             <th>Set No (ID)</th><th>Date</th><th>Count</th><th>Tickit</th><th>Bags</th><th>Weight</th><th>Sizing Name</th><th>Party Name</th><th>Order No</th><th>Quality</th><th>Total Ends</th><th>Sizing Mtr</th><th>Received Khard</th><th>Fresh Bags</th><th>Balance</th><th>Consumption KG</th><th>Sizing Count</th><th>Bill No</th><th>Status</th><th>Actions</th>

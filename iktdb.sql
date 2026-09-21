@@ -64,7 +64,8 @@ INSERT INTO yarn_storage_locations (location_name) VALUES
     ('Gate Pass'),
     ('Weaver'),
     ('Sizing'),
-    ('Other');
+    ('Other'),
+    ('Dyeing');
 
 
 -- =========================================================
@@ -143,6 +144,8 @@ CREATE TABLE yarn_inward (
     supplier_id BIGINT,
 
     storage_location_id BIGINT,
+    storage_sizing_id BIGINT,
+    storage_party_id BIGINT,
 
     bill_no VARCHAR(50),
 
@@ -180,7 +183,15 @@ CREATE TABLE yarn_inward (
 
     CONSTRAINT fk_yarn_inward_storage_location
         FOREIGN KEY (storage_location_id)
-        REFERENCES yarn_storage_locations(storage_location_id)
+        REFERENCES yarn_storage_locations(storage_location_id),
+
+    CONSTRAINT fk_yarn_inward_storage_sizing
+        FOREIGN KEY (storage_sizing_id)
+        REFERENCES sizing_units(sizing_id),
+
+    CONSTRAINT fk_yarn_inward_storage_party
+        FOREIGN KEY (storage_party_id)
+        REFERENCES parties(party_id)
 );
 
 

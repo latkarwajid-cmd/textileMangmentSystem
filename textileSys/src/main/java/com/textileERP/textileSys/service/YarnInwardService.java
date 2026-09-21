@@ -19,6 +19,7 @@ public class YarnInwardService {
     private final TickitsRepository tickitsRepository;
     private final PartiesRepository partiesRepository;
     private final YarnStorageLocationRepository yarnStorageLocationRepository;
+    private final SizingUnitRepository sizingUnitRepository;
 
     public YarnInwardService(
             YarnInwardRepository yarnInwardRepository,
@@ -26,13 +27,15 @@ public class YarnInwardService {
             YarnCountRepository yarnCountRepository,
             TickitsRepository tickitsRepository,
             PartiesRepository partiesRepository,
-            YarnStorageLocationRepository yarnStorageLocationRepository) {
+            YarnStorageLocationRepository yarnStorageLocationRepository,
+            SizingUnitRepository sizingUnitRepository) {
         this.yarnInwardRepository = yarnInwardRepository;
         this.fabricOrderRepository = fabricOrderRepository;
         this.yarnCountRepository = yarnCountRepository;
         this.tickitsRepository = tickitsRepository;
         this.partiesRepository = partiesRepository;
         this.yarnStorageLocationRepository = yarnStorageLocationRepository;
+        this.sizingUnitRepository = sizingUnitRepository;
     }
 
     // Get all yarn inwards
@@ -130,6 +133,22 @@ public class YarnInwardService {
             entity.setStorageLocation(storageLocation);
         } else {
             entity.setStorageLocation(null);
+        }
+
+        if (dto.getStorageSizingId() != null) {
+            SizingUnit sizingUnit = sizingUnitRepository.findById(dto.getStorageSizingId())
+                    .orElseThrow(() -> new RuntimeException("Storage sizing unit not found with id: " + dto.getStorageSizingId()));
+            entity.setStorageSizingUnit(sizingUnit);
+        } else {
+            entity.setStorageSizingUnit(null);
+        }
+
+        if (dto.getStoragePartyId() != null) {
+            Parties storageParty = partiesRepository.findById(dto.getStoragePartyId())
+                    .orElseThrow(() -> new RuntimeException("Storage party not found with id: " + dto.getStoragePartyId()));
+            entity.setStorageParty(storageParty);
+        } else {
+            entity.setStorageParty(null);
         }
 
         entity.setBags(dto.getBags());

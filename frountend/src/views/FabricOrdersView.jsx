@@ -245,11 +245,14 @@ export const FabricOrdersView = () => {
               <option value="CANCELLED">Cancelled</option>
             </select>
 
-            <button className="btn btn-primary" onClick={openCreateModal}>
-              <Plus size={18} />
-              <span>New Fabric Order</span>
-            </button>
           </div>
+        </div>
+
+        <div style={{ margin: '16px 0', display: 'flex', justifyContent: 'flex-start' }}>
+          <button className="btn btn-primary" onClick={openCreateModal}>
+            <Plus size={18} />
+            <span>New Fabric Order</span>
+          </button>
         </div>
 
         <div className="table-responsive">

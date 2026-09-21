@@ -51,6 +51,14 @@ public class YarnInward {
     @JoinColumn(name = "storage_location_id")
     private YarnStorageLocation storageLocation;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "storage_sizing_id")
+    private SizingUnit storageSizingUnit;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "storage_party_id")
+    private Parties storageParty;
+
     @Column(name = "bill_no", length = 50)
     private String billNo;
 

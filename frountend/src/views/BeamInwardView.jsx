@@ -132,8 +132,14 @@ export const BeamInwardView = () => {
             <span className="badge badge-info">{list.length}</span>
           </div>
           <div className="section-card-actions">
-            <button className="btn btn-primary" onClick={openCreate}><Plus size={16}/> <span>New Beam Inward</span></button>
           </div>
+        </div>
+
+        <div style={{ margin: '16px 0', display: 'flex', justifyContent: 'flex-start' }}>
+          <button className="btn btn-primary" onClick={openCreate}>
+            <Plus size={16} />
+            <span>New Beam Inward</span>
+          </button>
         </div>
 
         <div className="table-responsive">

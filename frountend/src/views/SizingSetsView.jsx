@@ -186,11 +186,14 @@ export const SizingSetsView = () => {
                 onChange={event => setSearch(event.target.value)}
               />
             </div>
-            <button className="btn btn-primary" onClick={openCreateModal}>
-              <Plus size={18} />
-              <span>New Sizing Set</span>
-            </button>
           </div>
+        </div>
+
+        <div style={{ margin: '16px 0', display: 'flex', justifyContent: 'flex-start' }}>
+          <button className="btn btn-primary" onClick={openCreateModal}>
+            <Plus size={18} />
+            <span>New Sizing Set</span>
+          </button>
         </div>
 
         <div className="table-responsive">
