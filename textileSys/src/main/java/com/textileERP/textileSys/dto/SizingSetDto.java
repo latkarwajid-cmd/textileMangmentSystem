@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @Data
 @NoArgsConstructor
@@ -20,6 +21,19 @@ public class SizingSetDto {
     private String quality;
     private Integer totalEnds;
     private BigDecimal sizingMeters;
-    private String sizingCount;
+    private LocalDate outDate;
+    private BigDecimal bags;
+    private BigDecimal cone;
+    private BigDecimal weightKg;
+    private BigDecimal rate;
+    private String billNo;
+    private BigDecimal amount;
+    private BigDecimal totalEnd;
+    private BigDecimal sizingMtr;
+    private BigDecimal sizingReceivedKhart;
+    private BigDecimal sizingFreshYarnReceived;
+    private BigDecimal balanceInSizing;
+    private BigDecimal sizingConsumption;
+    private BigDecimal sizingCount;
     private String status;
 }

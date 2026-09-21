@@ -34,6 +34,7 @@ public class SizingSetService {
             SizingUnitRepository sizingUnitRepository,
             TickitsRepository tickitsRepository,
             YarnCountRepository yarnCountRepository) {
+
         this.sizingSetRepository = sizingSetRepository;
         this.fabricOrderRepository = fabricOrderRepository;
         this.partiesRepository = partiesRepository;
@@ -47,37 +48,72 @@ public class SizingSetService {
     }
 
     public SizingSet createSizingSet(SizingSetDto request) {
+
         if (request.getSetNo() == null || request.getSetNo().isBlank()) {
             throw new RuntimeException("Sizing set number is required");
         }
+
         if (sizingSetRepository.existsBySetNoIgnoreCase(request.getSetNo().trim())) {
-            throw new RuntimeException("Sizing set already exists with number: " + request.getSetNo());
+            throw new RuntimeException(
+                    "Sizing set already exists with number: " + request.getSetNo()
+            );
         }
 
         SizingSet sizingSet = new SizingSet();
+
         sizingSet.setSetNo(request.getSetNo().trim());
+
         sizingSet.setOrder(findOrder(request.getOrderId()));
         sizingSet.setCount(findCount(request.getCountId()));
         sizingSet.setTickit(findTickit(request.getTickitId()));
         sizingSet.setSizingUnit(findSizingUnit(request.getSizingId()));
         sizingSet.setParty(findParty(request.getPartyId()));
+
         sizingSet.setQuality(request.getQuality());
         sizingSet.setTotalEnds(request.getTotalEnds());
         sizingSet.setSizingMeters(request.getSizingMeters());
+        sizingSet.setOutDate(request.getOutDate());
+        sizingSet.setBags(request.getBags());
+        sizingSet.setCone(request.getCone());
+        sizingSet.setWeightKg(request.getWeightKg());
+        sizingSet.setRate(request.getRate());
+        sizingSet.setBillNo(request.getBillNo());
+        sizingSet.setAmount(request.getAmount());
+        sizingSet.setTotalEnd(request.getTotalEnd());
+        sizingSet.setSizingMtr(request.getSizingMtr());
+        sizingSet.setSizingReceivedKhart(request.getSizingReceivedKhart());
+        sizingSet.setSizingFreshYarnReceived(request.getSizingFreshYarnReceived());
+        sizingSet.setBalanceInSizing(request.getBalanceInSizing());
+        sizingSet.setSizingConsumption(request.getSizingConsumption());
         sizingSet.setSizingCount(request.getSizingCount());
-        sizingSet.setStatus(request.getStatus() == null || request.getStatus().isBlank()
-                ? "OPEN" : request.getStatus());
+
+        sizingSet.setStatus(
+                request.getStatus() == null || request.getStatus().isBlank()
+                        ? "OPEN"
+                        : request.getStatus()
+        );
+
         return sizingSetRepository.save(sizingSet);
     }
 
     public SizingSet updateSizingSet(Long id, SizingSetDto request) {
+
         SizingSet existing = sizingSetRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Sizing set not found: " + id));
+                .orElseThrow(() ->
+                        new RuntimeException("Sizing set not found: " + id));
 
         if (request.getSetNo() != null && !request.getSetNo().isBlank()) {
-            if (!existing.getSetNo().equalsIgnoreCase(request.getSetNo()) && sizingSetRepository.existsBySetNoIgnoreCase(request.getSetNo().trim())) {
-                throw new RuntimeException("Sizing set already exists with number: " + request.getSetNo());
+
+            if (!existing.getSetNo().equalsIgnoreCase(request.getSetNo())
+                    && sizingSetRepository.existsBySetNoIgnoreCase(
+                    request.getSetNo().trim())) {
+
+                throw new RuntimeException(
+                        "Sizing set already exists with number: "
+                                + request.getSetNo()
+                );
             }
+
             existing.setSetNo(request.getSetNo().trim());
         }
 
@@ -86,10 +122,25 @@ public class SizingSetService {
         existing.setTickit(findTickit(request.getTickitId()));
         existing.setSizingUnit(findSizingUnit(request.getSizingId()));
         existing.setParty(findParty(request.getPartyId()));
+
         existing.setQuality(request.getQuality());
         existing.setTotalEnds(request.getTotalEnds());
         existing.setSizingMeters(request.getSizingMeters());
+        existing.setOutDate(request.getOutDate());
+        existing.setBags(request.getBags());
+        existing.setCone(request.getCone());
+        existing.setWeightKg(request.getWeightKg());
+        existing.setRate(request.getRate());
+        existing.setBillNo(request.getBillNo());
+        existing.setAmount(request.getAmount());
+        existing.setTotalEnd(request.getTotalEnd());
+        existing.setSizingMtr(request.getSizingMtr());
+        existing.setSizingReceivedKhart(request.getSizingReceivedKhart());
+        existing.setSizingFreshYarnReceived(request.getSizingFreshYarnReceived());
+        existing.setBalanceInSizing(request.getBalanceInSizing());
+        existing.setSizingConsumption(request.getSizingConsumption());
         existing.setSizingCount(request.getSizingCount());
+
         if (request.getStatus() != null && !request.getStatus().isBlank()) {
             existing.setStatus(request.getStatus());
         }
@@ -98,34 +149,58 @@ public class SizingSetService {
     }
 
     public void softDeleteSizingSet(Long id) {
+
         SizingSet existing = sizingSetRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Sizing set not found: " + id));
+                .orElseThrow(() ->
+                        new RuntimeException("Sizing set not found: " + id));
+
         existing.setStatus("DELETED");
+
         sizingSetRepository.save(existing);
     }
 
     private FabricOrder findOrder(Long id) {
-        return id == null ? null : fabricOrderRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Fabric order not found with id: " + id));
+        return id == null
+                ? null
+                : fabricOrderRepository.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Fabric order not found with id: " + id));
     }
 
     private YarnCount findCount(Long id) {
-        return id == null ? null : yarnCountRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Yarn count not found with id: " + id));
+        return id == null
+                ? null
+                : yarnCountRepository.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Yarn count not found with id: " + id));
     }
 
     private Tickits findTickit(Long id) {
-        return id == null ? null : tickitsRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Tickit not found with id: " + id));
+        return id == null
+                ? null
+                : tickitsRepository.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Tickit not found with id: " + id));
     }
 
     private SizingUnit findSizingUnit(Long id) {
-        return id == null ? null : sizingUnitRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Sizing unit not found with id: " + id));
+        return id == null
+                ? null
+                : sizingUnitRepository.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Sizing unit not found with id: " + id));
     }
 
     private Parties findParty(Long id) {
-        return id == null ? null : partiesRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Party not found with id: " + id));
+        return id == null
+                ? null
+                : partiesRepository.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Party not found with id: " + id));
     }
 }

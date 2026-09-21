@@ -1,11 +1,13 @@
 package com.textileERP.textileSys.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @Entity
 @Data
@@ -51,9 +53,49 @@ public class SizingSet {
     @Column(name = "sizing_meters", precision = 12, scale = 3)
     private BigDecimal sizingMeters;
 
-    @Column(name = "sizing_count", length = 50)
-    private String sizingCount;
+    @Column(name = "out_date")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+    private LocalDate outDate;
 
-    @Column(name = "status", length = 30)
-    private String status = "OPEN";
+    @Column(name = "bags", precision = 12, scale = 3)
+    private BigDecimal bags;
+
+    @Column(name = "cone", precision = 12, scale = 3)
+    private BigDecimal cone;
+
+    @Column(name = "weight_kg", precision = 12, scale = 3)
+    private BigDecimal weightKg;
+
+    @Column(name = "rate", precision = 12, scale = 2)
+    private BigDecimal rate;
+
+    @Column(name = "bill_no", length = 50)
+    private String billNo;
+
+    @Column(name = "amount", precision = 14, scale = 2)
+    private BigDecimal amount;
+
+    @Column(name = "total_end")
+    private BigDecimal totalEnd;
+
+    @Column(name = "sizing_mtr", precision = 14, scale = 3)
+    private BigDecimal sizingMtr;
+
+    @Column(name = "sizing_received_khard", precision = 14, scale = 3)
+    private BigDecimal sizingReceivedKhart;
+
+    @Column(name = "sizing_fresh_yarn_received", precision = 14, scale = 3)
+    private BigDecimal sizingFreshYarnReceived;
+
+    @Column(name = "balance_in_sizing", precision = 14, scale = 3)
+    private BigDecimal balanceInSizing;
+
+    @Column(name = "sizing_consumption", precision = 14, scale = 3)
+    private BigDecimal sizingConsumption;
+
+    @Column(name = "sizing_count", precision = 14, scale = 3)
+    private BigDecimal sizingCount;
+
+    @Column(name = "status", length = 50)
+    private String status;
 }
