@@ -19,21 +19,19 @@ public class YarnStorageLocationSeeder {
                     2L, "Gate Pass",
                     3L, "Weaver",
                     4L, "Sizing",
-                    5L, "Other",
-                    6L, "Dyeing"
+                    5L, "Other"
             );
 
-            standardLocations.forEach((id, name) -> {
-                YarnStorageLocation location = repository.findById(id)
-                        .orElseGet(() -> repository.findByLocationNameIgnoreCase(name).orElse(null));
-                if (location == null) {
-                    repository.save(new YarnStorageLocation(null, name, true));
-                } else if (!name.equals(location.getLocationName()) || !Boolean.TRUE.equals(location.getActive())) {
-                    location.setLocationName(name);
-                    location.setActive(true);
-                    repository.save(location);
-                }
-            });
+            standardLocations.forEach((id, name) -> repository.findById(id).ifPresentOrElse(
+                    location -> {
+                        if (!name.equals(location.getLocationName()) || !Boolean.TRUE.equals(location.getActive())) {
+                            location.setLocationName(name);
+                            location.setActive(true);
+                            repository.save(location);
+                        }
+                    },
+                    () -> repository.save(new YarnStorageLocation(id, name, true))
+            ));
         };
     }
 }

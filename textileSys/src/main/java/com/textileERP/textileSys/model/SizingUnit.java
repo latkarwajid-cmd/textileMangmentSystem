@@ -10,10 +10,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(
-    name = "sizing_units",
-    uniqueConstraints = {
-        @UniqueConstraint(name = "uk_sizing_party", columnNames = {"sizing_name", "party_id"})
-    }
+        name = "sizing_units",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_sizing_party", columnNames = {"sizing_name", "party_id"})
+        }
 )
 public class SizingUnit {
 

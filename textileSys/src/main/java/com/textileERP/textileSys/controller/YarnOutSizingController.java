@@ -3,15 +3,18 @@ package com.textileERP.textileSys.controller;
 import com.textileERP.textileSys.dto.YarnOutSizingDto;
 import com.textileERP.textileSys.model.YarnOutSizing;
 import com.textileERP.textileSys.service.YarnOutSizingService;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-
 @RestController
-@RequestMapping({"/api/yarn-out-sizing", "/api/yarnoutsizing", "/api/yarn-out-for-sizing"})
-@CrossOrigin(origins = "*")
+@RequestMapping("/api/yarn-out-sizing")
+@ConditionalOnProperty(
+        name = "feature.yarn-out-sizing",
+        havingValue = "true"
+)
 public class YarnOutSizingController {
 
     private final YarnOutSizingService yarnOutSizingService;
