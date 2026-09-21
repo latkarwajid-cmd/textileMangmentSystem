@@ -119,15 +119,6 @@ export const api = {
     delete: (id) => request(`/api/yarn-inward/${id}`, { method: 'DELETE' }),
   },
 
-  // Yarn Out For Sizing API
-  yarnOutSizing: {
-    getAll: () => request('/api/yarn-out-sizing'),
-    getById: (id) => request(`/api/yarn-out-sizing/${id}`),
-    getBySizingSet: (sizingSetId) => request(`/api/yarn-out-sizing/sizing-set/${sizingSetId}`),
-    create: (data) => request('/api/yarn-out-sizing', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id, data) => request(`/api/yarn-out-sizing/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-    delete: (id) => request(`/api/yarn-out-sizing/${id}`, { method: 'DELETE' }),
-  },
 
   // Sizing Yarn Inward API
   sizingYarnInward: {
@@ -145,9 +136,19 @@ export const api = {
   // Sizing Sets API
   sizingSets: {
     getAll: () => request('/api/sizing-sets'),
+    getById: (id) => request(`/api/sizing-sets/${id}`),
+    nextSetNo: () => request('/api/sizing-sets/next-set-no'),
     create: (data) => request('/api/sizing-sets', { method: 'POST', body: JSON.stringify(data) }),
     update: (id, data) => request(`/api/sizing-sets/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id) => request(`/api/sizing-sets/${id}`, { method: 'DELETE' }),
+  },
+
+  fabricOrderDetails: {
+    getByOrderNo: (orderNo) => request(`/api/orders/${encodeURIComponent(orderNo)}/details`),
+  },
+
+  gatePasses: {
+    getActiveYarn: () => request('/api/gate-passes/active-yarn'),
   },
 
   // Beam Inward API (Teammate's changes)

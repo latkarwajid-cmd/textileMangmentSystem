@@ -6,6 +6,8 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -13,6 +15,9 @@ import java.time.LocalDate;
 public class SizingSetDto {
 
     private String setNo;
+    private LocalDate setDate;
+    private String partNo;
+    private String lasa;
     private Long orderId;
     private Long countId;
     private Long tickitId;
@@ -34,6 +39,7 @@ public class SizingSetDto {
     private BigDecimal sizingFreshYarnReceived;
     private BigDecimal balanceInSizing;
     private BigDecimal sizingConsumption;
-    private BigDecimal sizingCount;
+    private String sizingCount;
     private String status;
+    private List<SizingSetYarnLineDto> yarnLines = new ArrayList<>();
 }

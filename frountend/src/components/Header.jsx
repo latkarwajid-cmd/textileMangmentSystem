@@ -17,8 +17,10 @@ export const Header = () => {
       case 'yarn-counts': return 'Yarn Counts Master';
       case 'sizing-units': return 'Sizing Units Master';
       case 'yarn-inward': return 'Yarn Inward Inventory';
-      case 'yarn-out-sizing': return 'Yarn Out for Sizing';
-      case 'sizing-yarn-inward': return 'Sizing Yarn Inward';
+      case 'sizing-sets': return 'Sizing Sets';
+      case 'beam-inward': return 'Beam Inward';
+      case 'sizing-yarn-inward': return 'Yarn Return from Sizing';
+      case 'yarn-out-dyeing': return 'Yarn Out Dyeing';
       default: return 'Textile Management System';
     }
   };

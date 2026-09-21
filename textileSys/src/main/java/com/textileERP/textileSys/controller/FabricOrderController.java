@@ -1,6 +1,7 @@
 package com.textileERP.textileSys.controller;
 
 import com.textileERP.textileSys.dto.FabricOrderDto;
+import com.textileERP.textileSys.dto.OrderDetailsDto;
 import com.textileERP.textileSys.model.FabricOrder;
 import com.textileERP.textileSys.service.FabricOrderService;
 import org.springframework.http.HttpStatus;
@@ -30,6 +31,11 @@ public class FabricOrderController {
     @GetMapping("/{id}")
     public ResponseEntity<FabricOrder> getOrderById(@PathVariable Long id) {
         return ResponseEntity.ok(fabricOrderService.getOrderById(id));
+    }
+
+    @GetMapping("/{orderNo}/details")
+    public ResponseEntity<OrderDetailsDto> getOrderDetails(@PathVariable String orderNo) {
+        return ResponseEntity.ok(fabricOrderService.getOrderDetailsByOrderNo(orderNo));
     }
 
     // GET BY PARTY ID

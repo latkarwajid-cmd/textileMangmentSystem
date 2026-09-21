@@ -28,7 +28,7 @@ const formatDate = (date) => {
 };
 
 export const FabricOrdersView = () => {
-  const { parties, tickits, yarnCounts, addToast, refreshMasters } = useApp();
+  const { parties, addToast, refreshMasters } = useApp();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
@@ -40,8 +40,6 @@ export const FabricOrdersView = () => {
     orderNo: '',
     orderDate: new Date().toISOString().split('T')[0],
     partyId: '',
-    // countId: '',
-    // tickitId: '',
     supplierId: '',
     quality: '',
     rate: '',
@@ -76,8 +74,6 @@ export const FabricOrdersView = () => {
       orderNo: `FO-${new Date().getFullYear()}-${Date.now().toString().slice(-4)}`,
       orderDate: new Date().toISOString().split('T')[0],
       partyId: parties.length > 0 ? parties[0].partyId : '',
-      // countId: '',
-      // tickitId: '',
       supplierId: '',
       quality: '',
       rate: '',
@@ -95,8 +91,6 @@ export const FabricOrdersView = () => {
       orderNo: order.orderNo || '',
       orderDate: formatDate(order.orderDate),
       partyId: order.party?.partyId || '',
-      // countId: order.count?.countId || '',
-      // tickitId: order.tickit?.tickitId || '',
       supplierId: order.supplier?.partyId || '',
       quality: order.quality || '',
       rate: order.rate || '',
@@ -115,8 +109,6 @@ export const FabricOrdersView = () => {
         orderNo: formData.orderNo,
         orderDate: formData.orderDate,
         partyId: Number(formData.partyId),
-        // countId: formData.countId ? Number(formData.countId) : null,
-        // tickitId: formData.tickitId ? Number(formData.tickitId) : null,
         supplierId: formData.supplierId ? Number(formData.supplierId) : null,
         quality: formData.quality,
         rate: formData.rate ? Number(formData.rate) : null,
@@ -245,11 +237,14 @@ export const FabricOrdersView = () => {
               <option value="CANCELLED">Cancelled</option>
             </select>
 
-            <button className="btn btn-primary" onClick={openCreateModal}>
-              <Plus size={18} />
-              <span>New Fabric Order</span>
-            </button>
           </div>
+        </div>
+
+        <div style={{ margin: '16px 0', display: 'flex', justifyContent: 'flex-start' }}>
+          <button className="btn btn-primary" onClick={openCreateModal}>
+            <Plus size={18} />
+            <span>New Fabric Order</span>
+          </button>
         </div>
 
         <div className="table-responsive">
@@ -418,21 +413,9 @@ export const FabricOrdersView = () => {
               </select>
             </div>
 
-            {/* <div className="form-group">
-              <label>Yarn Count</label>
-              <select className="form-control" value={formData.countId} onChange={(e) => setFormData({ ...formData, countId: e.target.value })}>
-                <option value="">-- Select Yarn Count --</option>
-                {yarnCounts.map(count => <option key={count.countId} value={count.countId}>{count.countName}</option>)}
-              </select>
-            </div>
 
-            <div className="form-group">
-              <label>Tickit</label>
-              <select className="form-control" value={formData.tickitId} onChange={(e) => setFormData({ ...formData, tickitId: e.target.value })}>
-                <option value="">-- Select Tickit --</option>
-                {tickits.map(tickit => <option key={tickit.tickitId} value={tickit.tickitId}>{tickit.tickitName}</option>)}
-              </select>
-            </div> */}
+
+
 
 
 

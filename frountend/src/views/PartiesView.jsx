@@ -139,11 +139,14 @@ export const PartiesView = () => {
               <option value="DYEING">Dyeing Unit</option>
             </select>
 
-            <button className="btn btn-primary" onClick={openCreateModal}>
-              <Plus size={18} />
-              <span>Add Party</span>
-            </button>
           </div>
+        </div>
+
+        <div style={{ margin: '16px 0', display: 'flex', justifyContent: 'flex-start' }}>
+          <button className="btn btn-primary" onClick={openCreateModal}>
+            <Plus size={18} />
+            <span>Add Party</span>
+          </button>
         </div>
 
         <div className="table-responsive">

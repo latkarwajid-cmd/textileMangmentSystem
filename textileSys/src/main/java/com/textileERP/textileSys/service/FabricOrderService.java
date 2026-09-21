@@ -1,6 +1,7 @@
 package com.textileERP.textileSys.service;
 
 import com.textileERP.textileSys.dto.FabricOrderDto;
+import com.textileERP.textileSys.dto.OrderDetailsDto;
 import com.textileERP.textileSys.model.FabricOrder;
 import com.textileERP.textileSys.model.Parties;
 import com.textileERP.textileSys.model.Tickits;
@@ -40,6 +41,67 @@ public class FabricOrderService {
     public FabricOrder getOrderById(Long id) {
         return fabricOrderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Fabric order not found with id: " + id));
+    }
+
+    public OrderDetailsDto getOrderDetailsByOrderNo(String orderNo) {
+        if (orderNo == null || orderNo.isBlank()) {
+            throw new RuntimeException("Order number is required");
+        }
+        String clean = orderNo.trim();
+        java.util.Optional<FabricOrder> orderOpt = fabricOrderRepository.findByOrderNoIgnoreCase(clean);
+        if (orderOpt.isEmpty()) {
+            try {
+                Long id = Long.parseLong(clean);
+                orderOpt = fabricOrderRepository.findById(id);
+            } catch (NumberFormatException ignored) {}
+        }
+        if (orderOpt.isEmpty() && clean.toLowerCase().startsWith("order ")) {
+            String sub = clean.substring(6).trim();
+            orderOpt = fabricOrderRepository.findByOrderNoIgnoreCase(sub);
+        }
+        FabricOrder order = orderOpt
+                .orElseThrow(() -> new RuntimeException("Fabric order not found with order no: " + orderNo));
+
+        OrderDetailsDto details = new OrderDetailsDto();
+        details.setOrderId(order.getOrderId());
+        details.setOrderNo(order.getOrderNo());
+        details.setPartyId(order.getParty() != null ? order.getParty().getPartyId() : null);
+        details.setCustomerName(order.getParty() != null ? order.getParty().getPartyName() : null);
+        details.setQuality(order.getQuality());
+        Integer totalEnds = parseTotalEnds(order.getQuality());
+        details.setTotalEnds(totalEnds);
+        details.setCone(parseCone(order.getQuality(), totalEnds));
+        details.setCountId(order.getCount() != null ? order.getCount().getCountId() : null);
+        details.setTickitId(order.getTickit() != null ? order.getTickit().getTickitId() : null);
+        details.setStatus(order.getStatus());
+        return details;
+    }
+
+    private Integer parseTotalEnds(String quality) {
+        if (quality == null || quality.isBlank()) {
+            return null;
+        }
+        java.util.regex.Matcher endsMatcher = java.util.regex.Pattern.compile("(?i)ends?\\s*[:=-]?\\s*(\\d+)").matcher(quality);
+        if (endsMatcher.find()) {
+            return Integer.parseInt(endsMatcher.group(1));
+        }
+        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("\\b(\\d{4,})\\b").matcher(quality);
+        if (matcher.find()) {
+            return Integer.parseInt(matcher.group(1));
+        }
+        return null;
+    }
+
+    private BigDecimal parseCone(String quality, Integer totalEnds) {
+        if (quality != null && !quality.isBlank()) {
+            java.util.regex.Matcher coneMatcher = java.util.regex.Pattern.compile("(?i)cones?\\s*[:=-]?\\s*(\\d+(?:\\.\\d+)?)").matcher(quality);
+            if (coneMatcher.find()) {
+                try {
+                    return new BigDecimal(coneMatcher.group(1));
+                } catch (Exception ignored) {}
+            }
+        }
+        return null;
     }
 
     // Get by Party ID

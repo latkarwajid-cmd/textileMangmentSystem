@@ -11,7 +11,6 @@ import { TickitsView } from './views/TickitsView';
 import { YarnCountsView } from './views/YarnCountsView';
 import { SizingUnitsView } from './views/SizingUnitsView';
 import { YarnInwardView } from './views/YarnInwardView';
-import { YarnOutSizingView } from './views/YarnOutSizingView';
 import { SizingYarnInwardView } from './views/SizingYarnInwardView';
 import { SizingSetsView } from './views/SizingSetsView';
 import { YarnOutDyeingView } from './views/YarnOutDyeingView';
@@ -31,7 +30,6 @@ const MainContent = () => {
       case 'sizing-sets': return <SizingSetsView />;
       case 'beam-inward': return <BeamInwardView />;
       case 'yarn-inward': return <YarnInwardView />;
-      case 'yarn-out-sizing': return <YarnOutSizingView />;
       case 'yarn-out-dyeing': return <YarnOutDyeingView />;
       case 'sizing-yarn-inward': return <SizingYarnInwardView />;
       default: return <DashboardView />;

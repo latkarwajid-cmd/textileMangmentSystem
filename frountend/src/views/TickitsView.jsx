@@ -135,11 +135,14 @@ export const TickitsView = () => {
               ))}
             </select>
 
-            <button className="btn btn-primary" onClick={openCreateModal}>
-              <Plus size={18} />
-              <span>Add Tickit</span>
-            </button>
           </div>
+        </div>
+
+        <div style={{ margin: '16px 0', display: 'flex', justifyContent: 'flex-start' }}>
+          <button className="btn btn-primary" onClick={openCreateModal}>
+            <Plus size={18} />
+            <span>Add Tickit</span>
+          </button>
         </div>
 
         <div className="table-responsive">

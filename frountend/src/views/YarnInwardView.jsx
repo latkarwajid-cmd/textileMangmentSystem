@@ -30,7 +30,7 @@ const formatDate = (date) => {
 };
 
 export const YarnInwardView = () => {
-  const { parties, fabricOrders, tickits, yarnCounts, yarnStorageLocations, addToast } = useApp();
+  const { parties, fabricOrders, tickits, yarnCounts, sizingUnits, yarnStorageLocations, addToast } = useApp();
   const [inwardList, setInwardList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
@@ -46,6 +46,8 @@ export const YarnInwardView = () => {
     tickitId: '',
     supplierId: '',
     storageLocationId: '',
+    storageSizingId: '',
+    storagePartyId: '',
     bags: '',
     weightKg: '',
     rate: '',
@@ -96,6 +98,10 @@ export const YarnInwardView = () => {
   }, [formData.weightKg, formData.rate, formData.gstPercent]);
 
   const selectedOrder = fabricOrders.find(o => String(o.orderId) === String(formData.orderId));
+  const selectedStorageLocation = yarnStorageLocations.find(location => String(location.storageLocationId) === String(formData.storageLocationId));
+  const isSizingStorage = selectedStorageLocation?.locationName?.toLowerCase() === 'sizing';
+  const isWeaverStorage = selectedStorageLocation?.locationName?.toLowerCase() === 'weaver';
+  const isDyeingStorage = selectedStorageLocation?.locationName?.toLowerCase() === 'dyeing';
 
   const handleOrderChange = orderNo => {
     const order = fabricOrders.find(item => item.orderNo?.trim().toLowerCase() === orderNo.trim().toLowerCase());
@@ -117,6 +123,8 @@ export const YarnInwardView = () => {
       tickitId: '',
       supplierId: '',
       storageLocationId: '',
+      storageSizingId: '',
+      storagePartyId: '',
       bags: '',
       weightKg: '',
       rate: '',
@@ -137,6 +145,8 @@ export const YarnInwardView = () => {
       tickitId: item.tickit?.tickitId || '',
       supplierId: item.supplier?.partyId || '',
       storageLocationId: item.storageLocation?.storageLocationId || '',
+      storageSizingId: item.storageSizingUnit?.sizingId || '',
+      storagePartyId: item.storageParty?.partyId || '',
       bags: item.bags || '',
       weightKg: item.weightKg || '',
       rate: item.rate || '',
@@ -158,6 +168,8 @@ export const YarnInwardView = () => {
         tickitId: formData.tickitId ? Number(formData.tickitId) : null,
         supplierId: formData.supplierId ? Number(formData.supplierId) : null,
         storageLocationId: formData.storageLocationId ? Number(formData.storageLocationId) : null,
+        storageSizingId: formData.storageSizingId ? Number(formData.storageSizingId) : null,
+        storagePartyId: formData.storagePartyId ? Number(formData.storagePartyId) : null,
         bags: formData.bags ? Number(formData.bags) : null,
         weightKg: formData.weightKg ? Number(formData.weightKg) : null,
         rate: formData.rate ? Number(formData.rate) : null,
@@ -254,11 +266,14 @@ export const YarnInwardView = () => {
               <option value="PARTIAL">Partial</option>
             </select>
 
-            <button className="btn btn-primary" onClick={openCreateModal}>
-              <Plus size={18} />
-              <span>New Yarn Inward</span>
-            </button>
           </div>
+        </div>
+
+        <div style={{ margin: '16px 0', display: 'flex', justifyContent: 'flex-start' }}>
+          <button className="btn btn-primary" onClick={openCreateModal}>
+            <Plus size={18} />
+            <span>New Yarn Inward</span>
+          </button>
         </div>
 
         <div className="table-responsive">
@@ -422,17 +437,41 @@ export const YarnInwardView = () => {
               <select
                 className="form-control"
                 value={formData.storageLocationId}
-                onChange={(e) => setFormData({ ...formData, storageLocationId: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, storageLocationId: e.target.value, storageSizingId: '', storagePartyId: '' })}
                 required
               >
                 <option value="">-- Select Storage Location --</option>
-                {yarnStorageLocations.map(location => (
+                {[...yarnStorageLocations].sort((first, second) => {
+                  const order = { Dyeing: 0, Other: 1 };
+                  return (order[first.locationName] ?? 0) - (order[second.locationName] ?? 0);
+                }).map(location => (
                   <option key={location.storageLocationId} value={location.storageLocationId}>
                     {location.locationName}
                   </option>
                 ))}
               </select>
             </div>
+
+            {(isSizingStorage || isWeaverStorage || isDyeingStorage) && (
+              <div className="form-group">
+                <label>{isSizingStorage ? 'Sizing Unit' : isDyeingStorage ? 'Dyeing Unit' : 'Weaver'} *</label>
+                <select
+                  className="form-control"
+                  value={isSizingStorage ? formData.storageSizingId : formData.storagePartyId}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    storageSizingId: isSizingStorage ? e.target.value : '',
+                    storagePartyId: isWeaverStorage ? e.target.value : '',
+                  })}
+                  required
+                >
+                  <option value="">-- Select {isSizingStorage ? 'Sizing Unit' : isDyeingStorage ? 'Dyeing Unit' : 'Weaver'} --</option>
+                  {isSizingStorage
+                    ? sizingUnits.map(unit => <option key={unit.sizingId} value={unit.sizingId}>{unit.sizingName}</option>)
+                    : parties.filter(party => party.partyType?.toUpperCase() === (isDyeingStorage ? 'DYEING' : 'WEAVER')).map(party => <option key={party.partyId} value={party.partyId}>{party.partyName}</option>)}
+                </select>
+              </div>
+            )}
 
             <div className="form-group">
               <label>Yarn Count</label>

@@ -8,49 +8,60 @@ import {
   Layers, 
   Factory, 
   ArrowDownLeft, 
-  ArrowUpRight, 
-  RotateCcw,
+  Layers3,
   TrendingUp,
   PackageCheck
 } from 'lucide-react';
 
+const formatDate = (date) => {
+  if (!date) return '-';
+  if (Array.isArray(date)) {
+    const [y, m, d] = date;
+    return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+  }
+  return String(date).substring(0, 10);
+};
+
+const inwardSortKey = (item) => {
+  const date = formatDate(item.inwardDate);
+  const id = Number(item.yarnInwardId) || 0;
+  return `${date}-${String(id).padStart(10, '0')}`;
+};
+
 export const DashboardView = () => {
   const { parties, fabricOrders, tickits, yarnCounts, sizingUnits, setCurrentTab } = useApp();
   const [inwardCount, setInwardCount] = useState(0);
-  const [outSizingCount, setOutSizingCount] = useState(0);
-  const [sizingInwardCount, setSizingInwardCount] = useState(0);
+  const [sizingSetCount, setSizingSetCount] = useState(0);
   const [totalInwardWeight, setTotalInwardWeight] = useState(0);
   const [recentInwards, setRecentInwards] = useState([]);
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const fetchStats = async () => {
-      setLoading(true);
       try {
-        const [inwardRes, outSizingRes, sizingInwardRes] = await Promise.allSettled([
+        const [inwardRes, sizingSetsRes] = await Promise.allSettled([
           api.yarnInward.getAll(),
-          api.yarnOutSizing.getAll(),
-          api.sizingYarnInward.getAll(),
+          api.sizingSets.getAll(),
         ]);
 
         if (inwardRes.status === 'fulfilled' && Array.isArray(inwardRes.value)) {
-          setInwardCount(inwardRes.value.length);
-          setRecentInwards(inwardRes.value.slice(-5).reverse());
-          const totalKg = inwardRes.value.reduce((acc, curr) => acc + (Number(curr.weightKg) || 0), 0);
+          const inwards = inwardRes.value;
+          setInwardCount(inwards.length);
+          setRecentInwards(
+            [...inwards]
+              .sort((a, b) => inwardSortKey(b).localeCompare(inwardSortKey(a)))
+              .slice(0, 5)
+          );
+          const totalKg = inwards.reduce((acc, curr) => acc + (Number(curr.weightKg) || 0), 0);
           setTotalInwardWeight(totalKg);
+        } else if (inwardRes.status === 'rejected') {
+          console.error('Error fetching yarn inward for dashboard:', inwardRes.reason);
         }
 
-        if (outSizingRes.status === 'fulfilled' && Array.isArray(outSizingRes.value)) {
-          setOutSizingCount(outSizingRes.value.length);
-        }
-
-        if (sizingInwardRes.status === 'fulfilled' && Array.isArray(sizingInwardRes.value)) {
-          setSizingInwardCount(sizingInwardRes.value.length);
+        if (sizingSetsRes.status === 'fulfilled' && Array.isArray(sizingSetsRes.value)) {
+          setSizingSetCount(sizingSetsRes.value.length);
         }
       } catch (err) {
         console.error('Error fetching dashboard stats:', err);
-      } finally {
-        setLoading(false);
       }
     };
 
@@ -130,13 +141,13 @@ export const DashboardView = () => {
           </div>
         </div>
 
-        <div className="stat-card" style={{ cursor: 'pointer' }} onClick={() => setCurrentTab('yarn-out-sizing')}>
+        <div className="stat-card" style={{ cursor: 'pointer' }} onClick={() => setCurrentTab('sizing-sets')}>
           <div className="stat-icon" style={{ background: '#06b6d4' }}>
-            <ArrowUpRight size={22} />
+            <Layers3 size={22} />
           </div>
           <div className="stat-info">
-            <h3>Out for Sizing</h3>
-            <div className="stat-value">{outSizingCount}</div>
+            <h3>Sizing Sets</h3>
+            <div className="stat-value">{sizingSetCount}</div>
           </div>
         </div>
       </div>
@@ -178,7 +189,7 @@ export const DashboardView = () => {
                 recentInwards.map((item) => (
                   <tr key={item.yarnInwardId}>
                     <td>#{item.yarnInwardId}</td>
-                    <td>{item.inwardDate || '-'}</td>
+                    <td>{formatDate(item.inwardDate)}</td>
                     <td style={{ fontWeight: 600 }}>{item.supplier?.partyName || '-'}</td>
                     <td>{item.count?.countName || '-'}</td>
                     <td>{item.tickit?.tickitName || '-'}</td>

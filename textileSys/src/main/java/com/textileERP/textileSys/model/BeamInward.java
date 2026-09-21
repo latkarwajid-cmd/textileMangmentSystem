@@ -16,7 +16,7 @@ public class BeamInward {
 
         @Id
         @GeneratedValue(strategy = GenerationType.IDENTITY)
-        @Column(name = "beam_inward_id")
+        @Column(name = "beam_id")
         private Long beamId;
 
     @ManyToOne(fetch = FetchType.EAGER)

@@ -6,7 +6,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.List;
+import java.util.Map;
 
 @Configuration
 public class YarnStorageLocationSeeder {
@@ -14,26 +14,24 @@ public class YarnStorageLocationSeeder {
     @Bean
     CommandLineRunner seedYarnStorageLocations(YarnStorageLocationRepository repository) {
         return args -> {
-            List<String> standardLocations = List.of(
-                    "Factory Warehouse",
-                    "Gate Pass",
-                    "Weaver",
-                    "Sizing",
-                    "Other"
+            Map<Long, String> standardLocations = Map.of(
+                    1L, "Factory Warehouse",
+                    2L, "Gate Pass",
+                    3L, "Weaver",
+                    4L, "Sizing",
+                    5L, "Other"
             );
 
-            standardLocations.forEach(name -> repository.findAll().stream()
-                    .filter(location -> name.equals(location.getLocationName()))
-                    .findFirst()
-                    .ifPresentOrElse(
-                            location -> {
-                                if (!Boolean.TRUE.equals(location.getActive())) {
-                                    location.setActive(true);
-                                    repository.save(location);
-                                }
-                            },
-                            () -> repository.save(new YarnStorageLocation(null, name, true))
-                    ));
+            standardLocations.forEach((id, name) -> repository.findById(id).ifPresentOrElse(
+                    location -> {
+                        if (!name.equals(location.getLocationName()) || !Boolean.TRUE.equals(location.getActive())) {
+                            location.setLocationName(name);
+                            location.setActive(true);
+                            repository.save(location);
+                        }
+                    },
+                    () -> repository.save(new YarnStorageLocation(id, name, true))
+            ));
         };
     }
 }

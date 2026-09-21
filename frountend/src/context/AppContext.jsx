@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { api, getBaseUrl, setBaseUrl } from '../services/api';
 
 const AppContext = createContext();
@@ -34,17 +34,17 @@ export const AppProvider = ({ children }) => {
     refreshMasters();
   };
 
-  const addToast = (message, type = 'info') => {
+  const removeToast = useCallback((id) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  }, []);
+
+  const addToast = useCallback((message, type = 'info') => {
     const id = Date.now() + Math.random();
     setToasts(prev => [...prev, { id, message, type }]);
     setTimeout(() => {
       removeToast(id);
     }, 4000);
-  };
-
-  const removeToast = (id) => {
-    setToasts(prev => prev.filter(t => t.id !== id));
-  };
+  }, [removeToast]);
 
   const refreshMasters = async () => {
     setLoadingMasters(true);
