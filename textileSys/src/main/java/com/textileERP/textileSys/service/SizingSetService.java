@@ -1,5 +1,4 @@
-
-        package com.textileERP.textileSys.service;
+package com.textileERP.textileSys.service;
 
 import com.textileERP.textileSys.dto.SizingSetDto;
 import com.textileERP.textileSys.dto.SizingSetYarnLineDto;
@@ -110,8 +109,7 @@ public class SizingSetService {
 
     public String generateNextSetNo() {
 
-        List<SizingSet> sets =
-                sizingSetRepository.findAll();
+        List<SizingSet> sets = sizingSetRepository.findAll();
 
         int maxNumber = 0;
 
@@ -120,36 +118,31 @@ public class SizingSetService {
 
         for (SizingSet set : sets) {
 
+            // Skip soft-deleted records.
+            if ("DELETED".equalsIgnoreCase(set.getStatus())) {
+                continue;
+            }
+
             if (set.getSetNo() == null) {
                 continue;
             }
 
-            Matcher matcher =
-                    pattern.matcher(set.getSetNo().trim());
+            Matcher matcher = pattern.matcher(set.getSetNo().trim());
 
             if (matcher.matches()) {
-
                 try {
-
-                    int number =
-                            Integer.parseInt(
-                                    matcher.group(1)
-                            );
+                    int number = Integer.parseInt(matcher.group(1));
 
                     if (number > maxNumber) {
                         maxNumber = number;
                     }
-
                 } catch (NumberFormatException ignored) {
-                    // Ignore invalid set numbers
+                    // Ignore invalid set numbers.
                 }
             }
         }
 
-        return String.format(
-                "SET-%04d",
-                maxNumber + 1
-        );
+        return String.format("SET-%02d", maxNumber + 1);
     }
 
     // ============================================================
@@ -830,15 +823,15 @@ public class SizingSetService {
                     cones
             );
 
-                        // If client provided weightPerBag prefer weightPerBag * bags as authoritative
-                        if (weightPerBag != null) {
-                                line.setWeightPerBag(weightPerBag);
-                                BigDecimal computed = weightPerBag.multiply(bags).setScale(3, RoundingMode.HALF_UP);
-                                line.setWeightKg(computed);
-                                weight = computed;
-                        } else {
-                                line.setWeightKg(weight);
-                        }
+            // If client provided weightPerBag prefer weightPerBag * bags as authoritative
+            if (weightPerBag != null) {
+                line.setWeightPerBag(weightPerBag);
+                BigDecimal computed = weightPerBag.multiply(bags).setScale(3, RoundingMode.HALF_UP);
+                line.setWeightKg(computed);
+                weight = computed;
+            } else {
+                line.setWeightKg(weight);
+            }
 
             line.setRemark(
                     dto.getRemark()
@@ -1706,3 +1699,4 @@ public class SizingSetService {
         return null;
     }
 }
+
