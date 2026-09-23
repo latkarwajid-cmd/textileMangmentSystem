@@ -69,6 +69,169 @@ public class SizingSetService {
                 .orElseThrow(() -> new RuntimeException("Sizing set not found: " + id));
     }
 
+<<<<<<< Updated upstream
+=======
+    // ============================================================
+    // INWARD LOOKUP
+    // ============================================================
+
+    public java.util.Map<String, Object> getInwardLookup(Long id) {
+        SizingSet set = getSizingSetById(id);
+        java.util.Map<String, Object> map = new java.util.HashMap<>();
+
+        map.put("sizingSetId", set.getSizingSetId());
+        map.put("setNo", set.getSetNo());
+
+        // Party / Client
+        Parties party = set.getParty();
+        if (party == null && set.getOrder() != null) {
+            party = set.getOrder().getParty();
+        }
+        map.put("partyId", party != null ? party.getPartyId() : null);
+        map.put("partyName", party != null ? party.getPartyName() : "");
+        map.put("clientName", party != null ? party.getPartyName() : "");
+
+        // Order
+        FabricOrder order = set.getOrder();
+        map.put("orderId", order != null ? order.getOrderId() : null);
+        map.put("orderNo", order != null ? order.getOrderNo() : "");
+
+        // Quality
+        String quality = set.getQuality();
+        if ((quality == null || quality.isBlank()) && order != null) {
+            quality = order.getQuality();
+        }
+        map.put("quality", quality != null ? quality : "");
+
+        // Count & Ticket Resolution
+        YarnCount count = set.getCount();
+        Tickits tickit = set.getTickit();
+
+        // 1. Check allocated yarn lines (direct, or via yarnInward / sizingInward)
+        if (set.getYarnLines() != null && !set.getYarnLines().isEmpty()) {
+            for (SizingSetYarnLine line : set.getYarnLines()) {
+                if (count == null) {
+                    if (line.getCount() != null) {
+                        count = line.getCount();
+                    } else if (line.getYarnInward() != null && line.getYarnInward().getCount() != null) {
+                        count = line.getYarnInward().getCount();
+                    } else if (line.getSizingInward() != null && line.getSizingInward().getCount() != null) {
+                        count = line.getSizingInward().getCount();
+                    }
+                }
+                if (tickit == null) {
+                    if (line.getTickit() != null) {
+                        tickit = line.getTickit();
+                    } else if (line.getYarnInward() != null && line.getYarnInward().getTickit() != null) {
+                        tickit = line.getYarnInward().getTickit();
+                    } else if (line.getSizingInward() != null && line.getSizingInward().getTickit() != null) {
+                        tickit = line.getSizingInward().getTickit();
+                    }
+                }
+            }
+        }
+
+        // 2. Check linked fabric order if still null
+        if (count == null && order != null) {
+            count = order.getCount();
+        }
+        if (tickit == null && order != null) {
+            tickit = order.getTickit();
+        }
+
+        String countName = count != null ? count.getCountName() : "";
+        String tickitName = tickit != null ? tickit.getTickitName() : "";
+        
+        String countAndTicket = "";
+        if (!countName.isBlank() && !tickitName.isBlank()) {
+            countAndTicket = countName + " " + tickitName;
+        } else if (!countName.isBlank()) {
+            countAndTicket = countName;
+        } else if (!tickitName.isBlank()) {
+            countAndTicket = tickitName;
+        } else if (set.getSizingCount() != null && !set.getSizingCount().isBlank()) {
+            countAndTicket = set.getSizingCount();
+        }
+
+        // 3. If still empty, check quality string for count/ticket matches
+        if (countAndTicket.isBlank() && quality != null) {
+            for (YarnCount yc : yarnCountRepository.findAll()) {
+                if (yc.getCountName() != null && quality.toLowerCase().contains(yc.getCountName().toLowerCase())) {
+                    count = yc;
+                    countName = yc.getCountName();
+                    break;
+                }
+            }
+            for (Tickits t : tickitsRepository.findAll()) {
+                if (t.getTickitName() != null && quality.toLowerCase().contains(t.getTickitName().toLowerCase())) {
+                    tickit = t;
+                    tickitName = t.getTickitName();
+                    break;
+                }
+            }
+            if (!countName.isBlank() && !tickitName.isBlank()) {
+                countAndTicket = countName + " " + tickitName;
+            } else if (!countName.isBlank()) {
+                countAndTicket = countName;
+            } else if (!tickitName.isBlank()) {
+                countAndTicket = tickitName;
+            }
+        }
+
+        map.put("countId", count != null ? count.getCountId() : null);
+        map.put("countName", countName);
+        map.put("tickitId", tickit != null ? tickit.getTickitId() : null);
+        map.put("tickitName", tickitName);
+        map.put("countAndTicket", countAndTicket.trim());
+
+
+
+        // Total ends
+        map.put("totalEnds", set.getTotalEnds());
+
+        // Sizing Unit
+        SizingUnit sizingUnit = set.getSizingUnit();
+        map.put("sizingId", sizingUnit != null ? sizingUnit.getSizingId() : null);
+        map.put("sizingName", sizingUnit != null ? sizingUnit.getSizingName() : "");
+
+        // Sizing meters
+        map.put("sizingMeters", set.getSizingMeters() != null ? set.getSizingMeters() : set.getSizingMtr());
+        map.put("partNo", set.getPartNo() != null ? set.getPartNo() : "");
+        map.put("lasa", set.getLasa() != null ? set.getLasa() : "");
+
+        // Raw Yarn Issued Metrics for Pink Slip Reconciliation
+        BigDecimal issuedBags = set.getBags();
+        BigDecimal issuedCones = set.getCone();
+        BigDecimal issuedWeight = set.getWeightKg();
+
+        if (set.getYarnLines() != null && !set.getYarnLines().isEmpty()) {
+            BigDecimal sumBags = BigDecimal.ZERO;
+            BigDecimal sumCones = BigDecimal.ZERO;
+            BigDecimal sumWeight = BigDecimal.ZERO;
+            for (SizingSetYarnLine line : set.getYarnLines()) {
+                if (line.getBags() != null) sumBags = sumBags.add(line.getBags());
+                if (line.getCones() != null) sumCones = sumCones.add(line.getCones());
+                if (line.getWeightKg() != null) sumWeight = sumWeight.add(line.getWeightKg());
+            }
+            if (issuedBags == null || issuedBags.compareTo(BigDecimal.ZERO) == 0) issuedBags = sumBags;
+            if (issuedCones == null || issuedCones.compareTo(BigDecimal.ZERO) == 0) issuedCones = sumCones;
+            if (issuedWeight == null || issuedWeight.compareTo(BigDecimal.ZERO) == 0) issuedWeight = sumWeight;
+        }
+
+        map.put("issuedBags", issuedBags != null ? issuedBags : BigDecimal.ZERO);
+        map.put("issuedCones", issuedCones != null ? issuedCones : BigDecimal.ZERO);
+        map.put("issuedWeightKg", issuedWeight != null ? issuedWeight : BigDecimal.ZERO);
+
+
+        return map;
+    }
+
+
+    // ============================================================
+    // GENERATE NEXT SET NUMBER
+    // ============================================================
+
+>>>>>>> Stashed changes
     public String generateNextSetNo() {
         int maxNumber = 0;
         for (SizingSet existing : sizingSetRepository.findAll()) {

@@ -12,6 +12,12 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class BeamInwardDto {
 
+    private String inwardNo;
+
+    private String challanNo;
+
+    private LocalDate challanDate;
+
     private Long sizingSetId;
 
     private Long orderId;
@@ -20,7 +26,11 @@ public class BeamInwardDto {
 
     private LocalDate inwardDate;
 
+    private String shed;
+
     private String beamNo;
+
+    private String flangeNo;
 
     private String quality;
 
@@ -28,13 +38,25 @@ public class BeamInwardDto {
 
     private Long tickitId;
 
+    private Integer totalEnds;
+
+    private Integer totalBeamsCount;
+
+    private BigDecimal cuts;
+
     private BigDecimal meter;
 
+    private BigDecimal grossWeight;
+
+    private BigDecimal tareWeight;
+
     private BigDecimal weightKg;
+
+    private BigDecimal netWeight;
 
     private Long partyId;
 
     private String status;
 
     private String remark;
-}
+}

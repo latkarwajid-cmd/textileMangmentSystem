@@ -416,6 +416,7 @@ export const SizingSetsView = () => {
     }
   };
 
+<<<<<<< Updated upstream
   const handleDelete = async (sizingSet) => {
     if (!sizingSet) return;
     if (!window.confirm(`Are you sure you want to delete Sizing Set ${sizingSet.setNo}?`)) {
@@ -432,6 +433,9 @@ export const SizingSetsView = () => {
       await fetchSizingSets();
     }
   };
+=======
+
+>>>>>>> Stashed changes
 
   const isGatePass = (line) => line.sourceFrom === 'Gate Pass';
 
@@ -918,9 +922,23 @@ export const SizingSetsView = () => {
                 onChange={e => setSearch(e.target.value)}
               />
             </div>
+<<<<<<< Updated upstream
+=======
+
+
+            <button
+              className="btn btn-primary"
+              onClick={openCreateEditor}
+            >
+              <Plus size={18} />
+              <span>New Sizing Set</span>
+            </button>
+
+>>>>>>> Stashed changes
           </div>
         </div>
 
+<<<<<<< Updated upstream
         <div style={{ margin: '16px 0', display: 'flex', justifyContent: 'flex-start' }}>
           <button className="btn btn-primary" onClick={openCreateEditor}>
             <Plus size={18} />
@@ -930,6 +948,15 @@ export const SizingSetsView = () => {
 
         <div className="table-responsive">
           <table className="data-table">
+=======
+
+        {/* LIST TABLE */}
+
+        <div className="table-responsive">
+
+          <table className="data-table">
+
+>>>>>>> Stashed changes
             <thead>
               <tr>
                 <th>Set No</th>

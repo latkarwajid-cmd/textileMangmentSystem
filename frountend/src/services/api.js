@@ -137,6 +137,7 @@ export const api = {
   sizingSets: {
     getAll: () => request('/api/sizing-sets'),
     getById: (id) => request(`/api/sizing-sets/${id}`),
+    getInwardLookup: (id) => request(`/api/sizing-sets/${id}/inward-lookup`),
     nextSetNo: () => request('/api/sizing-sets/next-set-no'),
     create: (data) => request('/api/sizing-sets', { method: 'POST', body: JSON.stringify(data) }),
     update: (id, data) => request(`/api/sizing-sets/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
@@ -151,14 +152,22 @@ export const api = {
     getActiveYarn: () => request('/api/gate-passes/active-yarn'),
   },
 
-  // Beam Inward API (Teammate's changes)
+  // Beam Inward API
   beamInward: {
     getAll: () => request('/api/beam-inward'),
     getById: (id) => request(`/api/beam-inward/${id}`),
+    getNextInwardNo: () => request('/api/beam-inward/next-inward-no'),
+    getByInwardNo: (inwardNo) => request(`/api/beam-inward/inward-no/${encodeURIComponent(inwardNo)}`),
+    getByOrder: (orderId) => request(`/api/beam-inward/order/${orderId}`),
+    getBySizingSet: (sizingSetId) => request(`/api/beam-inward/sizing-set/${sizingSetId}`),
     create: (data) => request('/api/beam-inward', { method: 'POST', body: JSON.stringify(data) }),
+    createBatch: (data) => request('/api/beam-inward/batch', { method: 'POST', body: JSON.stringify(data) }),
+    complete: (data) => request('/api/beam-inward/complete', { method: 'POST', body: JSON.stringify(data) }),
     update: (id, data) => request(`/api/beam-inward/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id) => request(`/api/beam-inward/${id}`, { method: 'DELETE' }),
   },
+
+
 
   // Yarn Out For Dyeing API (Your changes)
   yarnOutDyeing: {

@@ -12,4 +12,9 @@ public interface BeamInwardRepository extends JpaRepository<BeamInward, Long> {
 	List<BeamInward> findByOrderOrderId(Long orderId);
 
 	List<BeamInward> findBySizingSetSizingSetId(Long sizingSetId);
+
+	List<BeamInward> findByInwardNo(String inwardNo);
+
+	List<BeamInward> findByFlangeNo(String flangeNo);
 }
+
