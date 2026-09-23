@@ -5,18 +5,22 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.Optional;
 
 @Repository
 public interface TickitsRepository extends JpaRepository<Tickits, Long> {
 
+    // Get only active tickits
     List<Tickits> findByActiveTrue();
 
-    List<Tickits> findByPartyPartyIdAndActiveTrue(Long partyId);
+    // Check duplicate tickit name while creating
+    boolean existsByTickitNameIgnoreCase(
+            String tickitName
+    );
 
-    Optional<Tickits> findByTickitNameIgnoreCaseAndPartyPartyId(String tickitName, Long partyId);
-
-    boolean existsByTickitNameIgnoreCaseAndPartyPartyId(String tickitName, Long partyId);
-
-    boolean existsByTickitNameIgnoreCaseAndPartyPartyIdAndTickitIdNot(String tickitName, Long partyId, Long tickitId);
+    // Check duplicate tickit name while updating
+    // Excludes the current tickit ID
+    boolean existsByTickitNameIgnoreCaseAndTickitIdNot(
+            String tickitName,
+            Long tickitId
+    );
 }

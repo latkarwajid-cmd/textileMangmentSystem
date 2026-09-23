@@ -1,9 +1,7 @@
 package com.textileERP.textileSys.service;
 
 import com.textileERP.textileSys.dto.TickitsDto;
-import com.textileERP.textileSys.model.Parties;
 import com.textileERP.textileSys.model.Tickits;
-import com.textileERP.textileSys.repository.PartiesRepository;
 import com.textileERP.textileSys.repository.TickitsRepository;
 import org.springframework.stereotype.Service;
 
@@ -13,73 +11,122 @@ import java.util.List;
 public class TickitsService {
 
     private final TickitsRepository tickitsRepository;
-    private final PartiesRepository partiesRepository;
 
-    public TickitsService(TickitsRepository tickitsRepository, PartiesRepository partiesRepository) {
+    public TickitsService(TickitsRepository tickitsRepository) {
         this.tickitsRepository = tickitsRepository;
-        this.partiesRepository = partiesRepository;
     }
 
-    // Get all active tickits
+    // =========================================================
+    // GET ALL ACTIVE TICKITS
+    // =========================================================
+
     public List<Tickits> getAllTickits() {
         return tickitsRepository.findByActiveTrue();
     }
 
-    // Get tickit by ID
+    // =========================================================
+    // GET TICKIT BY ID
+    // =========================================================
+
     public Tickits getTickitById(Long id) {
+
         return tickitsRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Tickit not found with id: " + id));
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Tickit not found with id: " + id
+                        )
+                );
     }
 
-    // Get tickits by Party ID
-    public List<Tickits> getTickitsByPartyId(Long partyId) {
-        return tickitsRepository.findByPartyPartyIdAndActiveTrue(partyId);
-    }
+    // =========================================================
+    // CREATE TICKIT
+    // =========================================================
 
-    // Create tickit
     public Tickits createTickit(TickitsDto request) {
-        if (request.getPartyId() == null) {
-            throw new RuntimeException("Party ID is required");
+
+        if (request.getTickitName() == null ||
+                request.getTickitName().trim().isEmpty()) {
+
+            throw new RuntimeException(
+                    "Tickit name is required"
+            );
         }
 
-        Parties party = partiesRepository.findById(request.getPartyId())
-                .orElseThrow(() -> new RuntimeException("Party not found with id: " + request.getPartyId()));
+        String tickitName =
+                request.getTickitName().trim();
 
-        if (tickitsRepository.existsByTickitNameIgnoreCaseAndPartyPartyId(request.getTickitName(), request.getPartyId())) {
-            throw new RuntimeException("Tickit already exists for this party");
+        // Tickit name must be unique
+        if (tickitsRepository
+                .existsByTickitNameIgnoreCase(tickitName)) {
+
+            throw new RuntimeException(
+                    "Tickit with this name already exists"
+            );
         }
 
         Tickits tickit = new Tickits();
-        tickit.setTickitName(request.getTickitName());
-        tickit.setParty(party);
+
+        tickit.setTickitName(tickitName);
+
         tickit.setActive(true);
 
         return tickitsRepository.save(tickit);
     }
 
-    // Update tickit
-    public Tickits updateTickit(Long id, TickitsDto request) {
-        Tickits tickit = getTickitById(id);
+    // =========================================================
+    // UPDATE TICKIT
+    // =========================================================
 
-        Long targetPartyId = request.getPartyId() != null ? request.getPartyId() : tickit.getParty().getPartyId();
-        Parties party = partiesRepository.findById(targetPartyId)
-                .orElseThrow(() -> new RuntimeException("Party not found with id: " + targetPartyId));
+    public Tickits updateTickit(
+            Long id,
+            TickitsDto request
+    ) {
 
-        if (tickitsRepository.existsByTickitNameIgnoreCaseAndPartyPartyIdAndTickitIdNot(
-                request.getTickitName(), targetPartyId, id)) {
-            throw new RuntimeException("Tickit with this name already exists for this party");
+        Tickits tickit =
+                getTickitById(id);
+
+        if (request.getTickitName() == null ||
+                request.getTickitName().trim().isEmpty()) {
+
+            throw new RuntimeException(
+                    "Tickit name is required"
+            );
         }
 
-        tickit.setTickitName(request.getTickitName());
-        tickit.setParty(party);
+        String tickitName =
+                request.getTickitName().trim();
+
+        // Check duplicate name,
+        // but ignore the current tickit
+        if (tickitsRepository
+                .existsByTickitNameIgnoreCaseAndTickitIdNot(
+                        tickitName,
+                        id
+                )) {
+
+            throw new RuntimeException(
+                    "Tickit with this name already exists"
+            );
+        }
+
+        tickit.setTickitName(
+                tickitName
+        );
 
         return tickitsRepository.save(tickit);
     }
 
-    // Soft delete tickit
+    // =========================================================
+    // SOFT DELETE
+    // =========================================================
+
     public void deleteTickit(Long id) {
-        Tickits tickit = getTickitById(id);
+
+        Tickits tickit =
+                getTickitById(id);
+
         tickit.setActive(false);
+
         tickitsRepository.save(tickit);
     }
 }

@@ -40,7 +40,7 @@ export const FabricOrdersView = () => {
     orderNo: '',
     orderDate: new Date().toISOString().split('T')[0],
     partyId: '',
-    supplierId: '',
+    // supplierId: '',
     quality: '',
     rate: '',
     orderedMeters: '',
@@ -74,7 +74,7 @@ export const FabricOrdersView = () => {
       orderNo: `FO-${new Date().getFullYear()}-${Date.now().toString().slice(-4)}`,
       orderDate: new Date().toISOString().split('T')[0],
       partyId: parties.length > 0 ? parties[0].partyId : '',
-      supplierId: '',
+      // supplierId: '',
       quality: '',
       rate: '',
       orderedMeters: '',
@@ -91,7 +91,7 @@ export const FabricOrdersView = () => {
       orderNo: order.orderNo || '',
       orderDate: formatDate(order.orderDate),
       partyId: order.party?.partyId || '',
-      supplierId: order.supplier?.partyId || '',
+      // supplierId: order.supplier?.partyId || '',
       quality: order.quality || '',
       rate: order.rate || '',
       orderedMeters: order.orderedMeters || '',
@@ -109,7 +109,7 @@ export const FabricOrdersView = () => {
         orderNo: formData.orderNo,
         orderDate: formData.orderDate,
         partyId: Number(formData.partyId),
-        supplierId: formData.supplierId ? Number(formData.supplierId) : null,
+        // supplierId: formData.supplierId ? Number(formData.supplierId) : null,
         quality: formData.quality,
         rate: formData.rate ? Number(formData.rate) : null,
         orderedMeters: formData.orderedMeters ? Number(formData.orderedMeters) : null,
@@ -405,13 +405,13 @@ export const FabricOrdersView = () => {
               />
             </div>
 
-            <div className="form-group">
+            {/* <div className="form-group">
               <label>Supplier Party</label>
               <select className="form-control" value={formData.supplierId} onChange={(e) => setFormData({ ...formData, supplierId: e.target.value })}>
                 <option value="">-- Select Supplier --</option>
                 {parties.map(party => <option key={party.partyId} value={party.partyId}>{party.partyName}</option>)}
               </select>
-            </div>
+            </div> */}
 
 
 
