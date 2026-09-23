@@ -2,6 +2,7 @@ import React from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
+import ErrorBoundary from './components/ErrorBoundary';
 import { ToastContainer } from './components/Toast';
 
 import { DashboardView } from './views/DashboardView';
@@ -41,7 +42,9 @@ const MainContent = () => {
       <Sidebar />
       <div className="main-wrapper">
         <Header />
-        {renderActiveView()}
+        <ErrorBoundary>
+          {renderActiveView()}
+        </ErrorBoundary>
       </div>
       <ToastContainer />
     </div>

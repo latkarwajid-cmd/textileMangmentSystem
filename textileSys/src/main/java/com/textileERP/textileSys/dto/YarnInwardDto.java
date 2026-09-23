@@ -16,8 +16,11 @@ public class YarnInwardDto {
     private LocalDate inwardDate;
     private Long countId;
     private Long tickitId;
+    private BigDecimal originalBags;
     private BigDecimal bags;
+    private String type;
     private BigDecimal weightKg;
+    private BigDecimal weightPerBag;
     private Long supplierId;
     private Long storageLocationId;
     private Long storageSizingId;
@@ -32,6 +35,8 @@ public class YarnInwardDto {
     private BigDecimal paidAmount;
     private BigDecimal receivedPayment;
     private BigDecimal billAmount;
+    private BigDecimal originalYCone;
+    private BigDecimal yCone;
 
     private Integer days;
     private BigDecimal receivable;

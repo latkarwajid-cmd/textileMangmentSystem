@@ -16,10 +16,10 @@ import java.time.LocalDate;
 @Table(name = "beam_inward")
 public class BeamInward {
 
-        @Id
-        @GeneratedValue(strategy = GenerationType.IDENTITY)
-        @Column(name = "beam_id")
-        private Long beamId;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "beam_inward_id")
+    private Long beamId;
 
     @Column(name = "inward_no", length = 50)
     private String inwardNo;

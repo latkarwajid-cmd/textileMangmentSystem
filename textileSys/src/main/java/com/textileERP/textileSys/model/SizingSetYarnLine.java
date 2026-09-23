@@ -2,11 +2,7 @@ package com.textileERP.textileSys.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 
 import java.math.BigDecimal;
 
@@ -55,10 +51,23 @@ public class SizingSetYarnLine {
     @Column(name = "weight_kg", precision = 10, scale = 2)
     private BigDecimal weightKg;
 
+    @Column(name = "weight_per_bag", precision = 12, scale = 3)
+    private BigDecimal weightPerBag;
+
     @Column(name = "remark", length = 500)
     private String remark;
 
+    /*
+     * Yarn In source
+     */
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "yarn_inward_id")
     private YarnInward yarnInward;
+
+    /*
+     * Sizing In source
+     */
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "sizing_inward_id")
+    private SizingYarnInward sizingInward;
 }
