@@ -75,12 +75,17 @@ public class SizingSetService {
             if (existing.getSetNo() == null) {
                 continue;
             }
+            // Skip soft-deleted records so they don't inflate the counter
+            if ("DELETED".equalsIgnoreCase(existing.getStatus())) {
+                continue;
+            }
             Matcher matcher = SET_NUMBER.matcher(existing.getSetNo().trim());
             if (matcher.find()) {
                 maxNumber = Math.max(maxNumber, Integer.parseInt(matcher.group(1)));
             }
         }
-        return String.format("SET-%04d", maxNumber + 1);
+        // Pad to 2 digits only: single-digit gets one leading zero (SET-01), 10+ have none
+        return String.format("SET-%02d", maxNumber + 1);
     }
 
     @Transactional

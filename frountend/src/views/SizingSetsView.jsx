@@ -59,13 +59,16 @@ const toNumberOrNull = (value) => {
 const nextSetNoFromList = (existingSets = []) => {
   let maxNumber = 0;
   existingSets.forEach(item => {
+    // Skip soft-deleted records so they don't inflate the counter
+    if ((item?.status || '').toUpperCase() === 'DELETED') return;
     const match = String(item?.setNo || '').match(/(\d+)$/);
     if (match) {
       const parsed = Number(match[1]);
       if (!Number.isNaN(parsed) && parsed > maxNumber) maxNumber = parsed;
     }
   });
-  return `SET-${String(maxNumber + 1).padStart(4, '0')}`;
+  // 2-digit padding: single digit gets one leading zero (SET-01), 10+ no extra zeros
+  return `SET-${String(maxNumber + 1).padStart(2, '0')}`;
 };
 
 const createEmptyHeader = () => ({
@@ -418,12 +421,15 @@ export const SizingSetsView = () => {
     if (!window.confirm(`Are you sure you want to delete Sizing Set ${sizingSet.setNo}?`)) {
       return;
     }
+    // Optimistically remove from UI immediately
+    setSizingSets(prev => prev.filter(s => s.sizingSetId !== sizingSet.sizingSetId));
     try {
       await api.sizingSets.delete(sizingSet.sizingSetId);
       addToast(`Sizing set ${sizingSet.setNo} deleted`, 'success');
-      await fetchSizingSets();
     } catch (err) {
+      // On failure, do a proper refetch to restore the list in correct order
       addToast(err.message || 'Failed to delete sizing set', 'error');
+      await fetchSizingSets();
     }
   };
 
@@ -912,11 +918,14 @@ export const SizingSetsView = () => {
                 onChange={e => setSearch(e.target.value)}
               />
             </div>
-            <button className="btn btn-primary" onClick={openCreateEditor}>
-              <Plus size={18} />
-              <span>New Sizing Set</span>
-            </button>
           </div>
+        </div>
+
+        <div style={{ margin: '16px 0', display: 'flex', justifyContent: 'flex-start' }}>
+          <button className="btn btn-primary" onClick={openCreateEditor}>
+            <Plus size={18} />
+            <span>New Sizing Set</span>
+          </button>
         </div>
 
         <div className="table-responsive">
