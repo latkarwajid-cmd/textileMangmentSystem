@@ -20,36 +20,84 @@ public class TickitsController {
         this.tickitsService = tickitsService;
     }
 
+    // =========================================================
+    // GET ALL ACTIVE TICKITS
+    // =========================================================
+
     @GetMapping
     public ResponseEntity<List<Tickits>> getAllTickits() {
-        return ResponseEntity.ok(tickitsService.getAllTickits());
+
+        return ResponseEntity.ok(
+                tickitsService.getAllTickits()
+        );
     }
+
+    // =========================================================
+    // GET TICKIT BY ID
+    // =========================================================
 
     @GetMapping("/{id}")
-    public ResponseEntity<Tickits> getTickitById(@PathVariable Long id) {
-        return ResponseEntity.ok(tickitsService.getTickitById(id));
+    public ResponseEntity<Tickits> getTickitById(
+            @PathVariable Long id
+    ) {
+
+        return ResponseEntity.ok(
+                tickitsService.getTickitById(id)
+        );
     }
 
-    @GetMapping("/party/{partyId}")
-    public ResponseEntity<List<Tickits>> getTickitsByPartyId(@PathVariable Long partyId) {
-        return ResponseEntity.ok(tickitsService.getTickitsByPartyId(partyId));
-    }
+    // =========================================================
+    // CREATE TICKIT
+    // =========================================================
 
     @PostMapping
-    public ResponseEntity<Tickits> createTickit(@RequestBody TickitsDto request) {
-        Tickits savedTickit = tickitsService.createTickit(request);
-        return new ResponseEntity<>(savedTickit, HttpStatus.CREATED);
+    public ResponseEntity<Tickits> createTickit(
+            @RequestBody TickitsDto request
+    ) {
+
+        Tickits savedTickit =
+                tickitsService.createTickit(request);
+
+        return new ResponseEntity<>(
+                savedTickit,
+                HttpStatus.CREATED
+        );
     }
+
+    // =========================================================
+    // UPDATE TICKIT
+    // =========================================================
 
     @PutMapping("/{id}")
-    public ResponseEntity<Tickits> updateTickit(@PathVariable Long id, @RequestBody TickitsDto request) {
-        Tickits updatedTickit = tickitsService.updateTickit(id, request);
-        return ResponseEntity.ok(updatedTickit);
+    public ResponseEntity<Tickits> updateTickit(
+            @PathVariable Long id,
+            @RequestBody TickitsDto request
+    ) {
+
+        Tickits updatedTickit =
+                tickitsService.updateTickit(
+                        id,
+                        request
+                );
+
+        return ResponseEntity.ok(
+                updatedTickit
+        );
     }
 
+    // =========================================================
+    // SOFT DELETE TICKIT
+    // =========================================================
+
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteTickit(@PathVariable Long id) {
+    public ResponseEntity<String> deleteTickit(
+            @PathVariable Long id
+    ) {
+
         tickitsService.deleteTickit(id);
-        return ResponseEntity.ok("Tickit deleted successfully");
+
+        return ResponseEntity.ok(
+                "Tickit deleted successfully"
+        );
     }
 }

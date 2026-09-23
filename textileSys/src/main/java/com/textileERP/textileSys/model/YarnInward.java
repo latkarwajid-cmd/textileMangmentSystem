@@ -37,11 +37,23 @@ public class YarnInward {
     @JoinColumn(name = "tickit_id")
     private Tickits tickit;
 
+    @Column(name = "original_bags", precision = 12, scale = 3)
+    private BigDecimal originalBags;
+
+    @Column(name = "original_weight_kg", precision = 12, scale = 3)
+    private BigDecimal originalWeightKg;
+
     @Column(name = "bags", precision = 12, scale = 3)
     private BigDecimal bags;
 
+    @Column(name = "type", length = 20, nullable = false)
+    private String type = "FRESH";
+
     @Column(name = "weight_kg", precision = 12, scale = 3)
     private BigDecimal weightKg;
+
+    @Column(name = "weight_per_bag", precision = 12, scale = 3)
+    private BigDecimal weightPerBag;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "supplier_id")
@@ -89,6 +101,11 @@ public class YarnInward {
 
     @Column(name = "bill_amount", precision = 14, scale = 2)
     private BigDecimal billAmount;
+    @Column(name = "original_cone", precision = 12, scale = 3)
+    private BigDecimal originalYCone;
+
+    @Column(name = "cone", precision = 12, scale = 3)
+    private BigDecimal yCone;
 
 //NEW CHANGES IN DB
     @Column(name = "days")

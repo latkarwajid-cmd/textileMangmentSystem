@@ -9,5 +9,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class TickitsDto {
     private String tickitName;
-    private Long partyId;
+//    private Long partyId;
 }

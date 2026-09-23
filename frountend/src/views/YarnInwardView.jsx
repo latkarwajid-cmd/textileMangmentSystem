@@ -49,7 +49,9 @@ export const YarnInwardView = () => {
     storageSizingId: '',
     storagePartyId: '',
     bags: '',
+    yCone: '',
     weightKg: '',
+    weightPerBag: '',
     rate: '',
     gstPercent: '5.0',
     calculatedAmount: '',
@@ -126,6 +128,7 @@ export const YarnInwardView = () => {
       storageSizingId: '',
       storagePartyId: '',
       bags: '',
+      yCone: '',
       weightKg: '',
       rate: '',
       gstPercent: '5.0',
@@ -148,7 +151,9 @@ export const YarnInwardView = () => {
       storageSizingId: item.storageSizingUnit?.sizingId || '',
       storagePartyId: item.storageParty?.partyId || '',
       bags: item.bags || '',
+      yCone: item.yCone ?? '',
       weightKg: item.weightKg || '',
+      weightPerBag: item.weightPerBag || '',
       rate: item.rate || '',
       gstPercent: item.gstPercent || '5.0',
       calculatedAmount: item.calculatedAmount || '',
@@ -171,7 +176,9 @@ export const YarnInwardView = () => {
         storageSizingId: formData.storageSizingId ? Number(formData.storageSizingId) : null,
         storagePartyId: formData.storagePartyId ? Number(formData.storagePartyId) : null,
         bags: formData.bags ? Number(formData.bags) : null,
+        yCone: formData.yCone !== '' ? Number(formData.yCone) : null,
         weightKg: formData.weightKg ? Number(formData.weightKg) : null,
+        weightPerBag: formData.weightPerBag ? Number(formData.weightPerBag) : null,
         rate: formData.rate ? Number(formData.rate) : null,
         gstPercent: formData.gstPercent ? Number(formData.gstPercent) : null,
         calculatedAmount: formData.calculatedAmount ? Number(formData.calculatedAmount) : null,
@@ -286,7 +293,10 @@ export const YarnInwardView = () => {
                 <th>Stored At</th>
                 <th>Yarn Count</th>
                 <th>Tickit</th>
+                  <th>Weight/Bag (Kg)</th>
+                <th>Type</th>
                 <th>Bags</th>
+                <th>Cone</th>
                 <th>Weight (Kg)</th>
                 <th>Rate (₹)</th>
                 <th>Amount (₹)</th>
@@ -324,7 +334,14 @@ export const YarnInwardView = () => {
                     <td>{item.storageLocation?.locationName || '-'}</td>
                     <td>{item.count?.countName || '-'}</td>
                     <td>{item.tickit?.tickitName || '-'}</td>
-                    <td>{item.bags || '-'}</td>
+                    <td>{item.weightPerBag ? `${item.weightPerBag} kg` : '-'}</td>
+                    <td>
+                      <span className={`badge ${item.type === 'USED' ? 'badge-warning' : 'badge-success'}`}>
+                        {item.type || 'FRESH'}
+                      </span>
+                    </td>
+                    <td>{item.bags ?? '-'}</td>
+                    <td>{item.yCone ?? '-'}</td>
                     <td style={{ fontWeight: 600 }}>{item.weightKg ? `${item.weightKg} kg` : '-'}</td>
                     <td>{item.rate ? `₹${item.rate}` : '-'}</td>
                     <td style={{ color: 'var(--primary-blue-dark)', fontWeight: 700 }}>
@@ -518,6 +535,19 @@ export const YarnInwardView = () => {
             </div>
 
             <div className="form-group">
+              <label>Cone</label>
+              <input
+                type="number"
+                step="0.001"
+                min="0"
+                className="form-control"
+                value={formData.yCone}
+                onChange={(e) => setFormData({ ...formData, yCone: e.target.value })}
+                placeholder="e.g. 1000"
+              />
+            </div>
+
+            <div className="form-group">
               <label>Net Weight (Kg) *</label>
               <input
                 type="number"
@@ -527,6 +557,18 @@ export const YarnInwardView = () => {
                 onChange={(e) => setFormData({ ...formData, weightKg: e.target.value })}
                 placeholder="e.g. 500.000"
                 required
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Weight per Bag (Kg)</label>
+              <input
+                type="number"
+                step="0.001"
+                className="form-control"
+                value={formData.weightPerBag}
+                onChange={(e) => setFormData({ ...formData, weightPerBag: e.target.value })}
+                placeholder="e.g. 50.000"
               />
             </div>
 
@@ -652,8 +694,8 @@ export const YarnInwardView = () => {
                 <div>{viewDetailItem.tickit?.tickitName || '-'}</div>
               </div>
               <div>
-                <strong style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>BAGS / WEIGHT</strong>
-                <div>{viewDetailItem.bags || 0} Bags | {viewDetailItem.weightKg || 0} kg</div>
+                <strong style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>BAGS / CONE / WEIGHT</strong>
+                <div>{viewDetailItem.bags || 0} Bags | {viewDetailItem.yCone ?? 0} Cone | {viewDetailItem.weightKg || 0} kg</div>
               </div>
               <div>
                 <strong style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>RATE (₹) & GST %</strong>

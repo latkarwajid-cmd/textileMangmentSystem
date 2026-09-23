@@ -24,10 +24,10 @@ public class Tickits {
 
     @Column(name = "tickit_name", length = 100, nullable = false)
     private String tickitName;
-
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "party_id", nullable = false)
-    private Parties party;
+//
+//    @ManyToOne(fetch = FetchType.EAGER)
+//    @JoinColumn(name = "party_id", nullable = false)
+//    private Parties party;
 
     @Column(name = "active")
     private Boolean active = true;

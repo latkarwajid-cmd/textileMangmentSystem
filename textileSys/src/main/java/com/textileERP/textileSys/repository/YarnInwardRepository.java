@@ -4,6 +4,7 @@ import com.textileERP.textileSys.model.YarnInward;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -23,4 +24,6 @@ public interface YarnInwardRepository extends JpaRepository<YarnInward, Long> {
     List<YarnInward> findByInwardDateBetween(LocalDate startDate, LocalDate endDate);
 
     List<YarnInward> findByBillNoIgnoreCase(String billNo);
+
+    List<YarnInward> findByBagsGreaterThan(BigDecimal value);
 }

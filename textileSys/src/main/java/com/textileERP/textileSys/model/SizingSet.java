@@ -1,13 +1,9 @@
 package com.textileERP.textileSys.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import jakarta.persistence.*;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -70,6 +66,10 @@ public class SizingSet {
     @Column(name = "sizing_meters", precision = 12, scale = 3)
     private BigDecimal sizingMeters;
 
+    /*
+     * Fields moved from YarnOutSizing
+     */
+
     @Column(name = "out_date")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate outDate;
@@ -116,7 +116,12 @@ public class SizingSet {
     @Column(name = "status", length = 50)
     private String status;
 
-    @OneToMany(mappedBy = "sizingSet", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @OneToMany(
+            mappedBy = "sizingSet",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true,
+            fetch = FetchType.EAGER
+    )
     @JsonManagedReference
     private List<SizingSetYarnLine> yarnLines = new ArrayList<>();
 }

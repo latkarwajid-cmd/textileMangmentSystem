@@ -7,7 +7,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping({"/api/yarn-inward", "/api/yarninward", "/api/yarn-inwards"})
@@ -45,18 +47,41 @@ public class YarnInwardController {
         return ResponseEntity.ok(yarnInwardService.getYarnInwardsByPaymentStatus(status));
     }
 
-
     @PostMapping
     public ResponseEntity<YarnInward> createYarnInward(@RequestBody YarnInwardDto request) {
         YarnInward savedYarnInward = yarnInwardService.createYarnInward(request);
         return new ResponseEntity<>(savedYarnInward, HttpStatus.CREATED);
     }
+
     @PutMapping("/{id}")
-    public ResponseEntity<YarnInward> updateYarnInward(
-            @PathVariable Long id,
-            @RequestBody YarnInwardDto request) {
+    public ResponseEntity<YarnInward> updateYarnInward(@PathVariable Long id, @RequestBody YarnInwardDto request) {
         YarnInward updatedYarnInward = yarnInwardService.updateYarnInward(id, request);
         return ResponseEntity.ok(updatedYarnInward);
+    }
+
+    @PatchMapping("/{id}/issue")
+    public ResponseEntity<YarnInward> issueYarn(
+            @PathVariable Long id,
+            @RequestBody Map<String, BigDecimal> request) {
+
+        BigDecimal givenBags = request.get("givenBags");
+        BigDecimal givenCones = request.get("givenCones");
+
+        if (givenBags == null) {
+            throw new RuntimeException("givenBags is required.");
+        }
+
+        if (givenCones == null) {
+            throw new RuntimeException("givenCones is required.");
+        }
+
+        return ResponseEntity.ok(
+                yarnInwardService.issueYarn(
+                        id,
+                        givenBags,
+                        givenCones
+                )
+        );
     }
 
     @DeleteMapping("/{id}")

@@ -8,7 +8,8 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Repository
-public interface SizingYarnInwardRepository extends JpaRepository<SizingYarnInward, Long> {
+public interface SizingYarnInwardRepository
+        extends JpaRepository<SizingYarnInward, Long> {
 
     List<SizingYarnInward> findBySizingSetSizingSetId(Long sizingSetId);
 
@@ -22,5 +23,8 @@ public interface SizingYarnInwardRepository extends JpaRepository<SizingYarnInwa
 
     List<SizingYarnInward> findByTickitTickitId(Long tickitId);
 
-    List<SizingYarnInward> findByInwardDateBetween(LocalDate startDate, LocalDate endDate);
+    List<SizingYarnInward> findByInwardDateBetween(
+            LocalDate startDate,
+            LocalDate endDate
+    );
 }
