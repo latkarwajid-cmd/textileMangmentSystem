@@ -2133,25 +2133,6 @@ export const SizingSetsView = () => {
     );
   };
 
-<<<<<<< HEAD
-  const handleDelete = async (sizingSet) => {
-    if (!sizingSet) return;
-    if (!window.confirm(`Are you sure you want to delete Sizing Set ${sizingSet.setNo}?`)) {
-      return;
-    }
-    // Optimistically remove from UI immediately
-    setSizingSets(prev => prev.filter(s => s.sizingSetId !== sizingSet.sizingSetId));
-    try {
-      await api.sizingSets.delete(sizingSet.sizingSetId);
-      addToast(`Sizing set ${sizingSet.setNo} deleted`, 'success');
-    } catch (err) {
-      // On failure, do a proper refetch to restore the list in correct order
-      addToast(err.message || 'Failed to delete sizing set', 'error');
-      await fetchSizingSets();
-    }
-  };
-=======
->>>>>>> 91bc13abe298ec749112afc05d8f06550e518190
 
   /* =========================================================
      SUBMIT
@@ -4185,43 +4166,16 @@ export const SizingSetsView = () => {
               />
 
             </div>
-<<<<<<< HEAD
-=======
-
 
             <button
               className="btn btn-primary"
-              onClick={
-                openCreateEditor
-              }
+              onClick={openCreateEditor}
             >
-
-              <Plus
-                size={18}
-              />
-
-              <span>
-                New Sizing Set
-              </span>
-
+              <Plus size={18} />
+              <span>New Sizing Set</span>
             </button>
-
->>>>>>> 91bc13abe298ec749112afc05d8f06550e518190
           </div>
-
         </div>
-
-<<<<<<< HEAD
-        <div style={{ margin: '16px 0', display: 'flex', justifyContent: 'flex-start' }}>
-          <button className="btn btn-primary" onClick={openCreateEditor}>
-            <Plus size={18} />
-            <span>New Sizing Set</span>
-          </button>
-        </div>
-
-        <div className="table-responsive">
-          <table className="data-table">
-=======
 
         {/* LIST TABLE */}
 
@@ -4233,7 +4187,6 @@ export const SizingSetsView = () => {
             className="data-table"
           >
 
->>>>>>> 91bc13abe298ec749112afc05d8f06550e518190
             <thead>
 
               <tr>

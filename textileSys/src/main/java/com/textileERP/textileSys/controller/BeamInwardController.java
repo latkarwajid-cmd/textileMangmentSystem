@@ -1,5 +1,6 @@
 package com.textileERP.textileSys.controller;
 
+import com.textileERP.textileSys.dto.BeamInwardBatchDto;
 import com.textileERP.textileSys.dto.BeamInwardDto;
 import com.textileERP.textileSys.model.BeamInward;
 import com.textileERP.textileSys.service.BeamInwardService;
@@ -8,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping({"/api/beam-inward", "/api/beaminward"})
@@ -25,9 +27,19 @@ public class BeamInwardController {
         return ResponseEntity.ok(beamInwardService.getAll());
     }
 
+    @GetMapping("/next-inward-no")
+    public ResponseEntity<Map<String, String>> getNextInwardNo() {
+        return ResponseEntity.ok(Map.of("inwardNo", beamInwardService.generateNextInwardNo()));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<BeamInward> getById(@PathVariable Long id) {
         return ResponseEntity.ok(beamInwardService.getById(id));
+    }
+
+    @GetMapping("/inward-no/{inwardNo}")
+    public ResponseEntity<List<BeamInward>> getByInwardNo(@PathVariable String inwardNo) {
+        return ResponseEntity.ok(beamInwardService.getByInwardNo(inwardNo));
     }
 
     @GetMapping("/order/{orderId}")
@@ -46,6 +58,19 @@ public class BeamInwardController {
         return new ResponseEntity<>(saved, HttpStatus.CREATED);
     }
 
+    @PostMapping("/batch")
+    public ResponseEntity<List<BeamInward>> createBatch(@RequestBody BeamInwardBatchDto request) {
+        List<BeamInward> saved = beamInwardService.createBatch(request);
+        return new ResponseEntity<>(saved, HttpStatus.CREATED);
+    }
+
+    @PostMapping({"/complete", "/completes"})
+    public ResponseEntity<List<BeamInward>> completeInward(@RequestBody com.textileERP.textileSys.dto.BeamInwardCompleteDto request) {
+        List<BeamInward> saved = beamInwardService.completeInward(request);
+        return new ResponseEntity<>(saved, HttpStatus.CREATED);
+    }
+
+
     @PutMapping("/{id}")
     public ResponseEntity<BeamInward> update(@PathVariable Long id, @RequestBody BeamInwardDto request) {
         BeamInward updated = beamInwardService.update(id, request);
@@ -58,3 +83,4 @@ public class BeamInwardController {
         return ResponseEntity.ok("Beam inward deleted successfully");
     }
 }
+

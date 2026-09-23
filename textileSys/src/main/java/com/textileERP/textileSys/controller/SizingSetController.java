@@ -44,6 +44,12 @@ public class SizingSetController {
         return ResponseEntity.ok(sizingSetService.getSizingSetById(id));
     }
 
+    @GetMapping("/{id}/inward-lookup")
+    public ResponseEntity<Map<String, Object>> getInwardLookup(@PathVariable Long id) {
+        return ResponseEntity.ok(sizingSetService.getInwardLookup(id));
+    }
+
+
     @PostMapping
     public ResponseEntity<SizingSet> createSizingSet(@RequestBody SizingSetDto request) {
         return new ResponseEntity<>(sizingSetService.createSizingSet(request), HttpStatus.CREATED);

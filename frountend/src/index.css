@@ -807,6 +807,204 @@ textarea.form-control {
   padding: 10px 8px;
 }
 
+/* =========================================================
+   SIZED BEAM INWARD & EQUIPMENT TRACKING STYLES
+========================================================= */
+
+.form-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 1200px) {
+  .form-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .form-grid-4 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form-control-readonly {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  font-weight: 600;
+  border-color: #cbd5e1 !important;
+  cursor: not-allowed;
+}
+
+.beam-table-container {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.beam-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.beam-table th {
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 10px 8px;
+  border-bottom: 2px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.beam-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.beam-table tr:hover td {
+  background-color: #f8fafc;
+}
+
+.beam-table-input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-family: inherit;
+  color: var(--text-main);
+  background: #ffffff;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.beam-table-input:focus {
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 2px var(--primary-blue-light);
+}
+
+.beam-badge-stock {
+  background-color: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+  font-weight: 600;
+}
+
+.beam-badge-loom {
+  background-color: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  font-weight: 600;
+}
+
+.beam-badge-completed {
+  background-color: #f3f4f6;
+  color: #4b5563;
+  border: 1px solid #e5e7eb;
+  font-weight: 600;
+}
+
+.tab-nav {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 20px;
+}
+
+.tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.tab-btn:hover {
+  color: var(--text-main);
+  background-color: #f8fafc;
+}
+
+.tab-btn.active {
+  color: var(--primary-blue-dark);
+  border-bottom-color: var(--primary-blue);
+  background-color: var(--primary-blue-light);
+}
+
+/* Sub-Tab Navigation (White Slip vs Pink Slip) */
+.subtab-nav {
+  display: flex;
+  gap: 8px;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: var(--radius-md);
+  margin-bottom: 16px;
+  width: fit-content;
+}
+
+.subtab-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.85rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.subtab-btn:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.subtab-btn.active-white {
+  background: #ffffff;
+  color: var(--primary-blue-dark);
+  box-shadow: var(--shadow-sm);
+  font-weight: 700;
+}
+
+.subtab-btn.active-pink {
+  background: #fff1f2;
+  color: #e11d48;
+  border: 1px solid #fecdd3;
+  box-shadow: var(--shadow-sm);
+  font-weight: 700;
+}
+
+.badge-pink {
+  background-color: #ffe4e6;
+  color: #be123c;
+  border: 1px solid #fecdd3;
+  font-weight: 600;
+}
+
+.reconciliation-card {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+}
+
+
+
 @media (max-width: 768px) {
   .sidebar {
     display: none;
