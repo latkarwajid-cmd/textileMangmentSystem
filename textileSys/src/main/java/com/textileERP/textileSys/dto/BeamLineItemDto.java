@@ -31,5 +31,7 @@ public class BeamLineItemDto {
 
     private String status;
 
+    private String storedAt;
+
     private String remark;
 }

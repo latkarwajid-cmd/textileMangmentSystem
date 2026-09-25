@@ -88,6 +88,7 @@ const createEmptyBeamRow = (srNo = 1, beamNo = '') => ({
   tareWeight: '',
   netWeight: '',
   status: 'In Stock',
+  storedAt: '',
   remark: ''
 });
 
@@ -125,10 +126,7 @@ export const BeamInwardView = () => {
   const [header, setHeader] = useState(createEmptyHeader());
 
   // Form State: Tab 1 (White Slip - Sized Beams Grid)
-  const [beamRows, setBeamRows] = useState([
-    createEmptyBeamRow(1, '1'),
-    createEmptyBeamRow(2, '2')
-  ]);
+  const [beamRows, setBeamRows] = useState([createEmptyBeamRow(1, '1')]);
 
   // Form State: Tab 2 (Pink Slip - Yarn Reconciliation & Balance Return)
   const [reconciliation, setReconciliation] = useState({
@@ -184,25 +182,25 @@ export const BeamInwardView = () => {
         setHeader(prev => ({ ...prev, inwardNo: res.inwardNo }));
       }
     } catch (e) {
-      // Fallback local calculation starting at 1 (BINW-01)
-      const maxNo = allBeams.reduce((max, b) => {
+      // Fallback: read current beams from the repo directly to avoid stale closure
+      const list = await api.beamInward.getAll().catch(() => []);
+      const maxNo = (Array.isArray(list) ? list : []).reduce((max, b) => {
         const match = String(b.inwardNo || '').match(/(\d+)$/);
         return match ? Math.max(max, parseInt(match[1], 10)) : max;
       }, 0);
       setHeader(prev => ({ ...prev, inwardNo: `BINW-${String(maxNo + 1).padStart(2, '0')}` }));
     }
-  }, [allBeams]);
+  }, []); // stable — no external state dependencies
 
+  // Init: fetch data and generate the first inward number once on mount only
+  const initDoneRef = React.useRef(false);
   useEffect(() => {
+    if (initDoneRef.current) return;
+    initDoneRef.current = true;
     fetchAllBeams();
     fetchSizingSets();
-  }, [fetchAllBeams, fetchSizingSets]);
-
-  useEffect(() => {
-    if (!header.inwardNo) {
-      generateNextInwardNumber();
-    }
-  }, [generateNextInwardNumber, header.inwardNo]);
+    generateNextInwardNumber();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* =========================================================
      REACTIVITY: SIZING SET LOOKUP (Zero Full-Page Reload)
@@ -401,11 +399,7 @@ export const BeamInwardView = () => {
       // Raw Yarn Issued Metrics for Tab 2 Reconciliation
       const issuedBags = lookup?.issuedBags || targetSet.bags || (targetSet.yarnLines ? targetSet.yarnLines.reduce((acc, l) => acc + (parseFloat(l.bags) || 0), 0) : '') || '';
       const issuedWeight = lookup?.issuedWeightKg || targetSet.weightKg || (targetSet.yarnLines ? targetSet.yarnLines.reduce((acc, l) => acc + (parseFloat(l.weightKg) || 0), 0) : '') || '';
-      let issuedCones = lookup?.issuedCones || targetSet.cone || (targetSet.yarnLines ? targetSet.yarnLines.reduce((acc, l) => acc + (parseFloat(l.cones) || 0), 0) : '') || '';
-
-      if (!issuedCones && issuedBags) {
-        issuedCones = Math.round(parseFloat(issuedBags) * 32);
-      }
+      const issuedCones = issuedBags ? Math.round(parseFloat(issuedBags) * 32) : '';
 
       setHeader(prev => ({
         ...prev,
@@ -574,7 +568,7 @@ export const BeamInwardView = () => {
   const reconciliationSummary = useMemo(() => {
     const issuedBags = parseFloat(reconciliation.totalIssuedBags) || 0;
     const conesPerBag = parseFloat(reconciliation.conesPerBag) || 32;
-    const issuedCones = parseFloat(reconciliation.totalIssuedCones) || (issuedBags * conesPerBag);
+    const issuedCones = issuedBags * conesPerBag;
     const issuedGrossWeight = parseFloat(reconciliation.issuedGrossWeight) || 0;
     const tareGrams = parseFloat(reconciliation.emptyConeTareGrams) || 60; // 60g default
 
@@ -681,6 +675,7 @@ export const BeamInwardView = () => {
           netWeight: r.netWeight ? parseFloat(r.netWeight) : null,
           weightKg: r.netWeight ? parseFloat(r.netWeight) : null,
           status: r.status || 'In Stock',
+          storedAt: r.storedAt || null,
           remark: r.remark?.trim() || null
         })),
 
@@ -716,7 +711,7 @@ export const BeamInwardView = () => {
 
       // Reset Form & Generate Next Inward Number
       setHeader(createEmptyHeader());
-      setBeamRows([createEmptyBeamRow(1, '1'), createEmptyBeamRow(2, '2')]);
+      setBeamRows([createEmptyBeamRow(1, '1')]);
       setReconciliation({
         totalIssuedBags: '',
         totalIssuedCones: '',
@@ -738,7 +733,7 @@ export const BeamInwardView = () => {
   const handleResetForm = () => {
     if (window.confirm('Are you sure you want to clear the form?')) {
       setHeader(createEmptyHeader());
-      setBeamRows([createEmptyBeamRow(1, '1'), createEmptyBeamRow(2, '2')]);
+      setBeamRows([createEmptyBeamRow(1, '1')]);
       setReconciliation({
         totalIssuedBags: '',
         totalIssuedCones: '',
@@ -784,6 +779,7 @@ export const BeamInwardView = () => {
       tareWeight: beam.tareWeight || '',
       netWeight: beam.netWeight || beam.weightKg || '',
       status: beam.status || 'In Stock',
+      storedAt: beam.storedAt || '',
       shed: beam.shed || '',
       remark: beam.remark || ''
     });
@@ -812,6 +808,7 @@ export const BeamInwardView = () => {
         netWeight: net,
         weightKg: net,
         status: editForm.status,
+        storedAt: editForm.storedAt || null,
         shed: editForm.shed,
         remark: editForm.remark,
         sizingSetId: editBeamModal.sizingSet?.sizingSetId,
@@ -916,7 +913,7 @@ export const BeamInwardView = () => {
                 Sized Beam Inward & Yarn Reconciliation
               </h2>
               <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                Receive sized warp beams (White Slip) and reconcile raw yarn stock & returns (Pink Slip)
+                Receive sized warp beams and reconcile raw yarn stock & returns
               </span>
             </div>
           </div>
@@ -1220,23 +1217,12 @@ export const BeamInwardView = () => {
               onClick={() => setEntrySubTab('white-slip')}
             >
               <Layers size={16} />
-              <span>Tab 1: Sized Beams List (White Slip)</span>
+              <span>Sized Beams List</span>
               <span className="badge badge-info" style={{ fontSize: '0.7rem' }}>
                 {beamRows.length} Beams
               </span>
             </button>
 
-            <button
-              type="button"
-              className={`subtab-btn ${entrySubTab === 'pink-slip' ? 'active-pink' : ''}`}
-              onClick={() => setEntrySubTab('pink-slip')}
-            >
-              <Scale size={16} />
-              <span>Tab 2: Yarn Reconciliation & Balance Return (Pink Slip)</span>
-              <span className="badge badge-pink" style={{ fontSize: '0.7rem' }}>
-                {formatNum(reconciliationSummary.netYarnConsumedKg, 2)} kg Consumed
-              </span>
-            </button>
           </div>
 
           {/* =========================================================
@@ -1249,7 +1235,7 @@ export const BeamInwardView = () => {
                   <Layers size={18} color="var(--primary-blue-dark)" />
                   <div>
                     <h3 style={{ fontSize: '0.95rem', fontWeight: 700, margin: 0 }}>
-                      Tab 1: Sized Beams List ({beamRows.length} Beams)
+                      Sized Beams List ({beamRows.length} {beamRows.length === 1 ? 'Beam' : 'Beams'})
                     </h3>
                     <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                       Log individual physical warp beams with flange IDs, cuts, meters, and gross/tare weights
@@ -1283,6 +1269,7 @@ export const BeamInwardView = () => {
                           <th style={{ width: 110 }}>Tare Wt (kg)</th>
                           <th style={{ width: 120 }}>Net Yarn Wt (kg)</th>
                           <th style={{ width: 140 }}>Status</th>
+                          <th style={{ width: 170 }}>Stored At</th>
                           <th>Remark</th>
                           <th style={{ width: 50, textAlign: 'center' }}>Action</th>
                         </tr>
@@ -1404,6 +1391,22 @@ export const BeamInwardView = () => {
                               </select>
                             </td>
 
+                            {/* Stored At */}
+                            <td>
+                              <select
+                                className="beam-table-input"
+                                value={row.storedAt}
+                                onChange={e => handleBeamCellChange(row.id, 'storedAt', e.target.value)}
+                              >
+                                <option value="">-- Select Location --</option>
+                                {[...yarnStorageLocations].sort((first, second) => first.locationName.localeCompare(second.locationName)).map(location => (
+                                  <option key={location.storageLocationId} value={location.locationName}>
+                                    {location.locationName}
+                                  </option>
+                                ))}
+                              </select>
+                            </td>
+
                             {/* Remark */}
                             <td>
                               <input
@@ -1435,7 +1438,7 @@ export const BeamInwardView = () => {
                       <tfoot>
                         <tr style={{ background: '#f8fafc', borderTop: '2px solid var(--border-color)' }}>
                           <td colSpan="3" style={{ fontWeight: 700, textAlign: 'right', padding: '10px 12px' }}>
-                            White Slip Summary ({beamRows.length} Beams):
+                            Beam Summary ({beamRows.length} Beams):
                           </td>
                           <td style={{ fontWeight: 700, color: 'var(--text-main)' }}>
                             {formatNum(beamTotals.totalCuts, 2)} cuts
@@ -1452,7 +1455,7 @@ export const BeamInwardView = () => {
                           <td style={{ fontWeight: 700, color: '#059669', textAlign: 'right' }}>
                             {beamTotals.totalNet > 0 ? `${formatNum(beamTotals.totalNet, 2)} kg` : '-'}
                           </td>
-                          <td colSpan="3"></td>
+                          <td colSpan="4"></td>
                         </tr>
                       </tfoot>
                     </table>
@@ -1474,7 +1477,7 @@ export const BeamInwardView = () => {
                     <Scale size={18} color="#e11d48" />
                     <div>
                       <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#9f1239', margin: 0 }}>
-                        Section 2A: Issued Raw Yarn Parameters (Auto-Pulled from Sizing Set)
+                        Section 2A: Issued Raw Yarn Parameters
                       </h3>
                       <span style={{ fontSize: '0.75rem', color: '#be123c' }}>
                         Baseline yarn quantity sent to sizing unit for tare deduction and consumption calculation
@@ -1519,8 +1522,9 @@ export const BeamInwardView = () => {
                       <input
                         type="number"
                         className="form-control"
-                        value={reconciliation.totalIssuedCones}
-                        onChange={e => setReconciliation({ ...reconciliation, totalIssuedCones: e.target.value })}
+                        value={reconciliationSummary.issuedCones}
+                        readOnly
+                        style={{ background: '#f8fafc' }}
                         placeholder="e.g. 896"
                       />
                     </div>
@@ -1814,25 +1818,9 @@ export const BeamInwardView = () => {
           {/* Form Action Controls (Global for Single Workflow) */}
           <div style={{ padding: '0 4px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              {entrySubTab === 'white-slip' ? (
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setEntrySubTab('pink-slip')}
-                >
-                  <span>Go to Yarn Reconciliation (Pink Slip)</span>
-                  <ArrowRight size={16} />
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setEntrySubTab('white-slip')}
-                >
-                  <ArrowDownLeft size={16} />
-                  <span>Back to Sized Beams List</span>
-                </button>
-              )}
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                Yarn reconciliation is recorded in Yarn Return from Sizing.
+              </span>
             </div>
 
             <div style={{ display: 'flex', gap: 12 }}>
@@ -1922,19 +1910,20 @@ export const BeamInwardView = () => {
                   <th>Meters</th>
                   <th>Net Wt</th>
                   <th>Status</th>
+                  <th>Stored At</th>
                   <th style={{ textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan="13" style={{ textAlign: 'center', padding: 32 }}>
+                    <td colSpan="14" style={{ textAlign: 'center', padding: 32 }}>
                       Loading beam inward records...
                     </td>
                   </tr>
                 ) : filteredBeams.length === 0 ? (
                   <tr>
-                    <td colSpan="13" style={{ textAlign: 'center', padding: 36, color: 'var(--text-muted)' }}>
+                    <td colSpan="14" style={{ textAlign: 'center', padding: 36, color: 'var(--text-muted)' }}>
                       No sized beam inward records found matching your filters.
                     </td>
                   </tr>
@@ -1963,6 +1952,7 @@ export const BeamInwardView = () => {
                       <td style={{ fontWeight: 600 }}>{formatNum(beam.meter, 2)} m</td>
                       <td>{beam.netWeight ? `${formatNum(beam.netWeight, 2)} kg` : (beam.weightKg ? `${formatNum(beam.weightKg, 2)} kg` : '-')}</td>
                       <td>{renderStatusBadge(beam.status)}</td>
+                      <td>{beam.storedAt || '-'}</td>
                       <td style={{ textAlign: 'right' }}>
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
                           <button
@@ -2126,6 +2116,11 @@ export const BeamInwardView = () => {
             </div>
 
             <div>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Stored At:</span>
+              <div style={{ fontWeight: 600 }}>{viewBeamModal.storedAt || '-'}</div>
+            </div>
+
+            <div>
               <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Current Status:</span>
               <div style={{ marginTop: 4 }}>{renderStatusBadge(viewBeamModal.status)}</div>
             </div>
@@ -2274,6 +2269,22 @@ export const BeamInwardView = () => {
                   <option value="In Stock">In Stock</option>
                   <option value="Loaded on Loom">Loaded on Loom</option>
                   <option value="Completed">Completed</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Stored At</label>
+                <select
+                  className="form-control"
+                  value={editForm.storedAt}
+                  onChange={e => setEditForm({ ...editForm, storedAt: e.target.value })}
+                >
+                  <option value="">-- Select Location --</option>
+                  {[...yarnStorageLocations].sort((first, second) => first.locationName.localeCompare(second.locationName)).map(location => (
+                    <option key={location.storageLocationId} value={location.locationName}>
+                      {location.locationName}
+                    </option>
+                  ))}
                 </select>
               </div>
 

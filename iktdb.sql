@@ -582,6 +582,7 @@ CREATE TABLE beam_inward (
     party_id BIGINT,
 
     status VARCHAR(30),
+    stored_at VARCHAR(100),
     remark TEXT,
 
     CONSTRAINT fk_beam_set
@@ -745,4 +746,62 @@ CREATE TABLE fabric_dispatch (
     CONSTRAINT fk_dispatch_party
         FOREIGN KEY (party_id)
         REFERENCES parties(party_id)
+);
+
+
+-- =========================================================
+-- 20. BEAM INWARD
+-- Tracks individual physical warp beams received from sizing
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS beam_inward (
+    beam_inward_id  BIGINT PRIMARY KEY AUTO_INCREMENT,
+
+    inward_no       VARCHAR(50),
+    inward_date     DATE,
+    challan_no      VARCHAR(50),
+    challan_date    DATE,
+
+    sizing_set_id   BIGINT,
+    order_id        BIGINT,
+    sizing_id       BIGINT,
+    party_id        BIGINT,
+    count_id        BIGINT,
+    tickit_id       BIGINT,
+
+    shed            VARCHAR(100),
+    quality         VARCHAR(255),
+    total_ends      INT,
+    total_beams_count INT,
+
+    beam_no         VARCHAR(50),
+    flange_no       VARCHAR(50),
+    cuts            DECIMAL(10,2),
+    meter           DECIMAL(12,3),
+    gross_weight    DECIMAL(12,3),
+    tare_weight     DECIMAL(12,3),
+    net_weight      DECIMAL(12,3),
+    weight_kg       DECIMAL(12,3),
+
+    status          VARCHAR(50),
+    stored_at       VARCHAR(100),
+    remark          TEXT,
+
+    CONSTRAINT fk_beam_inward_set
+        FOREIGN KEY (sizing_set_id) REFERENCES sizing_sets(sizing_set_id),
+
+    CONSTRAINT fk_beam_inward_order
+        FOREIGN KEY (order_id) REFERENCES fabric_orders(order_id),
+
+    CONSTRAINT fk_beam_inward_sizing
+        FOREIGN KEY (sizing_id) REFERENCES sizing_units(sizing_id),
+
+    CONSTRAINT fk_beam_inward_party
+        FOREIGN KEY (party_id) REFERENCES parties(party_id),
+
+    CONSTRAINT fk_beam_inward_count
+        FOREIGN KEY (count_id) REFERENCES yarn_counts(count_id),
+
+    CONSTRAINT fk_beam_inward_tickit
+        FOREIGN KEY (tickit_id) REFERENCES tickits(tickit_id)
 );

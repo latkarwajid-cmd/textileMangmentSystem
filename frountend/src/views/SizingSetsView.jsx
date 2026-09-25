@@ -187,6 +187,10 @@ export const SizingSetsView = () => {
   const [issueRows, setIssueRows] =
     useState([]);
 
+  // Rows confirmed with Done stay out of the picker for this sizing-set form.
+  const [excludedIssueKeys, setExcludedIssueKeys] =
+    useState([]);
+
   const [issueSearch, setIssueSearch] =
     useState('');
 
@@ -465,6 +469,8 @@ export const SizingSetsView = () => {
        * Start with NO allocation rows.
        */
       setYarnLines([]);
+      setExcludedIssueKeys([]);
+      setIssueRows([]);
 
       setEditorOpen(true);
 
@@ -483,6 +489,8 @@ export const SizingSetsView = () => {
       setEditingSet(
         sizingSet
       );
+      setExcludedIssueKeys([]);
+      setIssueRows([]);
 
 
       setHeader({
@@ -1269,24 +1277,11 @@ export const SizingSetsView = () => {
                 );
 
 
-              const originalBags =
-                Number(
-                  item.bags ?? 0
-                );
-
-
-              const alreadyAllocated =
-                Number(
-                  allocatedMap[key] || 0
-                );
-
-
-              const remainingBags =
-                Math.max(
-                  0,
-                  originalBags -
-                  alreadyAllocated
-                );
+              // Sizing-yarn inward records store current remaining stock.
+              // The backend deducts bags when this source is issued, so do
+              // not subtract the persisted allocation map a second time.
+              const originalBags = Number(item.bags ?? 0);
+              const remainingBags = Math.max(0, originalBags);
 
 
               /*
@@ -1430,7 +1425,7 @@ export const SizingSetsView = () => {
 
 
         setIssueRows(
-          sortedRows
+          sortedRows.filter(row => !excludedIssueKeys.includes(row.key))
         );
 
 
@@ -1450,7 +1445,8 @@ export const SizingSetsView = () => {
 
     }, [
       addToast,
-      buildAllocatedMap
+      buildAllocatedMap,
+      excludedIssueKeys
     ]);
 
 
@@ -1467,7 +1463,9 @@ export const SizingSetsView = () => {
         'all'
       );
 
-      await fetchIssueRows();
+      if (issueRows.length === 0 && excludedIssueKeys.length === 0) {
+        await fetchIssueRows();
+      }
 
       setIssueModalOpen(true);
 
@@ -1939,15 +1937,38 @@ export const SizingSetsView = () => {
         ]
       );
 
+      const fullyIssuedKeys = selected
+        .filter(row => Number(row.issueBags || 0) >= Number(row.remainingBags || 0))
+        .map(row => row.key);
+
+      setExcludedIssueKeys(prev => [
+        ...new Set([
+          ...prev,
+          ...fullyIssuedKeys
+        ])
+      ]);
+
 
       /*
        * Remove selected rows
        * from current Issue Yarn list.
        */
-      setIssueRows(prev =>
-        prev.filter(
-          row => !row.checked
-        )
+      setIssueRows(prev => prev
+        .filter(row => !fullyIssuedKeys.includes(row.key))
+        .map(row => {
+          const issued = selected.find(selectedRow => selectedRow.key === row.key);
+          if (!issued) return row;
+
+          const remainingBags = Number(row.remainingBags || 0) - Number(issued.issueBags || 0);
+          return {
+            ...row,
+            checked: false,
+            issueBags: '',
+            issueCones: 0,
+            remainingBags: Math.max(0, remainingBags),
+            bags: Math.max(0, remainingBags)
+          };
+        })
       );
 
 
@@ -2327,9 +2348,9 @@ export const SizingSetsView = () => {
                 ),
 
               sourceFrom:
-                line.sourceLabel ||
-                line.sourceFrom ||
-                null,
+                line.sourceType === 'sizingIn'
+                  ? 'Sizing'
+                  : (line.sourceLabel || line.sourceFrom || null),
 
               freshWinding:
                 line.type === 'USED'
