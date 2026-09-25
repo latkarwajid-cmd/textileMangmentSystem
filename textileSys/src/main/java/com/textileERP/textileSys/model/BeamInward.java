@@ -98,6 +98,9 @@ public class BeamInward {
     @Column(name = "status", length = 50)
     private String status;
 
+    @Column(name = "stored_at", length = 100)
+    private String storedAt;
+
     @Column(name = "remark", columnDefinition = "TEXT")
     private String remark;
 }

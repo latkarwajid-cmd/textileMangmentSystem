@@ -58,5 +58,7 @@ public class BeamInwardDto {
 
     private String status;
 
+    private String storedAt;
+
     private String remark;
-}
+}

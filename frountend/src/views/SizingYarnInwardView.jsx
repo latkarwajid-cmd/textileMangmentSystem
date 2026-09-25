@@ -1,13 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { api } from '../services/api';
-import { Plus, Search, Edit2, Trash2, RotateCcw, Factory, Building2 } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, RotateCcw, Scale, Calculator } from 'lucide-react';
 import { Modal } from '../components/Modal';
 import { OrderNumberField } from '../components/OrderNumberField';
 
+const createEmptyReturnRow = (srNo = 1, countAndTicket = '', countId = '', tickitId = '') => ({
+  id: `ret-${Date.now()}-${Math.random()}`,
+  srNo,
+  itemType: 'Partial / Loose Bag',
+  countId,
+  tickitId,
+  countAndTicket,
+  bagsReturned: '',
+  conesReturned: '',
+  returnedWeightKg: '',
+  destinationWarehouse: 'Main Raw Yarn Warehouse',
+  remark: ''
+});
+
 export const SizingYarnInwardView = () => {
-  const { parties, fabricOrders, tickits, yarnCounts, sizingUnits, addToast } = useApp();
+  const { parties, fabricOrders, tickits, yarnCounts, sizingUnits, yarnStorageLocations, addToast } = useApp();
   const [inwardList, setInwardList] = useState([]);
+  const [sizingSets, setSizingSets] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
 
@@ -15,6 +30,7 @@ export const SizingYarnInwardView = () => {
   const [editingItem, setEditingItem] = useState(null);
   const [formData, setFormData] = useState({
     sizingSetId: '1',
+    setNo: '',
     orderNo: '',
     orderId: '',
     sizingId: '',
@@ -25,6 +41,8 @@ export const SizingYarnInwardView = () => {
     bags: '',
     weightKg: '',
     remark: '',
+    reconciliation: { totalIssuedBags: '', emptyConeTareGrams: '60', conesPerBag: '32', issuedGrossWeight: '' },
+    balanceReturns: [],
   });
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -44,12 +62,14 @@ export const SizingYarnInwardView = () => {
 
   useEffect(() => {
     fetchInwardList();
+    api.sizingSets.getAll().then(data => setSizingSets(Array.isArray(data) ? data.filter(s => s.status !== 'DELETED') : [])).catch(() => {});
   }, []);
 
   const openCreateModal = () => {
     setEditingItem(null);
     setFormData({
       sizingSetId: '1',
+      setNo: '',
       orderNo: '',
       orderId: '',
       sizingId: sizingUnits.length > 0 ? sizingUnits[0].sizingId : '',
@@ -60,6 +80,8 @@ export const SizingYarnInwardView = () => {
       bags: '',
       weightKg: '',
       remark: '',
+      reconciliation: { totalIssuedBags: '', emptyConeTareGrams: '60', conesPerBag: '32', issuedGrossWeight: '' },
+      balanceReturns: [createEmptyReturnRow(1)],
     });
     setIsModalOpen(true);
   };
@@ -68,6 +90,7 @@ export const SizingYarnInwardView = () => {
     setEditingItem(item);
     setFormData({
       sizingSetId: item.sizingSet?.sizingSetId || '1',
+      setNo: item.sizingSet?.setNo || '',
       orderNo: item.order?.orderNo || '',
       orderId: item.order?.orderId || '',
       sizingId: item.sizingUnit?.sizingId || '',
@@ -78,6 +101,8 @@ export const SizingYarnInwardView = () => {
       bags: item.bags || '',
       weightKg: item.weightKg || '',
       remark: item.remark || '',
+      reconciliation: { totalIssuedBags: '', emptyConeTareGrams: '60', conesPerBag: '32', issuedGrossWeight: '' },
+      balanceReturns: [createEmptyReturnRow(1, '', item.count?.countId || '', item.tickit?.tickitId || '')],
     });
     setIsModalOpen(true);
   };
@@ -85,25 +110,35 @@ export const SizingYarnInwardView = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const payload = {
+      const returnRows = formData.balanceReturns?.filter(row => row.returnedWeightKg || row.bagsReturned || row.conesReturned) || [];
+      const rowsToSave = returnRows.length ? returnRows : [{ countId: formData.countId, tickitId: formData.tickitId, bagsReturned: formData.bags, returnedWeightKg: formData.weightKg, itemType: 'Partial / Loose Bag', destinationWarehouse: 'Main Raw Yarn Warehouse', remark: formData.remark }];
+      const makePayload = row => ({
         sizingSetId: formData.sizingSetId ? Number(formData.sizingSetId) : null,
         orderNo: formData.orderNo || null,
         orderId: formData.orderId ? Number(formData.orderId) : null,
         sizingId: formData.sizingId ? Number(formData.sizingId) : null,
         inwardDate: formData.inwardDate,
-        countId: formData.countId ? Number(formData.countId) : null,
-        tickitId: formData.tickitId ? Number(formData.tickitId) : null,
+        countId: row.countId ? Number(row.countId) : (formData.countId ? Number(formData.countId) : null),
+        tickitId: row.tickitId ? Number(row.tickitId) : (formData.tickitId ? Number(formData.tickitId) : null),
         partyId: formData.partyId ? Number(formData.partyId) : null,
-        bags: formData.bags ? Number(formData.bags) : null,
-        weightKg: formData.weightKg ? Number(formData.weightKg) : null,
-        remark: formData.remark,
-      };
+        bags: row.bagsReturned ? Number(row.bagsReturned) : null,
+        weightKg: row.returnedWeightKg ? Number(row.returnedWeightKg) : null,
+        remark: [
+          row.itemType,
+          `Count & Ticket: ${row.countAndTicket || '-'}`,
+          `Cones Returned: ${row.conesReturned || 0}`,
+          `Destination: ${row.destinationWarehouse || '-'}`,
+          `Issued: ${formData.reconciliation.totalIssuedBags || 0} bags / ${reconciliationSummary.issuedCones} cones / ${formData.reconciliation.issuedGrossWeight || 0} kg`,
+          `Tare: ${formData.reconciliation.emptyConeTareGrams || 60} g`,
+          row.remark || formData.remark
+        ].filter(Boolean).join(' | '),
+      });
 
       if (editingItem) {
-        await api.sizingYarnInward.update(editingItem.sizingInwardId, payload);
+        await api.sizingYarnInward.update(editingItem.sizingInwardId, makePayload(rowsToSave[0]));
         addToast('Sizing Yarn Inward updated successfully', 'success');
       } else {
-        await api.sizingYarnInward.create(payload);
+        await Promise.all(rowsToSave.map(row => api.sizingYarnInward.create(makePayload(row))));
         addToast('Sizing Yarn Inward recorded successfully', 'success');
       }
       setIsModalOpen(false);
@@ -125,6 +160,55 @@ export const SizingYarnInwardView = () => {
     }));
   };
 
+  const handleSizingSetChange = async sizingSetId => {
+    const selectedSet = sizingSets.find(set => String(set.sizingSetId) === String(sizingSetId));
+    if (!sizingSetId) {
+      setFormData(prev => ({ ...prev, sizingSetId: '', setNo: '' }));
+      return;
+    }
+    try {
+      const lookup = await api.sizingSets.getInwardLookup(sizingSetId);
+      const set = selectedSet || {};
+      const order = set.order || {};
+      const party = set.party || order.party || {};
+      const count = set.count || order.count || {};
+      const tickit = set.tickit || order.tickit || {};
+      setFormData(prev => ({
+        ...prev,
+        sizingSetId,
+        setNo: lookup?.setNo || set.setNo || '',
+        orderNo: lookup?.orderNo || order.orderNo || prev.orderNo,
+        orderId: lookup?.orderId || order.orderId || prev.orderId,
+        sizingId: lookup?.sizingId || set.sizingUnit?.sizingId || prev.sizingId,
+        partyId: lookup?.partyId || party.partyId || prev.partyId,
+        countId: lookup?.countId || count.countId || prev.countId,
+        tickitId: lookup?.tickitId || tickit.tickitId || prev.tickitId,
+        bags: lookup?.issuedBags || prev.bags,
+        weightKg: lookup?.issuedWeightKg || prev.weightKg,
+        reconciliation: { ...prev.reconciliation, totalIssuedBags: lookup?.issuedBags || prev.reconciliation.totalIssuedBags, issuedGrossWeight: lookup?.issuedWeightKg || prev.reconciliation.issuedGrossWeight },
+        balanceReturns: (prev.balanceReturns?.length ? prev.balanceReturns : [createEmptyReturnRow(1)]).map(row => ({ ...row, countId: lookup?.countId || count.countId || row.countId, tickitId: lookup?.tickitId || tickit.tickitId || row.tickitId, countAndTicket: lookup?.countAndTicket || row.countAndTicket }))
+      }));
+    } catch {
+      addToast('Could not load sizing set details', 'error');
+    }
+  };
+
+  const updateReturnRow = (id, field, value) => setFormData(prev => ({ ...prev, balanceReturns: prev.balanceReturns.map(row => row.id === id ? { ...row, [field]: value } : row) }));
+  const addReturnRow = () => setFormData(prev => ({ ...prev, balanceReturns: [...(prev.balanceReturns || []), createEmptyReturnRow((prev.balanceReturns || []).length + 1, '', prev.countId, prev.tickitId)] }));
+  const removeReturnRow = id => setFormData(prev => ({ ...prev, balanceReturns: prev.balanceReturns.length === 1 ? [createEmptyReturnRow(1, '', prev.countId, prev.tickitId)] : prev.balanceReturns.filter(row => row.id !== id).map((row, index) => ({ ...row, srNo: index + 1 })) }));
+
+  const reconciliationSummary = (() => {
+    const issuedBags = Number(formData.reconciliation?.totalIssuedBags) || 0;
+    const conesPerBag = Number(formData.reconciliation?.conesPerBag) || 32;
+    const issuedCones = issuedBags * conesPerBag;
+    const tareKg = issuedCones * ((Number(formData.reconciliation?.emptyConeTareGrams) || 60) / 1000);
+    const issuedGrossWeight = Number(formData.reconciliation?.issuedGrossWeight) || 0;
+    const returnedWeight = (formData.balanceReturns || []).reduce((sum, row) => sum + (Number(row.returnedWeightKg) || 0), 0);
+    const returnedBags = (formData.balanceReturns || []).reduce((sum, row) => sum + (Number(row.bagsReturned) || 0), 0);
+    const returnedCones = (formData.balanceReturns || []).reduce((sum, row) => sum + (Number(row.conesReturned) || 0), 0);
+    return { issuedBags, issuedCones, tareKg, issuedGrossWeight, returnedWeight, returnedBags, returnedCones, consumed: Math.max(0, issuedGrossWeight - tareKg - returnedWeight) };
+  })();
+
   const handleDelete = async () => {
     if (!itemToDelete) return;
     try {
@@ -138,12 +222,14 @@ export const SizingYarnInwardView = () => {
     }
   };
 
-  const filteredList = inwardList.filter(item => 
-    item.party?.partyName?.toLowerCase().includes(search.toLowerCase()) ||
-    item.order?.orderNo?.toLowerCase().includes(search.toLowerCase()) ||
-    item.sizingUnit?.sizingName?.toLowerCase().includes(search.toLowerCase()) ||
-    item.count?.countName?.toLowerCase().includes(search.toLowerCase()) ||
-    item.tickit?.tickitName?.toLowerCase().includes(search.toLowerCase())
+  const filteredList = inwardList.filter(item =>
+    Number(item.bags ?? 0) > 0 && (
+      item.party?.partyName?.toLowerCase().includes(search.toLowerCase()) ||
+      item.order?.orderNo?.toLowerCase().includes(search.toLowerCase()) ||
+      item.sizingUnit?.sizingName?.toLowerCase().includes(search.toLowerCase()) ||
+      item.count?.countName?.toLowerCase().includes(search.toLowerCase()) ||
+      item.tickit?.tickitName?.toLowerCase().includes(search.toLowerCase())
+    )
   );
 
   return (
@@ -274,14 +360,20 @@ export const SizingYarnInwardView = () => {
             </div>
 
             <div className="form-group">
-              <label>Sizing Set ID</label>
-              <input
-                type="number"
+              <label>Sizing Set</label>
+              <select
                 className="form-control"
                 value={formData.sizingSetId}
-                onChange={(e) => setFormData({ ...formData, sizingSetId: e.target.value })}
-                placeholder="e.g. 1"
-              />
+                onChange={(e) => handleSizingSetChange(e.target.value)}
+              >
+                <option value="">-- Select Sizing Set --</option>
+                {sizingSets.map(set => <option key={set.sizingSetId} value={set.sizingSetId}>{set.setNo || `Set #${set.sizingSetId}`}</option>)}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label>Set No (Auto-filled)</label>
+              <input className="form-control" value={formData.setNo} readOnly placeholder="Select a sizing set" />
             </div>
 
             <div className="form-group">
@@ -371,6 +463,39 @@ export const SizingYarnInwardView = () => {
                 placeholder="e.g. 400.00"
                 required
               />
+            </div>
+
+            <div className="form-group col-span-2">
+              <div className="section-card-header" style={{ background: '#fff1f2', margin: '8px 0 12px', padding: '10px 14px' }}>
+                <div className="section-card-title"><Scale size={18} color="#e11d48" /><h3 style={{ margin: 0, fontSize: '0.95rem' }}>Yarn Reconciliation and Balance Return</h3></div>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={addReturnRow}><Plus size={14} /> Add Return Row</button>
+              </div>
+              <div className="form-grid-4">
+                <div className="form-group"><label>Total Yarn Issued (Bags)</label><input type="number" step="0.01" className="form-control" value={formData.reconciliation.totalIssuedBags} onChange={e => setFormData({ ...formData, reconciliation: { ...formData.reconciliation, totalIssuedBags: e.target.value } })} /></div>
+                <div className="form-group"><label>Cones Per Bag</label><input type="number" className="form-control" value={formData.reconciliation.conesPerBag} onChange={e => setFormData({ ...formData, reconciliation: { ...formData.reconciliation, conesPerBag: e.target.value } })} /></div>
+                <div className="form-group"><label>Total Issued Cones</label><input className="form-control" value={reconciliationSummary.issuedCones} readOnly /></div>
+                <div className="form-group"><label>Issued Gross Weight (Kg)</label><input type="number" step="0.001" className="form-control" value={formData.reconciliation.issuedGrossWeight} onChange={e => setFormData({ ...formData, reconciliation: { ...formData.reconciliation, issuedGrossWeight: e.target.value } })} /></div>
+                <div className="form-group"><label>Empty Cone Tare Weight (g)</label><input type="number" step="0.1" className="form-control" value={formData.reconciliation.emptyConeTareGrams} onChange={e => setFormData({ ...formData, reconciliation: { ...formData.reconciliation, emptyConeTareGrams: e.target.value } })} /></div>
+                <div className="form-group"><label>Net Yarn Issued (Kg)</label><input className="form-control" value={Math.max(0, reconciliationSummary.issuedGrossWeight - reconciliationSummary.tareKg).toFixed(3)} readOnly /></div>
+              </div>
+              <div className="table-responsive">
+                <table className="beam-table">
+                  <thead><tr><th>Sr.</th><th>Item Type</th><th>Yarn Count & Ticket</th><th>Bags Returned</th><th>Cones Returned</th><th>Returned Wt (Kg)</th><th>Destination Warehouse</th><th>Remark</th><th>Action</th></tr></thead>
+                  <tbody>{(formData.balanceReturns || []).map((row, index) => <tr key={row.id}>
+                    <td>{index + 1}</td>
+                    <td><select className="beam-table-input" value={row.itemType} onChange={e => updateReturnRow(row.id, 'itemType', e.target.value)}><option>Full Bag</option><option>Partial / Loose Bag</option><option>Empty Cones Scrap</option></select></td>
+                    <td><input className="beam-table-input" value={row.countAndTicket} onChange={e => updateReturnRow(row.id, 'countAndTicket', e.target.value)} placeholder="Count & Ticket" /></td>
+                    <td><input type="number" step="0.01" min="0" className="beam-table-input" value={row.bagsReturned} onChange={e => updateReturnRow(row.id, 'bagsReturned', e.target.value)} /></td>
+                    <td><input type="number" min="0" className="beam-table-input" value={row.conesReturned} onChange={e => updateReturnRow(row.id, 'conesReturned', e.target.value)} /></td>
+                    <td><input type="number" step="0.001" min="0" className="beam-table-input" value={row.returnedWeightKg} onChange={e => updateReturnRow(row.id, 'returnedWeightKg', e.target.value)} /></td>
+                    <td><select className="beam-table-input" value={row.destinationWarehouse} onChange={e => updateReturnRow(row.id, 'destinationWarehouse', e.target.value)}><option>Main Raw Yarn Warehouse</option><option>Shed 1 Raw Storage</option><option>Shed 2 Raw Storage</option><option>Kalawant Warehouse</option>{yarnStorageLocations.map(loc => <option key={loc.locationId} value={loc.locationName}>{loc.locationName}</option>)}</select></td>
+                    <td><input className="beam-table-input" value={row.remark} onChange={e => updateReturnRow(row.id, 'remark', e.target.value)} placeholder="Return notes" /></td>
+                    <td><button type="button" className="btn-icon" onClick={() => removeReturnRow(row.id)} title="Delete Return Row"><Trash2 size={14} /></button></td>
+                  </tr>)}</tbody>
+                  <tfoot><tr><td colSpan="3"><strong>Total Returned</strong></td><td>{reconciliationSummary.returnedBags || '-'}</td><td>{reconciliationSummary.returnedCones || '-'}</td><td>{reconciliationSummary.returnedWeight.toFixed(3)} kg</td><td colSpan="3"></td></tr></tfoot>
+                </table>
+              </div>
+              <div className="reconciliation-card" style={{ marginTop: 12 }}><Calculator size={18} /> Net Yarn Consumed: <strong>{reconciliationSummary.consumed.toFixed(3)} kg</strong></div>
             </div>
 
             <div className="form-group col-span-2">

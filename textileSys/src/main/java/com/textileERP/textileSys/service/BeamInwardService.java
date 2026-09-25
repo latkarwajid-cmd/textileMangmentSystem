@@ -229,6 +229,7 @@ public class BeamInwardService {
             b.setNetWeight(netWeight);
             b.setWeightKg(netWeight);
             b.setStatus(line.getStatus() != null && !line.getStatus().isBlank() ? line.getStatus() : "In Stock");
+            b.setStoredAt(line.getStoredAt());
             b.setRemark(line.getRemark() != null && !line.getRemark().isBlank() ? line.getRemark() : request.getRemark());
 
             savedList.add(beamInwardRepository.save(b));
@@ -416,6 +417,7 @@ public class BeamInwardService {
                 : (entity.getOrder() != null ? entity.getOrder().getQuality() : null));
 
         entity.setStatus(request.getStatus() == null || request.getStatus().isBlank() ? "In Stock" : request.getStatus());
+        entity.setStoredAt(request.getStoredAt());
         entity.setRemark(request.getRemark());
 
         if (request.getCountId() != null) {
