@@ -1065,28 +1065,7 @@ export const BeamInwardView = () => {
                   />
                 </div>
 
-                {/* 5. Sizing Party Name (Outside Sizer Unit) */}
-                <div className="form-group">
-                  <label>Sizing Party Name (Sizer Unit) *</label>
-                  <select
-                    className="form-control"
-                    value={header.sizingId}
-                    onChange={e => {
-                      const unit = sizingUnits.find(u => String(u.sizingId) === String(e.target.value));
-                      setHeader({ ...header, sizingId: e.target.value, sizingName: unit?.sizingName || '' });
-                    }}
-                    required
-                  >
-                    <option value="">-- Select Sizing Unit --</option>
-                    {sizingUnits.map(u => (
-                      <option key={u.sizingId} value={u.sizingId}>
-                        {u.sizingName}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* 6. Sizing Set No (Searchable/Select Dropdown) */}
+                                {/* 6. Sizing Set No (Searchable/Select Dropdown) */}
                 <div className="form-group">
                   <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span>Sizing Set No *</span>
@@ -1108,6 +1087,29 @@ export const BeamInwardView = () => {
                   </select>
                 </div>
 
+                {/* 5. Sizing Party Name (Outside Sizer Unit) */}
+                <div className="form-group">
+                  <label>Sizing Party Name (Sizer Unit) *</label>
+                  <select
+                    className="form-control"
+                    value={header.sizingId}
+                    onChange={e => {
+                      const unit = sizingUnits.find(u => String(u.sizingId) === String(e.target.value));
+                      setHeader({ ...header, sizingId: e.target.value, sizingName: unit?.sizingName || '' });
+                    }}
+                    required
+                  >
+                    <option value="">-- Select Sizing Unit --</option>
+                    {sizingUnits.map(u => (
+                      <option key={u.sizingId} value={u.sizingId}>
+                        {u.sizingName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+
+
                 {/* 7. Client / Party Name (Auto-filled & Editable) */}
                 <div className="form-group">
                   <label>Client / Party Name</label>
@@ -1122,7 +1124,7 @@ export const BeamInwardView = () => {
 
                 {/* 8. Shed / Mill Owner */}
                 <div className="form-group">
-                  <label>Shed / Mill Owner *</label>
+                  <label>Firm Name *</label>
                   <input
                     type="text"
                     className="form-control"
@@ -1266,7 +1268,7 @@ export const BeamInwardView = () => {
                           <th style={{ width: 95 }}>Cuts *</th>
                           <th style={{ width: 110 }}>Meters *</th>
                           <th style={{ width: 110 }}>Gross Wt (kg)</th>
-                          <th style={{ width: 110 }}>Tare Wt (kg)</th>
+                          <th style={{ width: 110 }}>Empty Beam Wt (kg)</th>
                           <th style={{ width: 120 }}>Net Yarn Wt (kg)</th>
                           <th style={{ width: 140 }}>Status</th>
                           <th style={{ width: 170 }}>Stored At</th>
@@ -1356,7 +1358,7 @@ export const BeamInwardView = () => {
                                 type="number"
                                 step="0.001"
                                 className="beam-table-input"
-                                placeholder="Tare (kg)"
+                                placeholder="Empty Beam Wt (kg)"
                                 value={row.tareWeight}
                                 onChange={e => handleBeamCellChange(row.id, 'tareWeight', e.target.value)}
                               />
@@ -1398,12 +1400,15 @@ export const BeamInwardView = () => {
                                 value={row.storedAt}
                                 onChange={e => handleBeamCellChange(row.id, 'storedAt', e.target.value)}
                               >
-                                <option value="">-- Select Location --</option>
-                                {[...yarnStorageLocations].sort((first, second) => first.locationName.localeCompare(second.locationName)).map(location => (
-                                  <option key={location.storageLocationId} value={location.locationName}>
-                                    {location.locationName}
-                                  </option>
-                                ))}
+                                <option value="">-- Select Weaver --</option>
+                                {parties
+                                  .filter(p => String(p.partyType || '').toUpperCase() === 'WEAVER')
+                                  .sort((a, b) => (a.partyName || '').localeCompare(b.partyName || ''))
+                                  .map(party => (
+                                    <option key={party.partyId} value={`Weaver (${party.partyName})`}>
+                                      {`Weaver (${party.partyName})`}
+                                    </option>
+                                  ))}
                               </select>
                             </td>
 
@@ -2279,12 +2284,15 @@ export const BeamInwardView = () => {
                   value={editForm.storedAt}
                   onChange={e => setEditForm({ ...editForm, storedAt: e.target.value })}
                 >
-                  <option value="">-- Select Location --</option>
-                  {[...yarnStorageLocations].sort((first, second) => first.locationName.localeCompare(second.locationName)).map(location => (
-                    <option key={location.storageLocationId} value={location.locationName}>
-                      {location.locationName}
-                    </option>
-                  ))}
+                  <option value="">-- Select Weaver --</option>
+                  {parties
+                    .filter(p => String(p.partyType || '').toUpperCase() === 'WEAVER')
+                    .sort((a, b) => (a.partyName || '').localeCompare(b.partyName || ''))
+                    .map(party => (
+                      <option key={party.partyId} value={`Weaver (${party.partyName})`}>
+                        {`Weaver (${party.partyName})`}
+                      </option>
+                    ))}
                 </select>
               </div>
 
