@@ -1,211 +1,159 @@
-import React, { useEffect, useState } from 'react';
-import { ArrowUpRight, Edit2, Plus, Search, Trash2 } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ArrowUpRight, Edit2, Plus, Save, Search, Trash2, X } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { api } from '../services/api';
 import { Modal } from '../components/Modal';
-import { OrderNumberField } from '../components/OrderNumberField';
 
-const emptyForm = {
-  sizingSetId: '', orderNo: '', orderId: '', outDate: new Date().toISOString().split('T')[0],
-  countId: '', tickitId: '', sizingId: '', partyId: '', bags: '', weightKg: '',
-  quality: '', totalEnds: '', sizingMeters: '', sizingReceivedWeight: '',
-  freshBagsReceived: '', balanceInSizing: '', sizingConsumptionKg: '', sizingCount: '',
-  billNo: '', status: 'OPEN',
-};
+const today = () => new Date().toISOString().split('T')[0];
+const emptyHeader = { gatePassNo: '', outDate: today(), orderId: '', firmName: '', dyeingUnitId: '', remark: '' };
+const emptyLine = () => ({ bags: '', cone: '', weightKg: '' });
 
 export const YarnOutDyeingView = () => {
-  const { parties, fabricOrders, tickits, yarnCounts, sizingUnits, addToast } = useApp();
-  const [sizingSets, setSizingSets] = useState([]);
+  const { parties, fabricOrders, addToast } = useApp();
   const [records, setRecords] = useState([]);
+  const [header, setHeader] = useState(emptyHeader);
+  const [lines, setLines] = useState([emptyLine()]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState(null);
-  const [formData, setFormData] = useState(emptyForm);
-  const [itemToDelete, setItemToDelete] = useState(null);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [editingRecord, setEditingRecord] = useState(null);
 
-  const fetchData = async () => {
+  const dyers = useMemo(() => parties.filter(party => (
+    party.status !== false && ['DYEING', 'DYER'].includes(party.partyType?.toUpperCase())
+  )), [parties]);
+  const selectedOrder = fabricOrders.find(order => String(order.orderId) === String(header.orderId));
+
+  const fetchRecords = async () => {
     setLoading(true);
     try {
-      const [recordsResult, setsResult] = await Promise.allSettled([
-        api.yarnOutDyeing.getAll(),
-        api.sizingSets.getAll(),
-      ]);
-
-      if (recordsResult.status === 'fulfilled') {
-        setRecords(Array.isArray(recordsResult.value) ? recordsResult.value : []);
-      } else {
-        setRecords([]);
-      }
-
-      if (setsResult.status === 'fulfilled') {
-        setSizingSets(Array.isArray(setsResult.value) ? setsResult.value : []);
-      } else {
-        setSizingSets([]);
-        addToast('Could not load sizing sets', 'error');
-      }
-    } catch (err) {
-      addToast(err.message || 'Failed to fetch dyeing records', 'error');
+      const data = await api.yarnOutDyeing.getAll();
+      setRecords(Array.isArray(data) ? data : []);
+    } catch (error) {
+      addToast(error.message || 'Failed to load yarn out dyeing records', 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchRecords(); }, []);
 
-  const openCreateModal = () => {
-    setEditingItem(null);
-    setFormData({
-      ...emptyForm,
-      sizingSetId: sizingSets[0]?.sizingSetId || '',
-      orderId: sizingSets[0]?.order?.orderId || '',
-      countId: sizingSets[0]?.count?.countId || '',
-      sizingId: sizingSets[0]?.sizingUnit?.sizingId || '',
-      partyId: sizingSets[0]?.party?.partyId || '',
-    });
+  const updateHeader = (field, value) => setHeader(previous => ({ ...previous, [field]: value }));
+  const updateLine = (index, field, value) => setLines(previous => previous.map((line, lineIndex) => (
+    lineIndex === index ? { ...line, [field]: value } : line
+  )));
+  const addLine = () => setLines(previous => [...previous, emptyLine()]);
+  const removeLine = index => setLines(previous => previous.length === 1 ? previous : previous.filter((_, lineIndex) => lineIndex !== index));
+  const resetDraft = () => { setHeader({ ...emptyHeader, outDate: today() }); setLines([emptyLine()]); };
+  const openModal = () => {
+    if (editingRecord) resetDraft();
+    setEditingRecord(null);
     setIsModalOpen(true);
   };
 
-  const openEditModal = (item) => {
-    setEditingItem(item);
-    setFormData({
-      sizingSetId: item.sizingSet?.sizingSetId || '', orderNo: item.order?.orderNo || '', orderId: item.order?.orderId || '',
-      outDate: item.outDate || '', countId: item.count?.countId || '',
-      tickitId: item.tickit?.tickitId || '', sizingId: item.sizingUnit?.sizingId || '',
-      partyId: item.party?.partyId || '', bags: item.bags || '', weightKg: item.weightKg || '',
-      quality: item.quality || '', totalEnds: item.totalEnds || '', sizingMeters: item.sizingMeters || '',
-      sizingReceivedWeight: item.sizingReceivedWeight || '', freshBagsReceived: item.freshBagsReceived || '',
-      balanceInSizing: item.balanceInSizing || '', sizingConsumptionKg: item.sizingConsumptionKg || '',
-      sizingCount: item.sizingCount || '', billNo: item.billNo || '', status: item.status || 'OPEN',
+  const openEditModal = record => {
+    setEditingRecord(record);
+    setHeader({
+      gatePassNo: record.gatePassNo || '',
+      outDate: record.outDate || today(),
+      orderId: record.order?.orderId || '',
+      firmName: record.firmName || '',
+      dyeingUnitId: record.party?.partyId || '',
+      remark: record.remark || '',
     });
+    setLines([{ bags: record.bags ?? '', cone: record.cone ?? '', weightKg: record.weightKg ?? '' }]);
     setIsModalOpen(true);
   };
 
-  const handleSetChange = (value) => {
-    const selectedSet = sizingSets.find(item => String(item.sizingSetId) === value);
-    setFormData(prev => ({
-      ...prev,
-      sizingSetId: value,
-      orderId: selectedSet?.order?.orderId || prev.orderId,
-      countId: selectedSet?.count?.countId || prev.countId,
-      sizingId: selectedSet?.sizingUnit?.sizingId || prev.sizingId,
-      partyId: selectedSet?.party?.partyId || prev.partyId,
-      quality: selectedSet?.quality || prev.quality,
-      totalEnds: selectedSet?.totalEnds || prev.totalEnds,
-      sizingMeters: selectedSet?.sizingMeters || prev.sizingMeters,
-      sizingCount: selectedSet?.sizingCount || prev.sizingCount,
-    }));
-  };
-
-  const handleOrderChange = orderNo => {
-    const order = fabricOrders.find(item => item.orderNo?.trim().toLowerCase() === orderNo.trim().toLowerCase());
-    setFormData(prev => ({
-      ...prev,
-      orderNo,
-      orderId: order?.orderId || '',
-      countId: order?.count?.countId || '',
-      tickitId: order?.tickit?.tickitId || '',
-      partyId: order?.party?.partyId || '',
-      quality: order?.quality || '',
-    }));
-  };
+  const handleOrderChange = orderId => setHeader(previous => ({ ...previous, orderId, firmName: previous.firmName }));
 
   const handleSubmit = async event => {
     event.preventDefault();
+    if (!selectedOrder || !header.dyeingUnitId) {
+      addToast('Select an order and dyeing unit before saving', 'error');
+      return;
+    }
+
+    setSaving(true);
     try {
-      const numericFields = ['sizingSetId', 'orderId', 'countId', 'tickitId', 'sizingId', 'partyId', 'totalEnds'];
-      const decimalFields = ['bags', 'weightKg', 'sizingMeters', 'sizingReceivedWeight', 'freshBagsReceived', 'balanceInSizing', 'sizingConsumptionKg'];
-      const payload = { ...formData };
-      delete payload.orderNo;
-      numericFields.forEach(field => { payload[field] = formData[field] ? Number(formData[field]) : null; });
-      decimalFields.forEach(field => { payload[field] = formData[field] ? Number(formData[field]) : null; });
-      if (editingItem) {
-        await api.yarnOutDyeing.update(editingItem.dyeingOutId, payload);
-        addToast('Yarn out dyeing record updated successfully', 'success');
+      const payloads = lines.map(line => ({
+        gatePassNo: header.gatePassNo || null,
+        outDate: header.outDate || null,
+        orderId: Number(header.orderId),
+        firmName: header.firmName || null,
+        dyeingUnitId: Number(header.dyeingUnitId),
+        countId: selectedOrder.count?.countId || editingRecord?.count?.countId || null,
+        tickitId: selectedOrder.tickit?.tickitId || editingRecord?.tickit?.tickitId || null,
+        bags: line.bags ? Number(line.bags) : null,
+        cone: line.cone ? Number(line.cone) : null,
+        weightKg: line.weightKg ? Number(line.weightKg) : null,
+        remark: header.remark || null,
+      }));
+      if (editingRecord) {
+        await api.yarnOutDyeing.update(editingRecord.dyeingOutId, payloads[0]);
+        addToast('Yarn dyeing row updated successfully', 'success');
       } else {
-        await api.yarnOutDyeing.create(payload);
-        addToast('Yarn out dyeing record created successfully', 'success');
+        await Promise.all(payloads.map(payload => api.yarnOutDyeing.create(payload)));
+        addToast(`${payloads.length} yarn dyeing row${payloads.length === 1 ? '' : 's'} saved successfully`, 'success');
       }
+      resetDraft();
+      setEditingRecord(null);
       setIsModalOpen(false);
-      fetchData();
-    } catch (err) {
-      addToast(err.message || 'Error saving dyeing record', 'error');
+      fetchRecords();
+    } catch (error) {
+      addToast(error.message || 'Failed to save yarn out dyeing records', 'error');
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = async record => {
     try {
-      await api.yarnOutDyeing.delete(itemToDelete.dyeingOutId);
-      addToast('Dyeing record deleted successfully', 'success');
-      setIsDeleteModalOpen(false);
-      setItemToDelete(null);
-      fetchData();
-    } catch (err) {
-      addToast(err.message || 'Failed to delete dyeing record', 'error');
+      await api.yarnOutDyeing.delete(record.dyeingOutId);
+      addToast('Yarn dyeing row deleted successfully', 'success');
+      fetchRecords();
+    } catch (error) {
+      addToast(error.message || 'Failed to delete yarn dyeing row', 'error');
     }
   };
 
-  const filteredRecords = records.filter(item => [
-    item.sizingSet?.setNo, item.order?.orderNo, item.sizingUnit?.sizingName,
-    item.party?.partyName, item.billNo, item.status,
-  ].some(value => value?.toLowerCase().includes(search.toLowerCase())));
-  const updateField = (field, value) => setFormData(prev => ({ ...prev, [field]: value }));
-  const selectOptions = (items, id, label) => items.map(item => <option key={item[id]} value={item[id]}>{item[label]}</option>);
+  const filteredRecords = records.filter(record => [
+    record.gatePassNo, record.order?.orderNo, record.firmName, record.party?.partyName,
+    record.count?.countName, record.tickit?.tickitName,
+  ].some(value => String(value || '').toLowerCase().includes(search.toLowerCase())));
 
   return (
     <div className="content-area">
       <div className="section-card">
         <div className="section-card-header">
           <div className="section-card-title"><ArrowUpRight size={20} color="var(--accent-rose)" /><h3>Yarn Out for Dyeing</h3><span className="badge badge-info">{filteredRecords.length} Records</span></div>
-          <div className="section-card-actions">
-            <div className="search-box"><Search size={16} /><input placeholder="Search set, order, party, bill..." value={search} onChange={event => setSearch(event.target.value)} /></div>
-          </div>
+          <div className="section-card-actions"><div className="search-box"><Search size={16} /><input placeholder="Search gate pass, order, firm, dyer..." value={search} onChange={event => setSearch(event.target.value)} /></div></div>
         </div>
-
-        <div style={{ margin: '16px 0', display: 'flex', justifyContent: 'flex-start' }}>
-          <button className="btn btn-primary" onClick={openCreateModal}>
-            <Plus size={18} />
-            <span>Record Yarn Out</span>
-          </button>
-        </div>
-
+        <div style={{ padding: '16px 20px' }}><button type="button" className="btn btn-primary" onClick={openModal}><Plus size={18} /> Record New Yarn Out</button></div>
         <div className="table-responsive">
-          <table className="data-table"><thead><tr>
-            <th>Set No (ID)</th><th>Date</th><th>Count</th><th>Tickit</th><th>Bags</th><th>Weight</th><th>Sizing Name</th><th>Party Name</th><th>Order No</th><th>Quality</th><th>Total Ends</th><th>Sizing Mtr</th><th>Received Khard</th><th>Fresh Bags</th><th>Balance</th><th>Consumption KG</th><th>Sizing Count</th><th>Bill No</th><th>Status</th><th>Actions</th>
-          </tr></thead><tbody>
-            {loading ? <tr><td colSpan="20" style={{ textAlign: 'center', padding: '32px' }}><div className="spinner" style={{ margin: '0 auto' }} /></td></tr> : filteredRecords.length === 0 ? <tr><td colSpan="20" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-dim)' }}>No yarn out dyeing records found.</td></tr> : filteredRecords.map(item => <tr key={item.dyeingOutId}>
-              <td>{item.sizingSet ? `${item.sizingSet.setNo || '-'} (ID: ${item.sizingSet.sizingSetId})` : '-'}</td><td>{item.outDate || '-'}</td><td>{item.count?.countName || '-'}</td><td>{item.tickit?.tickitName || '-'}</td><td>{item.bags || '-'}</td><td>{item.weightKg ? `${item.weightKg} kg` : '-'}</td><td>{item.sizingUnit?.sizingName || '-'}</td><td>{item.party?.partyName || '-'}</td><td>{item.order?.orderNo || '-'}</td><td>{item.quality || '-'}</td><td>{item.totalEnds || '-'}</td><td>{item.sizingMeters || '-'}</td><td>{item.sizingReceivedWeight || '-'}</td><td>{item.freshBagsReceived || '-'}</td><td>{item.balanceInSizing || '-'}</td><td>{item.sizingConsumptionKg || '-'}</td><td>{item.sizingCount || '-'}</td><td>{item.billNo || '-'}</td><td>{item.status || '-'}</td>
-              <td><div style={{ display: 'flex', gap: '8px' }}><button className="btn-icon" onClick={() => openEditModal(item)} title="Edit"><Edit2 size={16} /></button><button className="btn-icon" style={{ color: 'var(--accent-rose)' }} onClick={() => { setItemToDelete(item); setIsDeleteModalOpen(true); }} title="Delete"><Trash2 size={16} /></button></div></td>
-            </tr>)}
-          </tbody></table>
+          <table className="data-table"><thead><tr><th>Gate Pass</th><th>Date</th><th>Order No.</th><th>Firm</th><th>Dyeing Unit</th><th>Count</th><th>Tickit</th><th>Bags</th><th>Cones</th><th>Weight</th><th>Remarks</th><th>Actions</th></tr></thead>
+            <tbody>{loading ? <tr><td colSpan="12" style={{ textAlign: 'center', padding: '32px' }}><div className="spinner" style={{ margin: '0 auto' }} /></td></tr> : filteredRecords.length === 0 ? <tr><td colSpan="12" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-dim)' }}>No saved yarn out dyeing records found.</td></tr> : filteredRecords.map(record => <tr key={record.dyeingOutId}><td>{record.gatePassNo || '-'}</td><td>{record.outDate || '-'}</td><td>{record.order?.orderNo || '-'}</td><td>{record.firmName || '-'}</td><td>{record.party?.partyName || '-'}</td><td>{record.count?.countName || '-'}</td><td>{record.tickit?.tickitName || '-'}</td><td>{record.bags ?? '-'}</td><td>{record.cone ?? '-'}</td><td>{record.weightKg ? `${record.weightKg} kg` : '-'}</td><td>{record.remark || '-'}</td><td><div style={{ display: 'flex', gap: '6px' }}><button type="button" className="btn-icon" onClick={() => openEditModal(record)} title="Edit row"><Edit2 size={16} /></button><button type="button" className="btn-icon" style={{ color: 'var(--accent-rose)' }} onClick={() => handleDelete(record)} title="Delete row"><Trash2 size={16} /></button></div></td></tr>)}</tbody>
+          </table>
         </div>
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? `Edit Dyeing Entry #${editingItem.dyeingOutId}` : 'New Yarn Out for Dyeing'} size="lg">
-        <form onSubmit={handleSubmit}><div className="form-grid">
-          <div className="form-group"><label>Set No / ID *</label><select className="form-control" value={formData.sizingSetId} onChange={event => handleSetChange(event.target.value)} required><option value="">-- Select Set --</option>{sizingSets.map(item => <option key={item.sizingSetId} value={item.sizingSetId}>{item.setNo} (ID: {item.sizingSetId})</option>)}</select></div>
-          <div className="form-group"><label>Date *</label><input type="date" className="form-control" value={formData.outDate} onChange={event => updateField('outDate', event.target.value)} required /></div>
-          <div className="form-group"><label>Count</label><select className="form-control" value={formData.countId} onChange={event => updateField('countId', event.target.value)}><option value="">-- Select Count --</option>{selectOptions(yarnCounts, 'countId', 'countName')}</select></div>
-          <div className="form-group"><label>Tickit</label><select className="form-control" value={formData.tickitId} onChange={event => updateField('tickitId', event.target.value)}><option value="">-- Select Tickit --</option>{selectOptions(tickits, 'tickitId', 'tickitName')}</select></div>
-          <div className="form-group"><label>Bags</label><input type="number" step="0.001" className="form-control" value={formData.bags} onChange={event => updateField('bags', event.target.value)} /></div>
-          <div className="form-group"><label>Weight (Kg)</label><input type="number" step="0.001" className="form-control" value={formData.weightKg} onChange={event => updateField('weightKg', event.target.value)} /></div>
-          <div className="form-group"><label>Sizing Name</label><select className="form-control" value={formData.sizingId} onChange={event => updateField('sizingId', event.target.value)}><option value="">-- Select Sizing --</option>{selectOptions(sizingUnits, 'sizingId', 'sizingName')}</select></div>
-          <div className="form-group"><label>Party Name</label><select className="form-control" value={formData.partyId} onChange={event => updateField('partyId', event.target.value)}><option value="">-- Select Party --</option>{selectOptions(parties, 'partyId', 'partyName')}</select></div>
-          <OrderNumberField orders={fabricOrders} value={formData.orderNo || ''} onChange={handleOrderChange} />
-          <div className="form-group"><label>Quality</label><input className="form-control" value={formData.quality} onChange={event => updateField('quality', event.target.value)} /></div>
-          <div className="form-group"><label>Total Ends</label><input type="number" className="form-control" value={formData.totalEnds} onChange={event => updateField('totalEnds', event.target.value)} /></div>
-          <div className="form-group"><label>Sizing Mtr</label><input type="number" step="0.001" className="form-control" value={formData.sizingMeters} onChange={event => updateField('sizingMeters', event.target.value)} /></div>
-          <div className="form-group"><label>Sizing Received Khard</label><input type="number" step="0.001" className="form-control" value={formData.sizingReceivedWeight} onChange={event => updateField('sizingReceivedWeight', event.target.value)} /></div>
-          <div className="form-group"><label>Sizing Fresh Bag Receive</label><input type="number" step="0.001" className="form-control" value={formData.freshBagsReceived} onChange={event => updateField('freshBagsReceived', event.target.value)} /></div>
-          <div className="form-group"><label>Balance In Sizing</label><input type="number" step="0.001" className="form-control" value={formData.balanceInSizing} onChange={event => updateField('balanceInSizing', event.target.value)} /></div>
-          <div className="form-group"><label>Sizing Consumption KG</label><input type="number" step="0.001" className="form-control" value={formData.sizingConsumptionKg} onChange={event => updateField('sizingConsumptionKg', event.target.value)} /></div>
-          <div className="form-group"><label>Sizing Count</label><input className="form-control" value={formData.sizingCount} onChange={event => updateField('sizingCount', event.target.value)} /></div>
-          <div className="form-group"><label>Bill No</label><input className="form-control" value={formData.billNo} onChange={event => updateField('billNo', event.target.value)} /></div>
-          <div className="form-group"><label>Status</label><select className="form-control" value={formData.status} onChange={event => updateField('status', event.target.value)}><option value="OPEN">Open</option><option value="IN_PROGRESS">In Progress</option><option value="COMPLETED">Completed</option><option value="CANCELLED">Cancelled</option></select></div>
-        </div><div className="modal-footer" style={{ padding: '20px 0 0', marginTop: '20px' }}><button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>Cancel</button><button type="submit" className="btn btn-primary">{editingItem ? 'Update Record' : 'Record Yarn Out'}</button></div></form>
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingRecord ? `Edit Yarn Out #${editingRecord.dyeingOutId}` : 'Record New Yarn Out for Dyeing'} size="lg">
+        <form onSubmit={handleSubmit}>
+          <div className="dyeing-editor">
+            <div className="dyeing-header-fields form-grid">
+              <div className="form-group"><label>Gate Pass No.</label><input className="form-control" value={header.gatePassNo} onChange={event => updateHeader('gatePassNo', event.target.value)} placeholder="Enter gate pass number" /></div>
+              <div className="form-group"><label>Date *</label><input type="date" className="form-control" value={header.outDate} onChange={event => updateHeader('outDate', event.target.value)} required /></div>
+              <div className="form-group"><label>Firm Name</label><input className="form-control" value={header.firmName} onChange={event => updateHeader('firmName', event.target.value)} placeholder="Enter firm name" /></div>
+              <div className="form-group"><label>Order No. *</label><select className="form-control" value={header.orderId} onChange={event => handleOrderChange(event.target.value)} required><option value="">-- Select Order --</option>{fabricOrders.map(order => <option key={order.orderId} value={order.orderId}>{order.orderNo}</option>)}</select></div>
+              <div className="form-group"><label>Dyeing Unit Name *</label><select className="form-control" value={header.dyeingUnitId} onChange={event => updateHeader('dyeingUnitId', event.target.value)} required><option value="">-- Select Dyeing Unit --</option>{dyers.map(dyer => <option key={dyer.partyId} value={dyer.partyId}>{dyer.partyName}</option>)}</select></div>
+            </div>
+            <div className="dyeing-lines-header"><div><h4>Yarn Records</h4><span>Count and tickit are filled from the selected order.</span></div><button type="button" className="btn btn-secondary" onClick={addLine}><Plus size={16} /> Add Row</button></div>
+            <div className="table-responsive"><table className="data-table dyeing-lines-table"><thead><tr><th>Sr. No.</th><th>Count</th><th>Tickit</th><th>Bags</th><th>Cones</th><th>Weight (Kg)</th><th aria-label="Remove row" /></tr></thead><tbody>{lines.map((line, index) => <tr key={index}><td>{index + 1}</td><td>{selectedOrder?.count?.countName || '-'}</td><td>{selectedOrder?.tickit?.tickitName || '-'}</td><td><input type="number" min="0" step="0.001" className="form-control" value={line.bags} onChange={event => updateLine(index, 'bags', event.target.value)} placeholder="0" /></td><td><input type="number" min="0" step="0.001" className="form-control" value={line.cone} onChange={event => updateLine(index, 'cone', event.target.value)} placeholder="0" /></td><td><input type="number" min="0" step="0.001" className="form-control" value={line.weightKg} onChange={event => updateLine(index, 'weightKg', event.target.value)} placeholder="0.000" /></td><td><button type="button" className="btn-icon" onClick={() => removeLine(index)} title="Remove row" disabled={lines.length === 1}><X size={16} /></button></td></tr>)}</tbody></table></div>
+            <div className="form-group dyeing-remark"><label>Remarks</label><textarea className="form-control" value={header.remark} onChange={event => updateHeader('remark', event.target.value)} placeholder="Example: 500 kg for blue, 200 kg for red..." /></div>
+            <div className="dyeing-editor-actions"><button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>Close</button><button type="button" className="btn btn-secondary" onClick={resetDraft}>Clear Draft</button><button type="submit" className="btn btn-primary" disabled={saving}><Save size={17} /> {saving ? 'Saving...' : editingRecord ? 'Update Yarn Out' : 'Save Yarn Out'}</button></div>
+          </div>
+        </form>
       </Modal>
-      <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} title="Confirm Deletion"><p>Delete this yarn out dyeing record?</p><div className="modal-footer" style={{ padding: '20px 0 0' }}><button className="btn btn-secondary" onClick={() => setIsDeleteModalOpen(false)}>Cancel</button><button className="btn btn-danger" onClick={handleDelete}>Delete</button></div></Modal>
     </div>
   );
 };

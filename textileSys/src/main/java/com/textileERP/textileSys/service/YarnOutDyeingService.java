@@ -70,29 +70,20 @@ public class YarnOutDyeingService {
     }
 
     private void map(YarnOutDyeingDto dto, YarnOutDyeing entity) {
-        if (dto.getSizingSetId() == null) {
-            throw new RuntimeException("Sizing set is required");
-        }
-        entity.setSizingSet(findSizingSet(dto.getSizingSetId()));
+        entity.setGatePassNo(dto.getGatePassNo());
+        entity.setSizingSet(dto.getSizingSetId() == null ? null : findSizingSet(dto.getSizingSetId()));
         entity.setOrder(findOrder(dto.getOrderId()));
         entity.setOutDate(dto.getOutDate() == null && entity.getOutDate() == null
                 ? LocalDate.now() : dto.getOutDate());
+        entity.setFirmName(dto.getFirmName());
         entity.setCount(findCount(dto.getCountId()));
         entity.setTickit(findTickit(dto.getTickitId()));
-        entity.setSizingUnit(findSizingUnit(dto.getSizingId()));
-        entity.setParty(findParty(dto.getPartyId()));
+        entity.setSizingUnit(null);
+        entity.setParty(findParty(dto.getDyeingUnitId()));
         entity.setBags(dto.getBags());
+        entity.setCone(dto.getCone());
         entity.setWeightKg(dto.getWeightKg());
-        entity.setQuality(dto.getQuality());
-        entity.setTotalEnds(dto.getTotalEnds());
-        entity.setSizingMeters(dto.getSizingMeters());
-        entity.setSizingReceivedWeight(dto.getSizingReceivedWeight());
-        entity.setFreshBagsReceived(dto.getFreshBagsReceived());
-        entity.setBalanceInSizing(dto.getBalanceInSizing());
-        entity.setSizingConsumptionKg(dto.getSizingConsumptionKg());
-        entity.setSizingCount(dto.getSizingCount());
-        entity.setBillNo(dto.getBillNo());
-        entity.setStatus(dto.getStatus() == null || dto.getStatus().isBlank() ? "OPEN" : dto.getStatus());
+        entity.setRemark(dto.getRemark());
     }
 
     private SizingSet findSizingSet(Long id) {

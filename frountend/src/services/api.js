@@ -177,4 +177,11 @@ export const api = {
     update: (id, data) => request(`/api/yarn-out-dyeing/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id) => request(`/api/yarn-out-dyeing/${id}`, { method: 'DELETE' }),
   },
+
+  yarnReceiveDyeing: {
+    getAll: () => request('/api/yarn-receive-dyeing'),
+    create: (data) => request('/api/yarn-receive-dyeing', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => request(`/api/yarn-receive-dyeing/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => request(`/api/yarn-receive-dyeing/${id}`, { method: 'DELETE' }),
+  },
 };

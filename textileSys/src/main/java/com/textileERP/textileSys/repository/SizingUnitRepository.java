@@ -14,6 +14,8 @@ public interface SizingUnitRepository extends JpaRepository<SizingUnit, Long> {
 
     List<SizingUnit> findByPartyPartyIdAndActiveTrue(Long partyId);
 
+    Optional<SizingUnit> findFirstByPartyPartyIdAndActiveTrue(Long partyId);
+
     Optional<SizingUnit> findBySizingNameIgnoreCaseAndPartyPartyId(String sizingName, Long partyId);
 
     boolean existsBySizingNameIgnoreCaseAndPartyPartyId(String sizingName, Long partyId);

@@ -12,23 +12,16 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class YarnOutDyeingDto {
 
+    private String gatePassNo;
     private Long sizingSetId;
     private Long orderId;
     private LocalDate outDate;
+    private String firmName;
     private Long countId;
     private Long tickitId;
-    private Long sizingId;
-    private Long partyId;
+    private Long dyeingUnitId;
     private BigDecimal bags;
+    private BigDecimal cone;
     private BigDecimal weightKg;
-    private String quality;
-    private Integer totalEnds;
-    private BigDecimal sizingMeters;
-    private BigDecimal sizingReceivedWeight;
-    private BigDecimal freshBagsReceived;
-    private BigDecimal balanceInSizing;
-    private BigDecimal sizingConsumptionKg;
-    private String sizingCount;
-    private String billNo;
-    private String status;
+    private String remark;
 }

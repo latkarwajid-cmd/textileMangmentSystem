@@ -68,6 +68,13 @@ const toNumberOrNull = (value) => {
     : parsed;
 };
 
+const totalEndsFromQuality = (quality) => {
+  if (!quality) return '';
+  const epi = quality.match(/\bepi\s*[:=\-]?\s*(\d+(?:\.\d+)?)/i)?.[1];
+  const reedSpace = quality.match(/\b(?:reed\s*space|reedspace|rs)\s*[:=\-]?\s*(\d+(?:\.\d+)?)/i)?.[1];
+  return epi && reedSpace ? String(Number(epi) * Number(reedSpace)) : '';
+};
+
 
 const nextSetNoFromList = (
   existingSets = []
@@ -106,6 +113,8 @@ const createEmptyHeader = () => ({
 
   partyId: '',
   firmName: '',
+  sizingPartyId: '',
+  sizingName: '',
 
   quality: '',
   totalEnds: '',
@@ -130,10 +139,16 @@ export const SizingSetsView = () => {
 
   const {
     fabricOrders,
+    parties,
     tickits,
     yarnCounts,
     addToast
   } = useApp();
+
+  const sizingParties = useMemo(
+    () => parties.filter(party => party.partyType?.toUpperCase() === 'SIZING' && party.status !== false),
+    [parties]
+  );
 
 
   /* =========================================================
@@ -175,7 +190,6 @@ export const SizingSetsView = () => {
 
   const [loadingOrderDetails, setLoadingOrderDetails] =
     useState(false);
-
 
   /* =========================================================
      ISSUE YARN STATE
@@ -219,6 +233,13 @@ export const SizingSetsView = () => {
   const [header, setHeader] =
     useState(createEmptyHeader());
 
+  useEffect(() => {
+    const calculatedEnds = totalEndsFromQuality(header.quality);
+    if (calculatedEnds && calculatedEnds !== String(header.totalEnds)) {
+      setHeader(prev => ({ ...prev, totalEnds: calculatedEnds }));
+    }
+  }, [header.quality, header.totalEnds]);
+
 
   /* =========================================================
      YARN ALLOCATION
@@ -230,6 +251,21 @@ export const SizingSetsView = () => {
 
   const [yarnLines, setYarnLines] =
     useState([]);
+
+  const [editingAllocationKey, setEditingAllocationKey] =
+    useState(null);
+
+  const updateAllocationLine = (lineKey, field, value) => {
+    setYarnLines(prev => prev.map(line => {
+      if (line.key !== lineKey) return line;
+
+      const nextLine = { ...line, [field]: value };
+      if (field === 'givenBags') {
+        nextLine.weightKg = Number(value || 0) * Number(line.weightPerBag || 0);
+      }
+      return nextLine;
+    }));
+  };
 
 
   /* =========================================================
@@ -515,6 +551,12 @@ export const SizingSetsView = () => {
 
         firmName:
           sizingSet.party?.partyName || '',
+
+        sizingPartyId:
+          sizingSet.sizingUnit?.party?.partyId || '',
+
+        sizingName:
+          sizingSet.sizingUnit?.party?.partyName || sizingSet.sizingUnit?.sizingName || '',
 
         quality:
           sizingSet.quality || '',
@@ -1463,9 +1505,9 @@ export const SizingSetsView = () => {
         'all'
       );
 
-      if (issueRows.length === 0 && excludedIssueKeys.length === 0) {
-        await fetchIssueRows();
-      }
+      // Stock can change in Yarn Inward or another sizing set while this
+      // editor remains mounted, so never reuse stale picker quantities.
+      await fetchIssueRows();
 
       setIssueModalOpen(true);
 
@@ -2233,6 +2275,11 @@ export const SizingSetsView = () => {
         partyId:
           toNumberOrNull(
             header.partyId
+          ),
+
+        sizingPartyId:
+          toNumberOrNull(
+            header.sizingPartyId
           ),
 
         quality:
@@ -3386,6 +3433,43 @@ export const SizingSetsView = () => {
                 </div>
 
 
+                {/* FIRM NAME */}
+
+                <div className="form-group">
+                  <label>Firm Name</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={header.sizingName}
+                    onChange={e => updateHeader('sizingName', e.target.value)}
+                    placeholder="Enter firm name"
+                  />
+                </div>
+
+
+                {/* SIZING UNIT */}
+
+                <div className="form-group">
+                  <label>Sizing Unit</label>
+                  <select
+                    className="form-control"
+                    value={header.sizingPartyId}
+                    onChange={e => {
+                      setHeader(prev => ({
+                        ...prev,
+                        sizingPartyId: e.target.value,
+                        sizingName: prev.sizingName
+                      }));
+                    }}
+                  >
+                    <option value="">-- Select Sizing Unit --</option>
+                    {sizingParties.map(party => (
+                      <option key={party.partyId} value={party.partyId}>{party.partyName}</option>
+                    ))}
+                  </select>
+                </div>
+
+
                 {/* QUALITY */}
 
                 <div
@@ -3595,7 +3679,7 @@ export const SizingSetsView = () => {
                           'var(--text-muted)'
                       }}
                     >
-                      Selected rows from Issue Yarn — Read Only
+                      Selected rows from Issue Yarn
                     </span>
 
                   </div>
@@ -3846,18 +3930,25 @@ export const SizingSetsView = () => {
 
                             <td
                               style={{
-                                textAlign:
-                                  'right',
-                                fontWeight:
-                                  700,
-                                color:
-                                  'var(--primary-blue-dark)'
+                                textAlign: 'right',
+                                fontWeight: 700,
+                                color: 'var(--primary-blue-dark)'
                               }}
                             >
-                              {
-                                line.givenBags ??
-                                0
-                              }
+                              {editingAllocationKey === line.key ? (
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max={line.availableBags}
+                                  step="1"
+                                  className="form-control"
+                                  value={line.givenBags ?? 0}
+                                  onChange={e => updateAllocationLine(line.key, 'givenBags', e.target.value)}
+                                  style={{ minWidth: 90, textAlign: 'right' }}
+                                />
+                              ) : (
+                                line.givenBags ?? 0
+                              )}
                             </td>
 
 
@@ -3865,15 +3956,22 @@ export const SizingSetsView = () => {
 
                             <td
                               style={{
-                                textAlign:
-                                  'right',
-                                fontWeight:
-                                  600
+                                textAlign: 'right',
+                                fontWeight: 600
                               }}
                             >
-                              {Number(
-                                line.cones ||
-                                0
+                              {editingAllocationKey === line.key ? (
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="1"
+                                  className="form-control"
+                                  value={line.cones ?? 0}
+                                  onChange={e => updateAllocationLine(line.key, 'cones', e.target.value)}
+                                  style={{ minWidth: 90, textAlign: 'right' }}
+                                />
+                              ) : (
+                                Number(line.cones || 0)
                               )}
                             </td>
 
@@ -3906,30 +4004,36 @@ export const SizingSetsView = () => {
                               }
                             </td>
 
-                            {/* DELETE */}
+                            {/* ACTIONS */}
                             <td
                               style={{
                                 textAlign: 'center'
                               }}
                             >
-                              <button
-                                type="button"
-                                className="btn btn-sm btn-danger"
-                                title="Remove this allocated yarn"
-                                onClick={() =>
-                                  removeAllocatedYarn(
-                                    line.key
-                                  )
-                                }
-                                style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  padding: '6px 9px'
-                                }}
-                              >
-                                <Trash2 size={15} />
-                              </button>
+                              <div style={{ display: 'inline-flex', gap: 6 }}>
+                                <button
+                                  type="button"
+                                  className="btn-icon"
+                                  title={editingAllocationKey === line.key ? 'Done editing allocation' : 'Edit allocation'}
+                                  onClick={() => setEditingAllocationKey(current => current === line.key ? null : line.key)}
+                                >
+                                  {editingAllocationKey === line.key ? <Check size={15} /> : <Edit2 size={15} />}
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn btn-sm btn-danger"
+                                  title="Remove this allocated yarn"
+                                  onClick={() => removeAllocatedYarn(line.key)}
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    padding: '6px 9px'
+                                  }}
+                                >
+                                  <Trash2 size={15} />
+                                </button>
+                              </div>
                             </td>
 
                           </tr>

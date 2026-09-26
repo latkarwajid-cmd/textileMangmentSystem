@@ -28,7 +28,7 @@ const formatDate = (date) => {
 };
 
 export const FabricOrdersView = () => {
-  const { parties, addToast, refreshMasters } = useApp();
+  const { parties, yarnCounts, tickits, addToast, refreshMasters } = useApp();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
@@ -40,6 +40,8 @@ export const FabricOrdersView = () => {
     orderNo: '',
     orderDate: new Date().toISOString().split('T')[0],
     partyId: '',
+    countId: '',
+    tickitId: '',
     // supplierId: '',
     quality: '',
     rate: '',
@@ -71,9 +73,11 @@ export const FabricOrdersView = () => {
   const openCreateModal = () => {
     setEditingOrder(null);
     setFormData({
-      orderNo: `FO-${new Date().getFullYear()}-${Date.now().toString().slice(-4)}`,
+      orderNo: '',
       orderDate: new Date().toISOString().split('T')[0],
       partyId: parties.length > 0 ? parties[0].partyId : '',
+      countId: '',
+      tickitId: '',
       // supplierId: '',
       quality: '',
       rate: '',
@@ -91,6 +95,8 @@ export const FabricOrdersView = () => {
       orderNo: order.orderNo || '',
       orderDate: formatDate(order.orderDate),
       partyId: order.party?.partyId || '',
+      countId: order.count?.countId || '',
+      tickitId: order.tickit?.tickitId || '',
       // supplierId: order.supplier?.partyId || '',
       quality: order.quality || '',
       rate: order.rate || '',
@@ -109,6 +115,8 @@ export const FabricOrdersView = () => {
         orderNo: formData.orderNo,
         orderDate: formData.orderDate,
         partyId: Number(formData.partyId),
+        countId: formData.countId ? Number(formData.countId) : null,
+        tickitId: formData.tickitId ? Number(formData.tickitId) : null,
         // supplierId: formData.supplierId ? Number(formData.supplierId) : null,
         quality: formData.quality,
         rate: formData.rate ? Number(formData.rate) : null,
@@ -355,14 +363,13 @@ export const FabricOrdersView = () => {
         <form onSubmit={handleSubmit}>
           <div className="form-grid">
             <div className="form-group">
-              <label>Order Number *</label>
+              <label>Order Number</label>
               <input
                 type="text"
                 className="form-control"
                 value={formData.orderNo}
                 onChange={(e) => setFormData({ ...formData, orderNo: e.target.value })}
                 placeholder="e.g. FO-2026-001"
-                required
               />
             </div>
 
@@ -391,6 +398,30 @@ export const FabricOrdersView = () => {
                     {p.partyName} ({p.partyType || 'Customer'} - GST: {p.gstNo || 'N/A'})
                   </option>
                 ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label>Yarn Count</label>
+              <select
+                className="form-control"
+                value={formData.countId}
+                onChange={(e) => setFormData({ ...formData, countId: e.target.value })}
+              >
+                <option value="">-- Select Count --</option>
+                {yarnCounts.map(count => <option key={count.countId} value={count.countId}>{count.countName}</option>)}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label>Tickit</label>
+              <select
+                className="form-control"
+                value={formData.tickitId}
+                onChange={(e) => setFormData({ ...formData, tickitId: e.target.value })}
+              >
+                <option value="">-- Select Tickit --</option>
+                {tickits.map(tickit => <option key={tickit.tickitId} value={tickit.tickitId}>{tickit.tickitName}</option>)}
               </select>
             </div>
 

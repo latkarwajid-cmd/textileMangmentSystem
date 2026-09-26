@@ -21,6 +21,9 @@ public class YarnOutDyeing {
     @Column(name = "dyeing_out_id")
     private Long dyeingOutId;
 
+    @Column(name = "gate_pass_no", length = 50)
+    private String gatePassNo;
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "sizing_set_id")
     private SizingSet sizingSet;
@@ -32,6 +35,9 @@ public class YarnOutDyeing {
     @Column(name = "out_date")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate outDate;
+
+    @Column(name = "firm_name", length = 150)
+    private String firmName;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "count_id")
@@ -52,8 +58,14 @@ public class YarnOutDyeing {
     @Column(name = "bags", precision = 12, scale = 3)
     private BigDecimal bags;
 
+    @Column(name = "cone", precision = 12, scale = 3)
+    private BigDecimal cone;
+
     @Column(name = "weight_kg", precision = 12, scale = 3)
     private BigDecimal weightKg;
+
+    @Column(name = "remark", columnDefinition = "TEXT")
+    private String remark;
 
     @Column(name = "quality", length = 255)
     private String quality;
