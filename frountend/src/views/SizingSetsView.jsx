@@ -19,7 +19,8 @@ import {
   FileText,
   Tag,
   Hash,
-  CheckCircle2
+  CheckCircle2,
+  Check
 } from 'lucide-react';
 
 import { useApp } from '../context/AppContext';
@@ -145,6 +146,11 @@ export const SizingSetsView = () => {
     addToast
   } = useApp();
 
+  const [sizingOrders, setSizingOrders] = useState(fabricOrders);
+
+  useEffect(() => {
+    setSizingOrders(fabricOrders);
+  }, [fabricOrders]);
   const sizingParties = useMemo(
     () => parties.filter(party => party.partyType?.toUpperCase() === 'SIZING' && party.status !== false),
     [parties]
@@ -155,14 +161,11 @@ export const SizingSetsView = () => {
      ORDERS
   ========================================================= */
 
+  // Keep every fabric order available here. The previous OPEN/complete filter
+  // hid orders whose status or completion flag was set by another workflow.
   const openOrders = useMemo(
-    () =>
-      fabricOrders.filter(
-        order =>
-          (order.status || 'OPEN').toUpperCase() !== 'CLOSED' &&
-          !order.complete
-      ),
-    [fabricOrders]
+    () => sizingOrders.filter(order => order?.orderNo),
+    [sizingOrders]
   );
 
 
@@ -472,6 +475,15 @@ export const SizingSetsView = () => {
 
   const openCreateEditor =
     async () => {
+
+      // Refresh orders when the form opens so orders created moments ago
+      // are available even if the app-wide master refresh is still running.
+      try {
+        const orders = await api.fabricOrders.getAll();
+        if (Array.isArray(orders)) setSizingOrders(orders);
+      } catch (err) {
+        console.warn('Could not refresh fabric orders:', err);
+      }
 
       setEditingSet(null);
 

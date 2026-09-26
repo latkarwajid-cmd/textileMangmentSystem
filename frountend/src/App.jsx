@@ -16,6 +16,8 @@ import { SizingSetsView } from './views/SizingSetsView';
 import { YarnOutDyeingView } from './views/YarnOutDyeingView';
 import { YarnReceiveDyeingView } from './views/YarnReceiveDyeingView';
 import { BeamInwardView } from './views/BeamInwardView';
+import { RewindingIssueView } from './views/RewindingIssueView';
+import { RewindingYarnView } from './views/RewindingYarnView';
 
 const MainContent = () => {
   const { currentTab } = useApp();
@@ -32,6 +34,8 @@ const MainContent = () => {
     ['yarn-out-dyeing', <YarnOutDyeingView />],
     ['yarn-receive-dyeing', <YarnReceiveDyeingView />],
     ['sizing-yarn-inward', <SizingYarnInwardView />],
+    ['rewinding-issue', <RewindingIssueView />],
+    ['rewinding-yarn', <RewindingYarnView />],
   ];
 
   return (

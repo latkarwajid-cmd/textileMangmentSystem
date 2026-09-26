@@ -8,10 +8,11 @@ import {
   Ticket, 
   Layers, 
   ArrowDownLeft, 
-  RotateCcw
-  ,Layers3
-  ,Droplets
-  ,PackageCheck
+  RotateCcw,
+  Layers3,
+  Droplets,
+  RefreshCcw,
+  PackageCheck
 } from 'lucide-react';
 
 export const Sidebar = () => {
@@ -27,6 +28,8 @@ export const Sidebar = () => {
     { id: 'sizing-sets', label: 'Sizing Sets', icon: Layers3, section: 'Transactions' },
     { id: 'beam-inward', label: 'Beam Inward', icon: ArrowDownLeft, section: 'Transactions' },
     { id: 'sizing-yarn-inward', label: 'Yarn Return from Sizing', icon: RotateCcw, section: 'Transactions' },
+    { id: 'rewinding-issue', label: 'Yarn Issue to Rewinding', icon: RefreshCcw, section: 'Transactions' },
+    { id: 'rewinding-yarn', label: 'Yarn from Rewinding', icon: RotateCcw, section: 'Transactions' },
     { id: 'yarn-out-dyeing', label: 'Yarn Out Dyeing', icon: Droplets, section: 'Transactions' },
     { id: 'yarn-receive-dyeing', label: 'Yarn Receive from Dyeing', icon: PackageCheck, section: 'Transactions' },
   ];

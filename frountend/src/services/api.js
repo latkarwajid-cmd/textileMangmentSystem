@@ -152,6 +152,15 @@ export const api = {
     getActiveYarn: () => request('/api/gate-passes/active-yarn'),
   },
 
+  rewindingIssues: {
+    getAll: () => request('/api/rewinding-issues'),
+    getById: (id) => request(`/api/rewinding-issues/${id}`),
+    getByGetpassNo: (getpassNo) => request(`/api/rewinding-issues/getpass/${encodeURIComponent(getpassNo)}`),
+    create: (data) => request('/api/rewinding-issues', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => request(`/api/rewinding-issues/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => request(`/api/rewinding-issues/${id}`, { method: 'DELETE' }),
+  },
+
   // Beam Inward API
   beamInward: {
     getAll: () => request('/api/beam-inward'),
