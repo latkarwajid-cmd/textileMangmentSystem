@@ -20,22 +20,19 @@ import { BeamInwardView } from './views/BeamInwardView';
 const MainContent = () => {
   const { currentTab } = useApp();
 
-  const renderActiveView = () => {
-    switch (currentTab) {
-      case 'dashboard': return <DashboardView />;
-      case 'parties': return <PartiesView />;
-      case 'fabric-orders': return <FabricOrdersView />;
-      case 'tickits': return <TickitsView />;
-      case 'yarn-counts': return <YarnCountsView />;
-      case 'sizing-units': return <SizingUnitsView />;
-      case 'sizing-sets': return <SizingSetsView />;
-      case 'beam-inward': return <BeamInwardView />;
-      case 'yarn-inward': return <YarnInwardView />;
-      case 'yarn-out-dyeing': return <YarnOutDyeingView />;
-      case 'sizing-yarn-inward': return <SizingYarnInwardView />;
-      default: return <DashboardView />;
-    }
-  };
+  const views = [
+    ['dashboard', <DashboardView />],
+    ['parties', <PartiesView />],
+    ['fabric-orders', <FabricOrdersView />],
+    ['tickits', <TickitsView />],
+    ['yarn-counts', <YarnCountsView />],
+    ['sizing-units', <SizingUnitsView />],
+    ['sizing-sets', <SizingSetsView />],
+    ['beam-inward', <BeamInwardView />],
+    ['yarn-inward', <YarnInwardView />],
+    ['yarn-out-dyeing', <YarnOutDyeingView />],
+    ['sizing-yarn-inward', <SizingYarnInwardView />],
+  ];
 
   return (
     <div className="app-layout">
@@ -43,7 +40,11 @@ const MainContent = () => {
       <div className="main-wrapper">
         <Header />
         <ErrorBoundary>
-          {renderActiveView()}
+          {views.map(([tab, view]) => (
+            <div key={tab} className={`view-panel ${currentTab === tab ? 'view-panel-active' : ''}`} aria-hidden={currentTab !== tab}>
+              {view}
+            </div>
+          ))}
         </ErrorBoundary>
       </div>
       <ToastContainer />
