@@ -805,3 +805,21 @@ CREATE TABLE IF NOT EXISTS beam_inward (
     CONSTRAINT fk_beam_inward_tickit
         FOREIGN KEY (tickit_id) REFERENCES tickits(tickit_id)
 );
+
+-- =========================================================
+-- 13. YARN RECEIVE FROM DYEING
+-- =========================================================
+
+CREATE TABLE yarn_receive_dyeing (
+    yarn_receive_dyeing_id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    dyeing_out_id BIGINT NOT NULL,
+    gate_pass_no VARCHAR(50),
+    receive_date DATE,
+    party_name VARCHAR(150),
+    received_weight DECIMAL(12,3),
+    wastage DECIMAL(12,3),
+    remarks TEXT,
+    CONSTRAINT fk_receive_dyeing_out
+        FOREIGN KEY (dyeing_out_id)
+        REFERENCES yarn_out_dyeing(dyeing_out_id)
+);

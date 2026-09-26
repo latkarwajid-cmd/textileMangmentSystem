@@ -10,11 +10,11 @@ import { PartiesView } from './views/PartiesView';
 import { FabricOrdersView } from './views/FabricOrdersView';
 import { TickitsView } from './views/TickitsView';
 import { YarnCountsView } from './views/YarnCountsView';
-import { SizingUnitsView } from './views/SizingUnitsView';
 import { YarnInwardView } from './views/YarnInwardView';
 import { SizingYarnInwardView } from './views/SizingYarnInwardView';
 import { SizingSetsView } from './views/SizingSetsView';
 import { YarnOutDyeingView } from './views/YarnOutDyeingView';
+import { YarnReceiveDyeingView } from './views/YarnReceiveDyeingView';
 import { BeamInwardView } from './views/BeamInwardView';
 import { RewindingIssueView } from './views/RewindingIssueView';
 import { RewindingYarnView } from './views/RewindingYarnView';
@@ -28,11 +28,11 @@ const MainContent = () => {
     ['fabric-orders', <FabricOrdersView />],
     ['tickits', <TickitsView />],
     ['yarn-counts', <YarnCountsView />],
-    ['sizing-units', <SizingUnitsView />],
     ['sizing-sets', <SizingSetsView />],
     ['beam-inward', <BeamInwardView />],
     ['yarn-inward', <YarnInwardView />],
     ['yarn-out-dyeing', <YarnOutDyeingView />],
+    ['yarn-receive-dyeing', <YarnReceiveDyeingView />],
     ['sizing-yarn-inward', <SizingYarnInwardView />],
     ['rewinding-issue', <RewindingIssueView />],
     ['rewinding-yarn', <RewindingYarnView />],

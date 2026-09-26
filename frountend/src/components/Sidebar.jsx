@@ -7,12 +7,12 @@ import {
   ShoppingBag,
   Ticket, 
   Layers, 
-  Factory, 
   ArrowDownLeft, 
   RotateCcw,
   Layers3,
   Droplets,
-  RefreshCcw
+  RefreshCcw,
+  PackageCheck
 } from 'lucide-react';
 
 export const Sidebar = () => {
@@ -23,7 +23,6 @@ export const Sidebar = () => {
     { id: 'parties', label: 'Parties Master', icon: Users, section: 'Masters' },
     { id: 'tickits', label: 'Tickits Master', icon: Ticket, section: 'Masters' },
     { id: 'yarn-counts', label: 'Yarn Counts', icon: Layers, section: 'Masters' },
-    { id: 'sizing-units', label: 'Sizing Units', icon: Factory, section: 'Masters' },
     { id: 'fabric-orders', label: 'Fabric Orders', icon: ShoppingBag, section: 'Transactions' },
     { id: 'yarn-inward', label: 'Yarn Inward', icon: ArrowDownLeft, section: 'Transactions' },
     { id: 'sizing-sets', label: 'Sizing Sets', icon: Layers3, section: 'Transactions' },
@@ -32,6 +31,7 @@ export const Sidebar = () => {
     { id: 'rewinding-issue', label: 'Yarn Issue to Rewinding', icon: RefreshCcw, section: 'Transactions' },
     { id: 'rewinding-yarn', label: 'Yarn from Rewinding', icon: RotateCcw, section: 'Transactions' },
     { id: 'yarn-out-dyeing', label: 'Yarn Out Dyeing', icon: Droplets, section: 'Transactions' },
+    { id: 'yarn-receive-dyeing', label: 'Yarn Receive from Dyeing', icon: PackageCheck, section: 'Transactions' },
   ];
 
   const sections = ['Overview', 'Masters', 'Transactions'];

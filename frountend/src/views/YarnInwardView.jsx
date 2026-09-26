@@ -99,6 +99,18 @@ export const YarnInwardView = () => {
     }
   }, [formData.weightKg, formData.rate, formData.gstPercent]);
 
+  useEffect(() => {
+    const bags = Number(formData.bags);
+    const weightPerBag = Number(formData.weightPerBag);
+    const calculatedWeight = bags > 0 && weightPerBag > 0
+      ? (bags * weightPerBag).toFixed(3)
+      : '';
+
+    setFormData(prev => prev.weightKg === calculatedWeight
+      ? prev
+      : { ...prev, weightKg: calculatedWeight });
+  }, [formData.bags, formData.weightPerBag]);
+
   const selectedOrder = fabricOrders.find(o => String(o.orderId) === String(formData.orderId));
   const selectedStorageLocation = yarnStorageLocations.find(location => String(location.storageLocationId) === String(formData.storageLocationId));
   const isSizingStorage = selectedStorageLocation?.locationName?.toLowerCase() === 'sizing';
@@ -293,11 +305,11 @@ export const YarnInwardView = () => {
                 <th>Stored At</th>
                 <th>Yarn Count</th>
                 <th>Tickit</th>
-                  <th>Weight/Bag (Kg)</th>
+                <th>Weight (Kg)</th>
                 <th>Type</th>
                 <th>Bags</th>
                 <th>Cone</th>
-                <th>Weight (Kg)</th>
+                <th>Weight/Bag (Kg)</th>
                 <th>Rate (₹)</th>
                 <th>Amount (₹)</th>
 
@@ -548,20 +560,7 @@ export const YarnInwardView = () => {
             </div>
 
             <div className="form-group">
-              <label>Net Weight (Kg) *</label>
-              <input
-                type="number"
-                step="0.001"
-                className="form-control"
-                value={formData.weightKg}
-                onChange={(e) => setFormData({ ...formData, weightKg: e.target.value })}
-                placeholder="e.g. 500.000"
-                required
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Weight per Bag (Kg)</label>
+              <label>Weight per Bag (Kg) *</label>
               <input
                 type="number"
                 step="0.001"
@@ -569,6 +568,20 @@ export const YarnInwardView = () => {
                 value={formData.weightPerBag}
                 onChange={(e) => setFormData({ ...formData, weightPerBag: e.target.value })}
                 placeholder="e.g. 50.000"
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Net Weight (Kg) (Auto)</label>
+              <input
+                type="number"
+                step="0.001"
+                className="form-control"
+                value={formData.weightKg}
+                readOnly
+                placeholder="Bags x weight per bag"
+                style={{ color: '#0369a1', fontWeight: 700, backgroundColor: '#f0f9ff' }}
               />
             </div>
 

@@ -663,6 +663,72 @@ textarea.form-control {
   border-bottom-right-radius: var(--radius-lg);
 }
 
+.dyeing-editor {
+  padding: 20px;
+}
+
+.dyeing-header-fields {
+  margin-bottom: 24px;
+}
+
+.dyeing-lines-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 0 12px;
+  border-top: 1px solid var(--border-color);
+}
+
+.dyeing-lines-header h4 {
+  font-size: 1rem;
+  color: var(--text-main);
+}
+
+.dyeing-lines-header span {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.dyeing-lines-table .form-control {
+  min-width: 110px;
+}
+
+.dyeing-remark {
+  margin-top: 20px;
+}
+
+.dyeing-remark textarea {
+  min-height: 90px;
+}
+
+.dyeing-editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+@media (max-width: 640px) {
+  .dyeing-editor {
+    padding: 14px;
+  }
+
+  .dyeing-lines-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .dyeing-editor-actions {
+    justify-content: stretch;
+  }
+
+  .dyeing-editor-actions .btn {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
 .view-panel {
   display: none;
 }

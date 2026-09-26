@@ -28,6 +28,8 @@ public class SizingSetDto {
 
     private Long sizingId;
 
+    private Long sizingPartyId;
+
     private Long partyId;
 
     private String quality;
