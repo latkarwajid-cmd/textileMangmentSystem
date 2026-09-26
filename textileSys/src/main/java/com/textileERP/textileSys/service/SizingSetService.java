@@ -585,17 +585,27 @@ public class SizingSetService {
          * ========================================================
          */
 
-        if (request.getSizingId() != null) {
+        final Long sizingId = request.getSizingId() != null
+                ? request.getSizingId()
+                : request.getSizingPartyId() == null
+                        ? null
+                        : sizingUnitRepository
+                                .findFirstByPartyPartyIdAndActiveTrue(request.getSizingPartyId())
+                                .map(SizingUnit::getSizingId)
+                                .orElseThrow(() -> new RuntimeException(
+                                        "No active sizing unit found for party: " + request.getSizingPartyId()));
+
+        if (sizingId != null) {
 
             SizingUnit sizingUnit =
                     sizingUnitRepository
                             .findById(
-                                    request.getSizingId()
+                                    sizingId
                             )
                             .orElseThrow(() ->
                                     new RuntimeException(
                                             "Sizing unit not found with id: "
-                                                    + request.getSizingId()
+                                                    + sizingId
                                     )
                             );
 

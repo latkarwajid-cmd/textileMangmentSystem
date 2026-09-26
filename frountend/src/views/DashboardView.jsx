@@ -6,7 +6,6 @@ import {
   ShoppingBag,
   Ticket, 
   Layers, 
-  Factory, 
   ArrowDownLeft, 
   Layers3,
   TrendingUp,
@@ -29,7 +28,7 @@ const inwardSortKey = (item) => {
 };
 
 export const DashboardView = () => {
-  const { parties, fabricOrders, tickits, yarnCounts, sizingUnits, setCurrentTab } = useApp();
+  const { parties, fabricOrders, tickits, yarnCounts, setCurrentTab } = useApp();
   const [inwardCount, setInwardCount] = useState(0);
   const [sizingSetCount, setSizingSetCount] = useState(0);
   const [totalInwardWeight, setTotalInwardWeight] = useState(0);
@@ -108,16 +107,6 @@ export const DashboardView = () => {
           <div className="stat-info">
             <h3>Yarn Counts</h3>
             <div className="stat-value">{yarnCounts.length}</div>
-          </div>
-        </div>
-
-        <div className="stat-card" style={{ cursor: 'pointer' }} onClick={() => setCurrentTab('sizing-units')}>
-          <div className="stat-icon" style={{ background: '#f59e0b' }}>
-            <Factory size={22} />
-          </div>
-          <div className="stat-info">
-            <h3>Sizing Units</h3>
-            <div className="stat-value">{sizingUnits.length}</div>
           </div>
         </div>
 
