@@ -48,4 +48,6 @@ public class YarnInwardDto {
 
     private String remark;
     private String remark2;
+    private String targetShade;
+    private String inventoryStatus;
 }

@@ -44,6 +44,10 @@ public class RewindingIssue {
     @Column(name = "remark", columnDefinition = "TEXT")
     private String remark;
 
+    @Column(name = "status", length = 20, nullable = false)
+    @Convert(converter = RewindingStatusConverter.class)
+    private RewindingStatus status = RewindingStatus.ISSUED;
+
     @OneToMany(mappedBy = "rewindingIssue", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @JsonManagedReference
     private List<RewindingIssueLine> lines = new ArrayList<>();

@@ -146,6 +146,15 @@ public class YarnInwardService {
             Long yarnInwardId,
             BigDecimal givenBags,
             BigDecimal givenCones) {
+        return issueYarn(yarnInwardId, givenBags, givenCones, null);
+    }
+
+    @Transactional
+    public YarnInward issueYarn(
+            Long yarnInwardId,
+            BigDecimal givenBags,
+            BigDecimal givenCones,
+            BigDecimal givenWeightKg) {
 
         // --------------------------------------------------------
         // Validate bags
@@ -213,6 +222,15 @@ public class YarnInwardService {
                 yarnInward.getYCone() == null
                         ? BigDecimal.ZERO
                         : yarnInward.getYCone();
+
+        BigDecimal availableWeight = yarnInward.getWeightKg() == null
+                ? BigDecimal.ZERO
+                : yarnInward.getWeightKg();
+
+        if (givenWeightKg != null && (givenWeightKg.compareTo(BigDecimal.ZERO) < 0
+                || givenWeightKg.compareTo(availableWeight) > 0)) {
+            throw new RuntimeException("Issued weight must be between 0 and " + availableWeight + " kg.");
+        }
 
         if (givenCones.compareTo(
                 availableCone
@@ -285,13 +303,17 @@ public class YarnInwardService {
         // REMAINING WEIGHT
         // --------------------------------------------------------
 
-        BigDecimal remainingWeight = BigDecimal.ZERO;
+                BigDecimal remainingWeight = BigDecimal.ZERO;
+
+                if (givenWeightKg != null) {
+                        remainingWeight = availableWeight.subtract(givenWeightKg);
+                }
 
         // Prefer explicit weightPerBag when available. Otherwise derive
         // weightPerBag from original weight or current weight and bags.
-        BigDecimal wpb = yarnInward.getWeightPerBag();
+                BigDecimal wpb = yarnInward.getWeightPerBag();
 
-        if (wpb == null) {
+                if (givenWeightKg == null && wpb == null) {
             if (yarnInward.getOriginalBags() != null
                     && yarnInward.getOriginalBags().compareTo(BigDecimal.ZERO) > 0
                     && yarnInward.getOriginalWeightKg() != null) {
@@ -311,7 +333,9 @@ public class YarnInwardService {
             }
         }
 
-        remainingWeight = wpb.multiply(remainingBags).setScale(3, RoundingMode.HALF_UP);
+                if (givenWeightKg == null) {
+                        remainingWeight = wpb.multiply(remainingBags).setScale(3, RoundingMode.HALF_UP);
+                }
 
         // --------------------------------------------------------
         // SET REMAINING STOCK
@@ -891,5 +915,8 @@ public class YarnInwardService {
         entity.setRemark2(
                 dto.getRemark2()
         );
+
+        entity.setTargetShade(dto.getTargetShade());
+        entity.setInventoryStatus(dto.getInventoryStatus());
     }
 }

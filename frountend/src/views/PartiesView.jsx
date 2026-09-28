@@ -137,6 +137,7 @@ export const PartiesView = () => {
               <option value="WEAVER">Weaver</option>
               <option value="SIZING">Sizing Unit</option>
               <option value="DYEING">Dyeing Unit</option>
+              <option value="REWINDING">Rewinding Unit</option>
             </select>
 
           </div>
@@ -255,6 +256,7 @@ export const PartiesView = () => {
                 <option value="WEAVER">Weaver</option>
                 <option value="SIZING">Sizing Unit</option>
                 <option value="DYEING">Dyeing Unit</option>
+                <option value="REWINDING">Rewinding Unit</option>
                 <option value="OTHER">Other</option>
               </select>
             </div>
