@@ -11,6 +11,8 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class RewindingIssueLineDto {
     private Long yarnInwardId;
+    private Long sizingInwardId;
+    private String setNo;
     private String seNo;
     private String countName;
     private String tickitName;

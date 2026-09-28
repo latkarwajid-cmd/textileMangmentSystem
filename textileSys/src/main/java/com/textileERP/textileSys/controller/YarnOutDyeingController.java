@@ -45,6 +45,11 @@ public class YarnOutDyeingController {
         return new ResponseEntity<>(service.create(request), HttpStatus.CREATED);
     }
 
+    @PostMapping("/batch")
+    public ResponseEntity<List<YarnOutDyeing>> createBatch(@RequestBody List<YarnOutDyeingDto> requests) {
+        return new ResponseEntity<>(service.createBatch(requests), HttpStatus.CREATED);
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<YarnOutDyeing> update(@PathVariable Long id, @RequestBody YarnOutDyeingDto request) {
         return ResponseEntity.ok(service.update(id, request));

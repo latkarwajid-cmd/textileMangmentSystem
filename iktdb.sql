@@ -279,6 +279,9 @@ CREATE TABLE sizing_sets (
     tickit_id BIGINT,
     sizing_id BIGINT,
     party_id BIGINT,
+    yarn_inward_id BIGINT,
+    sizing_inward_id BIGINT,
+    set_no VARCHAR(100),
 
     quality VARCHAR(255),
 
@@ -471,7 +474,15 @@ CREATE TABLE yarn_out_dyeing (
 
     CONSTRAINT fk_dyeing_party
         FOREIGN KEY (party_id)
-        REFERENCES parties(party_id)
+        REFERENCES parties(party_id),
+
+    CONSTRAINT fk_dyeing_yarn_inward
+        FOREIGN KEY (yarn_inward_id)
+        REFERENCES yarn_inward(yarn_inward_id),
+
+    CONSTRAINT fk_dyeing_sizing_inward
+        FOREIGN KEY (sizing_inward_id)
+        REFERENCES sizing_yarn_inward(sizing_inward_id)
 );
 
 

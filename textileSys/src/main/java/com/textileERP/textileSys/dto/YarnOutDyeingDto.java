@@ -13,6 +13,9 @@ import java.time.LocalDate;
 public class YarnOutDyeingDto {
 
     private String gatePassNo;
+    private Long yarnInwardId;
+    private Long sizingInwardId;
+    private String setNo;
     private Long sizingSetId;
     private Long orderId;
     private LocalDate outDate;

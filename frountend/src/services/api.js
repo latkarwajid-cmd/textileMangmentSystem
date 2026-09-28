@@ -183,6 +183,7 @@ export const api = {
     getAll: () => request('/api/yarn-out-dyeing'),
     getById: (id) => request(`/api/yarn-out-dyeing/${id}`),
     create: (data) => request('/api/yarn-out-dyeing', { method: 'POST', body: JSON.stringify(data) }),
+    createBatch: (data) => request('/api/yarn-out-dyeing/batch', { method: 'POST', body: JSON.stringify(data) }),
     update: (id, data) => request(`/api/yarn-out-dyeing/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id) => request(`/api/yarn-out-dyeing/${id}`, { method: 'DELETE' }),
   },

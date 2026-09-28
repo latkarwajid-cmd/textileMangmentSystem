@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { api } from '../services/api';
-import { Package, Search, CheckCircle2, Plus } from 'lucide-react';
+import { Package, CheckCircle2, Plus } from 'lucide-react';
+import { IssueYarnPickerModal } from '../components/IssueYarnPickerModal';
 
 const emptyForm = {
   getpassNo: '',
@@ -16,14 +17,21 @@ export const RewindingIssueView = () => {
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
+  const [sourceFilter, setSourceFilter] = useState('all');
   const [issueRows, setIssueRows] = useState([]);
+  const [loadingStock, setLoadingStock] = useState(false);
   const [rewindingRecords, setRewindingRecords] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [showIssuePicker, setShowIssuePicker] = useState(false);
 
   const fetchAvailableYarn = async () => {
+    setLoadingStock(true);
     try {
-      const data = await api.yarnInward.getAll();
-      const rows = (Array.isArray(data) ? data : [])
+      const [yarnResult, sizingResult] = await Promise.allSettled([
+        api.yarnInward.getAll(),
+        api.sizingYarnInward.getAll(),
+      ]);
+      const yarnRows = (yarnResult.status === 'fulfilled' && Array.isArray(yarnResult.value) ? yarnResult.value : [])
         .filter(item => Number(item.bags ?? 0) > 0)
         .map(item => {
           const totalWeight = Number(item.weightKg ?? 0);
@@ -32,6 +40,11 @@ export const RewindingIssueView = () => {
 
           return {
             id: item.yarnInwardId,
+            key: `yarn-${item.yarnInwardId}`,
+            sourceType: 'yarnIn',
+            sourceLabel: 'Yarn In',
+            type: 'FRESH',
+            setNo: '-',
             serialLabel: item.billNo || `YI-${item.yarnInwardId}`,
             countName: item.count?.countName || item.count?.countNo || '-',
             tickitName: item.tickit?.tickitName || item.tickit?.tickitNo || '-',
@@ -50,9 +63,53 @@ export const RewindingIssueView = () => {
           };
         });
 
-      setIssueRows(rows);
+      const sizingRows = (sizingResult.status === 'fulfilled' && Array.isArray(sizingResult.value) ? sizingResult.value : [])
+        .filter(item => Number(item.bags ?? 0) > 0)
+        .map(item => {
+          const totalBags = Number(item.bags ?? 0);
+          const totalWeight = Number(item.weightKg ?? 0);
+          return {
+            id: item.sizingInwardId,
+            key: `sizing-${item.sizingInwardId}`,
+            sourceType: 'sizingIn',
+            sourceLabel: 'Sizing In',
+            type: 'FRESH',
+            setNo: item.sizingSet?.setNo || '-',
+            serialLabel: `SIn ${item.sizingInwardId}`,
+            countName: item.count?.countName || item.count?.countNo || '-',
+            tickitName: item.tickit?.tickitName || item.tickit?.tickitNo || '-',
+            supplierName: item.party?.partyName || item.sizingUnit?.sizingName || '-',
+            inwardDate: item.inwardDate || '',
+            totalBags,
+            remainingBags: totalBags,
+            cones: 0,
+            weightPerBag: totalBags > 0 ? totalWeight / totalBags : 0,
+            weightKg: totalWeight,
+            remark: item.remark || '',
+            checked: false,
+            issueBags: '',
+            issueCones: '0',
+            issueWeightKg: 0,
+          };
+        });
+
+      if (yarnResult.status === 'rejected' && sizingResult.status === 'rejected') {
+        throw yarnResult.reason || sizingResult.reason;
+      }
+      const availableRows = [...yarnRows, ...sizingRows];
+      setIssueRows(previousRows => {
+        const previousByKey = new Map(previousRows.map(row => [row.key, row]));
+        return availableRows.map(row => {
+          const previous = previousByKey.get(row.key);
+          return previous?.checked
+            ? { ...row, checked: true, issueBags: previous.issueBags, issueCones: previous.issueCones }
+            : row;
+        });
+      });
     } catch (err) {
       addToast(err.message || 'Failed to load available yarn inward stock', 'error');
+    } finally {
+      setLoadingStock(false);
     }
   };
 
@@ -66,7 +123,6 @@ export const RewindingIssueView = () => {
   };
 
   useEffect(() => {
-    fetchAvailableYarn();
     fetchRewindingRecords();
   }, []);
 
@@ -74,10 +130,12 @@ export const RewindingIssueView = () => {
   const filteredIssueRows = useMemo(() => {
     const query = search.trim().toLowerCase();
     return issueRows.filter(row => {
+      if (sourceFilter !== 'all' && row.sourceType !== sourceFilter) return false;
       if (!query) return true;
 
       const haystack = [
         row.serialLabel,
+        row.setNo,
         row.countName,
         row.tickitName,
         row.supplierName,
@@ -86,7 +144,7 @@ export const RewindingIssueView = () => {
 
       return haystack.includes(query);
     });
-  }, [issueRows, search]);
+  }, [issueRows, search, sourceFilter]);
 
   const updateField = (field, value) => {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -94,7 +152,7 @@ export const RewindingIssueView = () => {
 
   const toggleIssueRow = (rowId, checked) => {
     setIssueRows(prev => prev.map(row => {
-      if (row.id !== rowId) return row;
+      if (row.key !== rowId) return row;
 
       const safeBags = Number(row.remainingBags || 0);
       const availableCones = Number(row.cones || 0);
@@ -111,7 +169,7 @@ export const RewindingIssueView = () => {
 
   const handleBagsChange = (rowId, value) => {
     setIssueRows(prev => prev.map(row => {
-      if (row.id !== rowId) return row;
+      if (row.key !== rowId) return row;
 
       if (value === '') {
         return { ...row, issueBags: '', issueWeightKg: 0 };
@@ -129,7 +187,7 @@ export const RewindingIssueView = () => {
 
   const handleConesChange = (rowId, value) => {
     setIssueRows(prev => prev.map(row => {
-      if (row.id !== rowId) return row;
+      if (row.key !== rowId) return row;
 
       if (value === '') {
         return { ...row, issueCones: '' };
@@ -179,7 +237,9 @@ export const RewindingIssueView = () => {
         rewindingName: form.rewindingName,
         remark: form.remark,
         lines: selected.map((row, index) => ({
-          yarnInwardId: row.id,
+          yarnInwardId: row.sourceType === 'yarnIn' ? row.id : null,
+          sizingInwardId: row.sourceType === 'sizingIn' ? row.id : null,
+          setNo: row.setNo === '-' ? null : row.setNo,
           seNo: row.serialLabel || `SE-${index + 1}`,
           countName: row.countName || '-',
           tickitName: row.tickitName || '-',
@@ -205,6 +265,7 @@ export const RewindingIssueView = () => {
 
       await fetchAvailableYarn();
       await fetchRewindingRecords();
+      setShowIssuePicker(false);
       setShowForm(false);
     } catch (err) {
       addToast(err.message || 'Failed to issue yarn to rewinding', 'error');
@@ -238,6 +299,7 @@ export const RewindingIssueView = () => {
                   ...emptyForm,
                   issueDate: new Date().toISOString().split('T')[0],
                 });
+                setShowIssuePicker(false);
                 setShowForm(true);
               }}
             >
@@ -254,6 +316,7 @@ export const RewindingIssueView = () => {
                 <tr>
                   <th>Rewinding Sr No</th>
                   <th>Getpass No</th>
+                  <th>Set No</th>
                   <th>Firm Name</th>
                   <th>Date</th>
                   <th>Rewinding Name</th>
@@ -265,7 +328,7 @@ export const RewindingIssueView = () => {
                 {rewindingRecords.length === 0 ? (
                   <tr>
                     <td
-                      colSpan="6"
+                      colSpan="7"
                       style={{
                         textAlign: 'center',
                         padding: '28px',
@@ -288,6 +351,7 @@ export const RewindingIssueView = () => {
                       {/* Normal running serial number: 1, 2, 3... */}
                       <td>{index + 1}</td>
                       <td>{row.getpassNo || '-'}</td>
+                      <td>{[...new Set((row.lines || []).map(line => line.setNo).filter(Boolean))].join(', ') || '-'}</td>
                       <td>{row.firmName || '-'}</td>
                       <td>{row.issueDate || '-'}</td>
                       <td>{row.rewindingName || '-'}</td>
@@ -307,6 +371,7 @@ export const RewindingIssueView = () => {
                 onClick={() => {
                   setForm(emptyForm);
                   setShowForm(false);
+                  setShowIssuePicker(false);
                 }}
               >
                 Back
@@ -373,127 +438,32 @@ export const RewindingIssueView = () => {
               </div>
             </div>
 
-            <div className="section-card" style={{ marginTop: 20 }}>
-              <div
-                className="section-card-header"
-                style={{ borderBottom: '1px solid var(--border-color)' }}
-              >
-                <div className="section-card-title">
-                  <Search size={18} color="var(--primary-blue)" />
-                  <div>
-                    <h3
-                      style={{
-                        margin: 0,
-                        fontSize: '1rem',
-                        fontWeight: 700,
-                      }}
-                    >
-                      Available Yarn Inward Stock
-                    </h3>
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ marginTop: 16 }}>
-                <div className="search-box" style={{ maxWidth: 360 }}>
-                  <Search size={16} />
-                  <input
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                    placeholder="Search by bill / count / tickit / supplier"
-                  />
-                </div>
-              </div>
-
-              <div className="table-responsive" style={{ marginTop: 16 }}>
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th style={{ width: 52 }}></th>
-                      <th>Se No</th>
-                      <th>Count</th>
-                      <th>Tickit</th>
-                      <th>Supplier</th>
-                      <th>Remaining Bags</th>
-                      <th>Cones</th>
-                      <th>Weight (Kg)</th>
-                      <th>Issue Bags</th>
-                      <th>Issue Cones</th>
-                      <th>Remark</th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {filteredIssueRows.length === 0 ? (
-                      <tr>
-                        <td
-                          colSpan="11"
-                          style={{
-                            textAlign: 'center',
-                            padding: '28px',
-                            color: 'var(--text-muted)',
-                          }}
-                        >
-                          No remaining yarn inward stock is available.
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredIssueRows.map(row => (
-                        <tr key={row.id}>
-                          <td>
-                            <input
-                              type="checkbox"
-                              checked={row.checked}
-                              onChange={e =>
-                                toggleIssueRow(row.id, e.target.checked)
-                              }
-                            />
-                          </td>
-
-                          <td>{row.serialLabel}</td>
-                          <td>{row.countName}</td>
-                          <td>{row.tickitName}</td>
-                          <td>{row.supplierName}</td>
-                          <td>{row.remainingBags}</td>
-                          <td>{row.cones}</td>
-                          <td>{Number(row.weightKg || 0).toFixed(2)}</td>
-
-                          <td>
-                            <input
-                              className="form-control"
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              value={row.issueBags}
-                              onChange={e =>
-                                handleBagsChange(row.id, e.target.value)
-                              }
-                              disabled={!row.checked}
-                            />
-                          </td>
-
-                          <td>
-                            <input
-                              className="form-control"
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              value={row.issueCones}
-                              onChange={e =>
-                                handleConesChange(row.id, e.target.value)
-                              }
-                              disabled={!row.checked}
-                            />
-                          </td>
-
-                          <td>{row.remark || '-'}</td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
+              <button type="button" className="btn btn-secondary" onClick={async () => {
+                setSearch('');
+                setSourceFilter('all');
+                setShowIssuePicker(true);
+                await fetchAvailableYarn();
+              }}>
+                <Package size={16} /> <span>Issue Yarn</span>
+              </button>
             </div>
+
+            <IssueYarnPickerModal
+              isOpen={showIssuePicker}
+              onClose={() => setShowIssuePicker(false)}
+              rows={filteredIssueRows}
+              loading={loadingStock}
+              search={search}
+              onSearchChange={setSearch}
+              sourceFilter={sourceFilter}
+              onSourceFilterChange={setSourceFilter}
+              onToggle={toggleIssueRow}
+              onBagsChange={handleBagsChange}
+              onConesChange={handleConesChange}
+              onDone={() => setShowIssuePicker(false)}
+              showSetNo
+            />
 
             <div
               style={{
@@ -509,7 +479,7 @@ export const RewindingIssueView = () => {
               >
                 <CheckCircle2 size={16} />
                 <span>
-                  {loading ? 'Issuing...' : 'Issue to Rewinding'}
+                {loading ? 'Issuing...' : 'Issue to Rewinding'}
                 </span>
               </button>
             </div>

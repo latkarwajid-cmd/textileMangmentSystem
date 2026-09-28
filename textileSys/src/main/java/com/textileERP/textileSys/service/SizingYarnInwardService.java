@@ -8,6 +8,7 @@ import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -61,6 +62,41 @@ public class SizingYarnInwardService {
     getAllSizingYarnInwards() {
 
         return sizingYarnInwardRepository.findAll();
+    }
+
+    // Deduct sizing inward stock when it is issued to rewinding.
+    @Transactional
+    public SizingYarnInward issueYarn(Long sizingInwardId, BigDecimal givenBags) {
+        if (givenBags == null || givenBags.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new RuntimeException("Issued bags must be greater than zero.");
+        }
+
+        SizingYarnInward inward = getSizingYarnInwardById(sizingInwardId);
+        BigDecimal availableBags = inward.getBags() == null ? BigDecimal.ZERO : inward.getBags();
+        if (givenBags.compareTo(availableBags) > 0) {
+            throw new RuntimeException("Only " + availableBags + " bags are available in sizing inward " + sizingInwardId);
+        }
+
+        BigDecimal availableWeight = inward.getWeightKg() == null ? BigDecimal.ZERO : inward.getWeightKg();
+        BigDecimal remainingBags = availableBags.subtract(givenBags);
+        BigDecimal remainingWeight = availableBags.compareTo(BigDecimal.ZERO) > 0
+                ? availableWeight.multiply(remainingBags).divide(availableBags, 3, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
+        inward.setBags(remainingBags);
+        inward.setWeightKg(remainingWeight);
+        return sizingYarnInwardRepository.save(inward);
+    }
+
+    @Transactional
+    public SizingYarnInward restoreIssuedYarn(Long sizingInwardId, BigDecimal bags, BigDecimal weightKg) {
+        SizingYarnInward inward = getSizingYarnInwardById(sizingInwardId);
+        inward.setBags(value(inward.getBags()).add(value(bags)));
+        inward.setWeightKg(value(inward.getWeightKg()).add(value(weightKg)));
+        return sizingYarnInwardRepository.save(inward);
+    }
+
+    private BigDecimal value(BigDecimal amount) {
+        return amount == null ? BigDecimal.ZERO : amount;
     }
 
     // =========================================================

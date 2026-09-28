@@ -28,6 +28,12 @@ public class RewindingIssueLine {
     @Column(name = "yarn_inward_id")
     private Long yarnInwardId;
 
+    @Column(name = "sizing_inward_id")
+    private Long sizingInwardId;
+
+    @Column(name = "set_no", length = 100)
+    private String setNo;
+
     @Column(name = "se_no", length = 100)
     private String seNo;
 

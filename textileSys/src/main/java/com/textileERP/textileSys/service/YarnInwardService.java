@@ -358,6 +358,21 @@ public class YarnInwardService {
         );
     }
 
+    @Transactional
+    public YarnInward restoreIssuedYarn(Long yarnInwardId, BigDecimal bags, BigDecimal cones, BigDecimal weightKg) {
+        YarnInward inward = getYarnInwardById(yarnInwardId);
+        inward.setBags(value(inward.getBags()).add(value(bags)));
+        inward.setYCone(value(inward.getYCone()).add(value(cones)));
+        inward.setWeightKg(value(inward.getWeightKg()).add(value(weightKg)));
+        BigDecimal originalBags = inward.getOriginalBags();
+        inward.setType(originalBags != null && inward.getBags().compareTo(originalBags) >= 0 ? "FRESH" : "USED");
+        return yarnInwardRepository.save(inward);
+    }
+
+    private BigDecimal value(BigDecimal amount) {
+        return amount == null ? BigDecimal.ZERO : amount;
+    }
+
     // ============================================================
     // DELETE
     // ============================================================

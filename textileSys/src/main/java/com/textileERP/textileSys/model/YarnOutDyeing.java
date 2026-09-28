@@ -24,6 +24,15 @@ public class YarnOutDyeing {
     @Column(name = "gate_pass_no", length = 50)
     private String gatePassNo;
 
+    @Column(name = "yarn_inward_id")
+    private Long yarnInwardId;
+
+    @Column(name = "sizing_inward_id")
+    private Long sizingInwardId;
+
+    @Column(name = "set_no", length = 100)
+    private String setNo;
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "sizing_set_id")
     private SizingSet sizingSet;

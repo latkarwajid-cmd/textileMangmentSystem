@@ -4,9 +4,12 @@ import com.textileERP.textileSys.dto.YarnOutDyeingDto;
 import com.textileERP.textileSys.model.*;
 import com.textileERP.textileSys.repository.*;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class YarnOutDyeingService {
@@ -18,6 +21,9 @@ public class YarnOutDyeingService {
     private final TickitsRepository tickitsRepository;
     private final SizingUnitRepository sizingUnitRepository;
     private final PartiesRepository partiesRepository;
+    private final YarnInwardService yarnInwardService;
+    private final SizingYarnInwardService sizingYarnInwardService;
+    private final YarnReceiveDyeingRepository yarnReceiveDyeingRepository;
 
     public YarnOutDyeingService(
             YarnOutDyeingRepository repository,
@@ -26,7 +32,10 @@ public class YarnOutDyeingService {
             YarnCountRepository yarnCountRepository,
             TickitsRepository tickitsRepository,
             SizingUnitRepository sizingUnitRepository,
-            PartiesRepository partiesRepository) {
+            PartiesRepository partiesRepository,
+            YarnInwardService yarnInwardService,
+            SizingYarnInwardService sizingYarnInwardService,
+            YarnReceiveDyeingRepository yarnReceiveDyeingRepository) {
         this.repository = repository;
         this.sizingSetRepository = sizingSetRepository;
         this.fabricOrderRepository = fabricOrderRepository;
@@ -34,6 +43,9 @@ public class YarnOutDyeingService {
         this.tickitsRepository = tickitsRepository;
         this.sizingUnitRepository = sizingUnitRepository;
         this.partiesRepository = partiesRepository;
+        this.yarnInwardService = yarnInwardService;
+        this.sizingYarnInwardService = sizingYarnInwardService;
+        this.yarnReceiveDyeingRepository = yarnReceiveDyeingRepository;
     }
 
     public List<YarnOutDyeing> getAll() {
@@ -53,24 +65,57 @@ public class YarnOutDyeingService {
         return repository.findByOrderOrderId(orderId);
     }
 
+    @Transactional
     public YarnOutDyeing create(YarnOutDyeingDto request) {
+        if (request.getGatePassNo() == null || request.getGatePassNo().isBlank()) {
+            throw new RuntimeException("Gate pass number is required for a dyeing issue");
+        }
         YarnOutDyeing entity = new YarnOutDyeing();
         map(request, entity);
+        issueStock(request);
         return repository.save(entity);
     }
 
+    @Transactional
+    public List<YarnOutDyeing> createBatch(List<YarnOutDyeingDto> requests) {
+        if (requests == null || requests.isEmpty()) {
+            throw new RuntimeException("At least one yarn stock row must be selected");
+        }
+        return requests.stream().map(this::create).toList();
+    }
+
+    @Transactional
     public YarnOutDyeing update(Long id, YarnOutDyeingDto request) {
         YarnOutDyeing entity = getById(id);
+        boolean stockChanged = !Objects.equals(entity.getYarnInwardId(), request.getYarnInwardId())
+                || !Objects.equals(entity.getSizingInwardId(), request.getSizingInwardId())
+                || !sameAmount(entity.getBags(), request.getBags())
+                || !sameAmount(entity.getCone(), request.getCone())
+                || !sameAmount(entity.getWeightKg(), request.getWeightKg());
+        if (stockChanged && hasReceipts(id)) {
+            throw new RuntimeException("Stock quantities cannot be changed after yarn has been received from dyeing");
+        }
+        if (stockChanged) restoreStock(entity);
         map(request, entity);
+        if (stockChanged && (request.getYarnInwardId() != null || request.getSizingInwardId() != null)) issueStock(request);
         return repository.save(entity);
     }
 
+    @Transactional
     public void delete(Long id) {
-        repository.delete(getById(id));
+        YarnOutDyeing entity = getById(id);
+        if (hasReceipts(id)) {
+            throw new RuntimeException("This dyeing issue has receipt records and cannot be deleted");
+        }
+        restoreStock(entity);
+        repository.delete(entity);
     }
 
     private void map(YarnOutDyeingDto dto, YarnOutDyeing entity) {
         entity.setGatePassNo(dto.getGatePassNo());
+        entity.setYarnInwardId(dto.getYarnInwardId());
+        entity.setSizingInwardId(dto.getSizingInwardId());
+        entity.setSetNo(dto.getSetNo());
         entity.setSizingSet(dto.getSizingSetId() == null ? null : findSizingSet(dto.getSizingSetId()));
         entity.setOrder(findOrder(dto.getOrderId()));
         entity.setOutDate(dto.getOutDate() == null && entity.getOutDate() == null
@@ -84,6 +129,42 @@ public class YarnOutDyeingService {
         entity.setCone(dto.getCone());
         entity.setWeightKg(dto.getWeightKg());
         entity.setRemark(dto.getRemark());
+    }
+
+    private void issueStock(YarnOutDyeingDto request) {
+        boolean yarnSource = request.getYarnInwardId() != null;
+        boolean sizingSource = request.getSizingInwardId() != null;
+        if (yarnSource == sizingSource) {
+            throw new RuntimeException("Select exactly one yarn stock source for dyeing issue");
+        }
+        if (request.getBags() == null || request.getBags().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new RuntimeException("Issued bags must be greater than zero");
+        }
+        if (yarnSource) {
+            yarnInwardService.issueYarn(request.getYarnInwardId(), request.getBags(), value(request.getCone()));
+        } else {
+            sizingYarnInwardService.issueYarn(request.getSizingInwardId(), request.getBags());
+        }
+    }
+
+    private void restoreStock(YarnOutDyeing entity) {
+        if (entity.getYarnInwardId() != null) {
+            yarnInwardService.restoreIssuedYarn(entity.getYarnInwardId(), entity.getBags(), entity.getCone(), entity.getWeightKg());
+        } else if (entity.getSizingInwardId() != null) {
+            sizingYarnInwardService.restoreIssuedYarn(entity.getSizingInwardId(), entity.getBags(), entity.getWeightKg());
+        }
+    }
+
+    private BigDecimal value(BigDecimal amount) {
+        return amount == null ? BigDecimal.ZERO : amount;
+    }
+
+    private boolean sameAmount(BigDecimal left, BigDecimal right) {
+        return left == null ? right == null : right != null && left.compareTo(right) == 0;
+    }
+
+    private boolean hasReceipts(Long dyeingOutId) {
+        return !yarnReceiveDyeingRepository.findByYarnOutDyeingDyeingOutId(dyeingOutId).isEmpty();
     }
 
     private SizingSet findSizingSet(Long id) {

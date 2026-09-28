@@ -16,10 +16,13 @@ public class RewindingIssueService {
 
     private final RewindingIssueRepository repository;
     private final YarnInwardService yarnInwardService;
+    private final SizingYarnInwardService sizingYarnInwardService;
 
-    public RewindingIssueService(RewindingIssueRepository repository, YarnInwardService yarnInwardService) {
+    public RewindingIssueService(RewindingIssueRepository repository, YarnInwardService yarnInwardService,
+                                 SizingYarnInwardService sizingYarnInwardService) {
         this.repository = repository;
         this.yarnInwardService = yarnInwardService;
+        this.sizingYarnInwardService = sizingYarnInwardService;
     }
 
     public List<RewindingIssue> getAll() {
@@ -96,23 +99,31 @@ public class RewindingIssueService {
 
         List<RewindingIssueLine> lines = new ArrayList<>();
         for (RewindingIssueLineDto lineDto : dto.getLines()) {
-            if (lineDto.getYarnInwardId() == null) {
-                throw new RuntimeException("Each rewind line must include a yarn inward source id");
+            boolean hasYarnInward = lineDto.getYarnInwardId() != null;
+            boolean hasSizingInward = lineDto.getSizingInwardId() != null;
+            if (hasYarnInward == hasSizingInward) {
+                throw new RuntimeException("Each rewind line must include exactly one yarn or sizing inward source id");
             }
 
             if (lineDto.getBags() == null || lineDto.getBags().compareTo(java.math.BigDecimal.ZERO) <= 0) {
-                throw new RuntimeException("Issued bags must be greater than zero for yarn inward id: " + lineDto.getYarnInwardId());
+                throw new RuntimeException("Issued bags must be greater than zero");
             }
 
             if (lineDto.getCone() == null || lineDto.getCone().compareTo(java.math.BigDecimal.ZERO) < 0) {
                 throw new RuntimeException("Issued cones cannot be negative for yarn inward id: " + lineDto.getYarnInwardId());
             }
 
-            yarnInwardService.issueYarn(lineDto.getYarnInwardId(), lineDto.getBags(), lineDto.getCone());
+            if (hasYarnInward) {
+                yarnInwardService.issueYarn(lineDto.getYarnInwardId(), lineDto.getBags(), lineDto.getCone());
+            } else {
+                sizingYarnInwardService.issueYarn(lineDto.getSizingInwardId(), lineDto.getBags());
+            }
 
             RewindingIssueLine line = new RewindingIssueLine();
             line.setRewindingIssue(entity);
             line.setYarnInwardId(lineDto.getYarnInwardId());
+            line.setSizingInwardId(lineDto.getSizingInwardId());
+            line.setSetNo(lineDto.getSetNo());
             line.setSeNo(lineDto.getSeNo());
             line.setCountName(lineDto.getCountName());
             line.setTickitName(lineDto.getTickitName());
