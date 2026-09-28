@@ -26,5 +26,7 @@ public class YarnOutDyeingDto {
     private BigDecimal bags;
     private BigDecimal cone;
     private BigDecimal weightKg;
+    private String targetShade;
+    private String dyeingType;
     private String remark;
 }

@@ -57,7 +57,13 @@ export const YarnReceiveDyeingView = () => {
   const selectGatePass = gatePassNo => {
     const selected = gatePassGroups.find(([number]) => number === gatePassNo)?.[1] || [];
     setHeader(previous => ({ ...previous, gatePassNo }));
-    setLines(selected.map(record => ({ sourceId: record.dyeingOutId, receivedWeight: '', wastage: '' })));
+    setLines(selected.map(record => ({
+      sourceId: record.dyeingOutId,
+      targetShade: record.targetShade || '',
+      previousReceived: previouslyConsumed(record.dyeingOutId),
+      receivedWeight: '',
+      wastage: '',
+    })));
   };
 
   const previouslyConsumed = (sourceId, excludedReceiptId = editingRecord?.yarnReceiveDyeingId) => receiveRecords
@@ -91,7 +97,13 @@ export const YarnReceiveDyeingView = () => {
       receiveDate: record.receiveDate || today(),
       remarks: record.remarks || '',
     });
-    setLines([{ sourceId: record.yarnOutDyeing?.dyeingOutId, receivedWeight: record.receivedWeight ?? '', wastage: record.wastage ?? '' }]);
+    setLines([{
+      sourceId: record.yarnOutDyeing?.dyeingOutId,
+      targetShade: record.targetShade || record.yarnOutDyeing?.targetShade || '',
+      previousReceived: previouslyConsumed(record.yarnOutDyeing?.dyeingOutId),
+      receivedWeight: record.receivedWeight ?? '',
+      wastage: record.wastage ?? '',
+    }]);
     setIsModalOpen(true);
   };
 
@@ -120,6 +132,7 @@ export const YarnReceiveDyeingView = () => {
         partyGatePassNo: header.partyGatePassNo || null,
         receivedWeight: numberValue(line.receivedWeight),
         wastage: numberValue(line.wastage),
+        targetShade: line.targetShade || null,
         remarks: header.remarks || null,
       }));
       if (editingRecord) {
@@ -158,7 +171,7 @@ export const YarnReceiveDyeingView = () => {
           <div className="section-card-actions"><div className="search-box"><Search size={16} /><input placeholder="Search gate pass, party, count..." value={search} onChange={event => setSearch(event.target.value)} /></div></div>
         </div>
         <div style={{ padding: '16px 20px' }}><button type="button" className="btn btn-primary" onClick={openModal}><Plus size={18} /> Record Yarn Receipt</button></div>
-        <div className="table-responsive"><table className="data-table"><thead><tr><th>Gate Pass</th><th>Date</th><th>Party Gate Pass</th><th>Count</th><th>Tickit</th><th>Received (Kg)</th><th>Wastage (Kg)</th><th>Remarks</th><th>Actions</th></tr></thead><tbody>{loading ? <tr><td colSpan="9" style={{ textAlign: 'center', padding: '32px' }}><div className="spinner" style={{ margin: '0 auto' }} /></td></tr> : filteredRecords.length === 0 ? <tr><td colSpan="9" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-dim)' }}>No saved yarn receipts found.</td></tr> : filteredRecords.map(record => <tr key={record.yarnReceiveDyeingId}><td>{record.gatePassNo || '-'}</td><td>{record.receiveDate || '-'}</td><td>{record.partyGatePassNo || '-'}</td><td>{record.yarnOutDyeing?.count?.countName || '-'}</td><td>{record.yarnOutDyeing?.tickit?.tickitName || '-'}</td><td>{record.receivedWeight ?? '-'}</td><td>{record.wastage ?? '-'}</td><td>{record.remarks || '-'}</td><td><div style={{ display: 'flex', gap: '6px' }}><button type="button" className="btn-icon" onClick={() => openEditModal(record)} title="Edit receipt"><Edit2 size={16} /></button><button type="button" className="btn-icon" style={{ color: 'var(--accent-rose)' }} onClick={() => handleDelete(record)} title="Delete receipt"><Trash2 size={16} /></button></div></td></tr>)}</tbody></table></div>
+        <div className="table-responsive"><table className="data-table"><thead><tr><th>Gate Pass</th><th>Date</th><th>Shade</th><th>Count</th><th>Tickit</th><th>Received (Kg)</th><th>Wastage (Kg)</th><th>Status</th><th>Remarks</th><th>Actions</th></tr></thead><tbody>{loading ? <tr><td colSpan="10" style={{ textAlign: 'center', padding: '32px' }}><div className="spinner" style={{ margin: '0 auto' }} /></td></tr> : filteredRecords.length === 0 ? <tr><td colSpan="10" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-dim)' }}>No saved yarn receipts found.</td></tr> : filteredRecords.map(record => <tr key={record.yarnReceiveDyeingId}><td>{record.gatePassNo || '-'}</td><td>{record.receiveDate || '-'}</td><td>{record.targetShade || record.yarnOutDyeing?.targetShade || '-'}</td><td>{record.yarnOutDyeing?.count?.countName || '-'}</td><td>{record.yarnOutDyeing?.tickit?.tickitName || '-'}</td><td>{record.receivedWeight ?? '-'}</td><td>{record.wastage ?? '-'}</td><td>{record.yarnOutDyeing?.status || 'PARTIAL'}</td><td>{record.remarks || '-'}</td><td><div style={{ display: 'flex', gap: '6px' }}><button type="button" className="btn-icon" onClick={() => openEditModal(record)} title="Edit receipt"><Edit2 size={16} /></button><button type="button" className="btn-icon" style={{ color: 'var(--accent-rose)' }} onClick={() => handleDelete(record)} title="Delete receipt"><Trash2 size={16} /></button></div></td></tr>)}</tbody></table></div>
       </div>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingRecord ? 'Edit Yarn Receive from Dyeing' : 'Record Yarn Receive from Dyeing'} size="lg">
@@ -169,7 +182,7 @@ export const YarnReceiveDyeingView = () => {
           <div className="form-group"><label>Receive Date *</label><input type="date" className="form-control" value={header.receiveDate} onChange={event => updateHeader('receiveDate', event.target.value)} required /></div>
         </div>
         <div className="dyeing-lines-header"><div><h4>Received Yarn Records</h4><span>Rows are filled from the selected yarn issue gate pass.</span></div></div>
-        <div className="table-responsive"><table className="data-table dyeing-lines-table"><thead><tr><th>Sr. No.</th><th>Count</th><th>Tickit</th><th>Issued (Kg)</th><th>Received (Kg)</th><th>Remaining (Kg)</th><th>Wastage (Kg)</th></tr></thead><tbody>{lines.length === 0 ? <tr><td colSpan="7" style={{ textAlign: 'center', color: 'var(--text-dim)' }}>Select an against challan to load yarn rows.</td></tr> : lines.map((line, index) => { const source = issueRecords.find(record => record.dyeingOutId === line.sourceId); const issued = numberValue(source?.weightKg); const remaining = Math.max(0, issued - previouslyConsumed(line.sourceId) - numberValue(line.receivedWeight) - numberValue(line.wastage)); return <tr key={line.sourceId}><td>{index + 1}</td><td>{source?.count?.countName || '-'}</td><td>{source?.tickit?.tickitName || '-'}</td><td>{issued.toFixed(3)}</td><td><input type="number" min="0" step="0.001" className="form-control" value={line.receivedWeight} onChange={event => updateLine(line.sourceId, 'receivedWeight', event.target.value)} placeholder="0.000" /></td><td>{remaining.toFixed(3)}</td><td><input type="number" min="0" step="0.001" className="form-control" value={line.wastage} onChange={event => updateLine(line.sourceId, 'wastage', event.target.value)} placeholder="0.000" /></td></tr>; })}</tbody></table></div>
+        <div className="table-responsive"><table className="data-table dyeing-lines-table"><thead><tr><th>SR NO</th><th>COUNT & TICKET</th><th>SHADE / COLOR</th><th>ISSUED (KG)</th><th>PREVIOUSLY RECEIVED (KG)</th><th>CURRENT RECEIVED (KG)</th><th>REMAINING (KG)</th><th>WASTAGE (KG)</th></tr></thead><tbody>{lines.length === 0 ? <tr><td colSpan="8" style={{ textAlign: 'center', color: 'var(--text-dim)' }}>Select an against challan to load yarn rows.</td></tr> : lines.map((line, index) => { const source = issueRecords.find(record => record.dyeingOutId === line.sourceId); const issued = numberValue(source?.weightKg); const previous = numberValue(line.previousReceived ?? previouslyConsumed(line.sourceId)); const remaining = Math.max(0, issued - previous - numberValue(line.receivedWeight) - numberValue(line.wastage)); return <tr key={line.sourceId}><td>{index + 1}</td><td>{[source?.count?.countName, source?.tickit?.tickitName].filter(Boolean).join(' ') || '-'}</td><td>{line.targetShade || source?.targetShade || '-'}</td><td>{issued.toFixed(3)}</td><td>{previous.toFixed(3)}</td><td><input type="number" min="0" step="0.001" className="form-control" value={line.receivedWeight} onChange={event => updateLine(line.sourceId, 'receivedWeight', event.target.value)} placeholder="0.000" /></td><td>{remaining.toFixed(3)}</td><td><input type="number" min="0" step="0.001" className="form-control" value={line.wastage} onChange={event => updateLine(line.sourceId, 'wastage', event.target.value)} placeholder="0.000" /></td></tr>; })}</tbody></table></div>
         <div className="form-group dyeing-remark"><label>Remarks</label><textarea className="form-control" value={header.remarks} onChange={event => updateHeader('remarks', event.target.value)} placeholder="Enter remarks" /></div>
         <div className="dyeing-editor-actions"><button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>Close</button><button type="submit" className="btn btn-primary" disabled={saving}><Save size={17} /> {saving ? 'Saving...' : 'Save Receipt'}</button></div></div></form>
       </Modal>

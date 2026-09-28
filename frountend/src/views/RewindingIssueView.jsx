@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { api } from '../services/api';
-import { Package, CheckCircle2, Plus } from 'lucide-react';
+import { Edit2, Package, CheckCircle2, Plus, Trash2 } from 'lucide-react';
 import { IssueYarnPickerModal } from '../components/IssueYarnPickerModal';
+import { Modal } from '../components/Modal';
 
 const emptyForm = {
   getpassNo: '',
@@ -13,16 +14,25 @@ const emptyForm = {
 };
 
 export const RewindingIssueView = () => {
-  const { addToast } = useApp();
+  const { addToast, parties } = useApp();
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [sourceFilter, setSourceFilter] = useState('all');
   const [issueRows, setIssueRows] = useState([]);
+  const [selectedRows, setSelectedRows] = useState([]);
   const [loadingStock, setLoadingStock] = useState(false);
   const [rewindingRecords, setRewindingRecords] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [showIssuePicker, setShowIssuePicker] = useState(false);
+  const [editingRecord, setEditingRecord] = useState(null);
+  const [editForm, setEditForm] = useState(null);
+  const [updating, setUpdating] = useState(false);
+
+  const rewindingParties = useMemo(
+    () => parties.filter(party => party.status !== false && String(party.partyType || '').toUpperCase() === 'REWINDING'),
+    [parties]
+  );
 
   const fetchAvailableYarn = async () => {
     setLoadingStock(true);
@@ -42,7 +52,7 @@ export const RewindingIssueView = () => {
             id: item.yarnInwardId,
             key: `yarn-${item.yarnInwardId}`,
             sourceType: 'yarnIn',
-            sourceLabel: 'Yarn In',
+            sourceLabel: 'Fresh Yarn',
             type: 'FRESH',
             setNo: '-',
             serialLabel: item.billNo || `YI-${item.yarnInwardId}`,
@@ -60,6 +70,8 @@ export const RewindingIssueView = () => {
             issueBags: '',
             issueCones: '',
             issueWeightKg: 0,
+            grossWeight: '',
+            targetOutputType: 'CONES',
           };
         });
 
@@ -72,8 +84,8 @@ export const RewindingIssueView = () => {
             id: item.sizingInwardId,
             key: `sizing-${item.sizingInwardId}`,
             sourceType: 'sizingIn',
-            sourceLabel: 'Sizing In',
-            type: 'FRESH',
+            sourceLabel: 'Returned Yarn',
+            type: 'RETURNED',
             setNo: item.sizingSet?.setNo || '-',
             serialLabel: `SIn ${item.sizingInwardId}`,
             countName: item.count?.countName || item.count?.countNo || '-',
@@ -90,6 +102,8 @@ export const RewindingIssueView = () => {
             issueBags: '',
             issueCones: '0',
             issueWeightKg: 0,
+            grossWeight: '',
+            targetOutputType: 'CONES',
           };
         });
 
@@ -102,7 +116,15 @@ export const RewindingIssueView = () => {
         return availableRows.map(row => {
           const previous = previousByKey.get(row.key);
           return previous?.checked
-            ? { ...row, checked: true, issueBags: previous.issueBags, issueCones: previous.issueCones }
+            ? {
+              ...row,
+              checked: true,
+              issueBags: previous.issueBags,
+              issueCones: previous.issueCones,
+              issueWeightKg: previous.issueWeightKg,
+              grossWeight: previous.grossWeight,
+              targetOutputType: previous.targetOutputType,
+            }
             : row;
         });
       });
@@ -148,6 +170,89 @@ export const RewindingIssueView = () => {
 
   const updateField = (field, value) => {
     setForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const openEditModal = (record) => {
+    setEditingRecord(record);
+    setEditForm({
+      getpassNo: record.getpassNo || '',
+      firmName: record.firmName || '',
+      issueDate: record.issueDate || '',
+      rewindingName: record.rewindingName || '',
+      remark: record.remark || '',
+      lines: (record.lines || []).map(line => ({
+        yarnInwardId: line.yarnInwardId || null,
+        sizingInwardId: line.sizingInwardId || null,
+        setNo: line.setNo || '',
+        seNo: line.seNo || '',
+        countName: line.countName || '',
+        tickitName: line.tickitName || '',
+        bags: line.bags ?? '',
+        cone: line.cone ?? '',
+        weightKg: line.weightKg ?? '',
+        targetOutputType: line.targetOutputType || 'CONES',
+        remark: line.remark || '',
+      })),
+    });
+  };
+
+  const updateEditField = (field, value) => {
+    setEditForm(previous => ({ ...previous, [field]: value }));
+  };
+
+  const updateEditLine = (index, field, value) => {
+    setEditForm(previous => ({
+      ...previous,
+      lines: previous.lines.map((line, lineIndex) => lineIndex === index ? { ...line, [field]: value } : line),
+    }));
+  };
+
+  const handleUpdate = async (event) => {
+    event.preventDefault();
+    if (!editingRecord || !editForm) return;
+    if (!editForm.getpassNo || !editForm.firmName || !editForm.issueDate || !editForm.rewindingName) {
+      addToast('Getpass number, firm name, date and rewinding name are required', 'error');
+      return;
+    }
+
+    try {
+      setUpdating(true);
+      await api.rewindingIssues.update(editingRecord.rewindingIssueId, {
+        ...editForm,
+        lines: editForm.lines.map(line => ({
+          ...line,
+          bags: Number(line.bags),
+          cone: Number(line.cone || 0),
+          weightKg: Number(line.weightKg || 0),
+        })),
+      });
+      addToast('Rewinding issue updated successfully', 'success');
+      setEditingRecord(null);
+      setEditForm(null);
+      await fetchRewindingRecords();
+      await fetchAvailableYarn();
+    } catch (err) {
+      addToast(err.message || 'Failed to update rewinding issue', 'error');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleDelete = async (record) => {
+    if (!record?.rewindingIssueId) return;
+    if (!window.confirm(`Delete rewinding issue ${record.getpassNo || record.rewindingIssueId}? Issued stock will be restored.`)) return;
+
+    try {
+      setLoading(true);
+      await api.rewindingIssues.delete(record.rewindingIssueId);
+      addToast('Rewinding issue deleted and stock restored', 'success');
+      await fetchRewindingRecords();
+      await fetchAvailableYarn();
+    } catch (err) {
+      addToast(err.message || 'Failed to delete rewinding issue', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const toggleIssueRow = (rowId, checked) => {
@@ -199,6 +304,51 @@ export const RewindingIssueView = () => {
     }));
   };
 
+  const handleDoneSelecting = () => {
+    const selected = issueRows.filter(row => row.checked);
+    if (selected.length === 0) {
+      addToast('Select at least one yarn batch to issue', 'warning');
+      return;
+    }
+
+    for (const row of selected) {
+      const issueBags = Number(row.issueBags || 0);
+      const issueCones = Number(row.issueCones || 0);
+      if (!Number.isFinite(issueBags) || issueBags <= 0 || issueBags > Number(row.remainingBags || 0)) {
+        addToast(`Enter valid bags for ${row.serialLabel}. Available: ${row.remainingBags}`, 'error');
+        return;
+      }
+      if (!Number.isFinite(issueCones) || issueCones < 0 || issueCones > Number(row.cones || 0)) {
+        addToast(`Enter valid cones for ${row.serialLabel}. Available: ${row.cones}`, 'error');
+        return;
+      }
+    }
+
+    setSelectedRows(selected.map(row => ({
+      ...row,
+      grossWeight: row.grossWeight || (Number(row.issueWeightKg || 0).toFixed(3)),
+      targetOutputType: row.targetOutputType || 'CONES',
+    })));
+    setShowIssuePicker(false);
+  };
+
+  const removeSelectedRow = (rowKey) => {
+    setSelectedRows(previous => previous.filter(row => row.key !== rowKey));
+    setIssueRows(previous => previous.map(row => row.key === rowKey
+      ? { ...row, checked: false, issueBags: '', issueCones: '', issueWeightKg: 0, grossWeight: '' }
+      : row));
+  };
+
+  const updateSelectedRow = (rowKey, field, value) => {
+    setSelectedRows(previous => previous.map(row => row.key === rowKey ? { ...row, [field]: value } : row));
+    setIssueRows(previous => previous.map(row => row.key === rowKey ? { ...row, [field]: value } : row));
+  };
+
+  const selectedTotals = useMemo(() => selectedRows.reduce((totals, row) => ({
+    bags: totals.bags + (Number(row.issueBags) || 0),
+    weight: totals.weight + (Number(row.grossWeight) || 0),
+  }), { bags: 0, weight: 0 }), [selectedRows]);
+
   const handleSubmit = async (event) => {
     event.preventDefault();
 
@@ -207,7 +357,7 @@ export const RewindingIssueView = () => {
       return;
     }
 
-    const selected = issueRows.filter(row => row.checked);
+    const selected = selectedRows;
     if (selected.length === 0) {
       addToast('Please select at least one yarn inward record to issue', 'error');
       return;
@@ -245,7 +395,8 @@ export const RewindingIssueView = () => {
           tickitName: row.tickitName || '-',
           bags: Number(row.issueBags || 0),
           cone: Number(row.issueCones || 0),
-          weightKg: Number(row.issueWeightKg || 0),
+          weightKg: Number(row.grossWeight || row.issueWeightKg || 0),
+          targetOutputType: row.targetOutputType || 'CONES',
           remark: row.remark || 'Issued to rewinding',
         })),
       };
@@ -253,6 +404,7 @@ export const RewindingIssueView = () => {
       await api.rewindingIssues.create(payload);
       addToast('Yarn issued to rewinding successfully', 'success');
       setForm(emptyForm);
+      setSelectedRows([]);
       setIssueRows(prev =>
         prev.map(row => ({
           ...row,
@@ -260,6 +412,8 @@ export const RewindingIssueView = () => {
           issueBags: '',
           issueCones: '',
           issueWeightKg: 0,
+          grossWeight: '',
+          targetOutputType: 'CONES',
         }))
       );
 
@@ -321,6 +475,7 @@ export const RewindingIssueView = () => {
                   <th>Date</th>
                   <th>Rewinding Name</th>
                   <th>Remark</th>
+                  <th style={{ textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
 
@@ -328,7 +483,7 @@ export const RewindingIssueView = () => {
                 {rewindingRecords.length === 0 ? (
                   <tr>
                     <td
-                      colSpan="7"
+                      colSpan="8"
                       style={{
                         textAlign: 'center',
                         padding: '28px',
@@ -356,6 +511,25 @@ export const RewindingIssueView = () => {
                       <td>{row.issueDate || '-'}</td>
                       <td>{row.rewindingName || '-'}</td>
                       <td>{row.remark || '-'}</td>
+                      <td style={{ textAlign: 'right' }}>
+                        <button
+                          type="button"
+                          className="btn-icon"
+                          title="Edit rewinding issue"
+                          onClick={() => openEditModal(row)}
+                        >
+                          <Edit2 size={15} />
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-icon"
+                          title="Delete rewinding issue"
+                          style={{ color: 'var(--color-danger)' }}
+                          onClick={() => handleDelete(row)}
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </td>
                     </tr>
                   ))
                 )}
@@ -414,13 +588,19 @@ export const RewindingIssueView = () => {
 
               <div className="form-group">
                 <label>Rewinding Name</label>
-                <input
+                <select
                   className="form-control"
                   value={form.rewindingName}
                   onChange={e => updateField('rewindingName', e.target.value)}
-                  placeholder="Rewinding unit"
                   required
-                />
+                >
+                  <option value="">-- Select Rewinding Party --</option>
+                  {rewindingParties.map(party => (
+                    <option key={party.partyId} value={party.partyName}>
+                      {party.partyName}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div
@@ -435,6 +615,80 @@ export const RewindingIssueView = () => {
                   onChange={e => updateField('remark', e.target.value)}
                   placeholder="Optional remarks"
                 />
+              </div>
+            </div>
+
+            <div className="section-card" style={{ marginTop: 20, border: '1px solid var(--border-color)' }}>
+              <div className="section-card-header" style={{ padding: '12px 16px' }}>
+                <div className="section-card-title">
+                  <Package size={17} color="var(--primary-blue)" />
+                  <h4 style={{ margin: 0 }}>Selected Yarn Batches</h4>
+                </div>
+                <span className="badge badge-info">{selectedRows.length} Items</span>
+              </div>
+              <div className="table-responsive">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Yarn Serial / Lot</th>
+                      <th>Count</th>
+                      <th>Ticket / Brand</th>
+                      <th>Issued Bags</th>
+                      <th>Issued Cones</th>
+                      <th>Gross Weight (Kg)</th>
+                      <th>Target Output</th>
+                      <th style={{ textAlign: 'right' }}>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedRows.length === 0 ? (
+                      <tr><td colSpan="8" style={{ textAlign: 'center', padding: 24, color: 'var(--text-muted)' }}>Use Issue Yarn to select fresh or returned yarn batches.</td></tr>
+                    ) : selectedRows.map(row => (
+                      <tr key={row.key}>
+                        <td style={{ fontWeight: 700 }}>{row.serialLabel}</td>
+                        <td>{row.countName || '-'}</td>
+                        <td>{row.tickitName || '-'}</td>
+                        <td>{row.issueBags}</td>
+                        <td>{row.issueCones || 0}</td>
+                        <td>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.001"
+                            className="form-control"
+                            value={row.grossWeight}
+                            onChange={event => updateSelectedRow(row.key, 'grossWeight', event.target.value)}
+                          />
+                        </td>
+                        <td>
+                          <select
+                            className="form-control"
+                            value={row.targetOutputType}
+                            onChange={event => updateSelectedRow(row.key, 'targetOutputType', event.target.value)}
+                          >
+                            <option value="CONES">Cones</option>
+                            <option value="PIRN">PIRN</option>
+                            <option value="CHEESE">Cheese</option>
+                          </select>
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          <button type="button" className="btn-icon" title="Remove selected batch" onClick={() => removeSelectedRow(row.key)}>
+                            <Trash2 size={15} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr style={{ background: '#f8fafc' }}>
+                      <td colSpan="3" style={{ textAlign: 'right', fontWeight: 700 }}>Totals</td>
+                      <td style={{ fontWeight: 700 }}>{selectedTotals.bags.toFixed(3)}</td>
+                      <td style={{ fontWeight: 700 }}>{selectedRows.reduce((sum, row) => sum + (Number(row.issueCones) || 0), 0).toFixed(3)}</td>
+                      <td style={{ fontWeight: 700 }}>{selectedTotals.weight.toFixed(3)} kg</td>
+                      <td colSpan="2"></td>
+                    </tr>
+                  </tfoot>
+                </table>
               </div>
             </div>
 
@@ -461,7 +715,7 @@ export const RewindingIssueView = () => {
               onToggle={toggleIssueRow}
               onBagsChange={handleBagsChange}
               onConesChange={handleConesChange}
-              onDone={() => setShowIssuePicker(false)}
+              onDone={handleDoneSelecting}
               showSetNo
             />
 
@@ -484,6 +738,83 @@ export const RewindingIssueView = () => {
               </button>
             </div>
           </form>
+        )}
+
+        {editingRecord && editForm && (
+          <Modal
+            isOpen={true}
+            onClose={() => { setEditingRecord(null); setEditForm(null); }}
+            title={`Edit Rewinding Issue - ${editingRecord.getpassNo || ''}`}
+            size="lg"
+          >
+            <form onSubmit={handleUpdate}>
+              <div className="form-grid-4">
+                <div className="form-group">
+                  <label>Getpass No</label>
+                  <input className="form-control" value={editForm.getpassNo} onChange={event => updateEditField('getpassNo', event.target.value)} required />
+                </div>
+                <div className="form-group">
+                  <label>Firm Name</label>
+                  <input className="form-control" value={editForm.firmName} onChange={event => updateEditField('firmName', event.target.value)} required />
+                </div>
+                <div className="form-group">
+                  <label>Dispatch Date</label>
+                  <input type="date" className="form-control" value={editForm.issueDate} onChange={event => updateEditField('issueDate', event.target.value)} required />
+                </div>
+                <div className="form-group">
+                  <label>Rewinding Party</label>
+                  <select className="form-control" value={editForm.rewindingName} onChange={event => updateEditField('rewindingName', event.target.value)} required>
+                    <option value="">-- Select Rewinding Party --</option>
+                    {rewindingParties.map(party => <option key={party.partyId} value={party.partyName}>{party.partyName}</option>)}
+                  </select>
+                </div>
+                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                  <label>Remark</label>
+                  <textarea className="form-control" rows={2} value={editForm.remark} onChange={event => updateEditField('remark', event.target.value)} />
+                </div>
+              </div>
+
+              <div className="table-responsive" style={{ marginTop: 16 }}>
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Yarn Serial / Lot</th>
+                      <th>Count</th>
+                      <th>Ticket / Brand</th>
+                      <th>Bags</th>
+                      <th>Cones</th>
+                      <th>Weight (Kg)</th>
+                      <th>Output</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {editForm.lines.map((line, index) => (
+                      <tr key={`${line.yarnInwardId || line.sizingInwardId}-${index}`}>
+                        <td>{line.seNo || '-'}</td>
+                        <td>{line.countName || '-'}</td>
+                        <td>{line.tickitName || '-'}</td>
+                        <td><input type="number" min="0" step="0.001" className="form-control" value={line.bags} onChange={event => updateEditLine(index, 'bags', event.target.value)} required /></td>
+                        <td><input type="number" min="0" step="0.001" className="form-control" value={line.cone} onChange={event => updateEditLine(index, 'cone', event.target.value)} /></td>
+                        <td><input type="number" min="0" step="0.001" className="form-control" value={line.weightKg} onChange={event => updateEditLine(index, 'weightKg', event.target.value)} /></td>
+                        <td>
+                          <select className="form-control" value={line.targetOutputType} onChange={event => updateEditLine(index, 'targetOutputType', event.target.value)}>
+                            <option value="CONES">Cones</option>
+                            <option value="PIRN">PIRN</option>
+                            <option value="CHEESE">Cheese</option>
+                          </select>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="modal-footer" style={{ marginTop: 20 }}>
+                <button type="button" className="btn btn-secondary" onClick={() => { setEditingRecord(null); setEditForm(null); }}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={updating}>{updating ? 'Updating...' : 'Update Rewinding Issue'}</button>
+              </div>
+            </form>
+          </Modal>
         )}
       </div>
     </div>

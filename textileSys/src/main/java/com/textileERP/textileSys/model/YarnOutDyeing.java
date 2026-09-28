@@ -105,4 +105,10 @@ public class YarnOutDyeing {
 
     @Column(name = "status", length = 30)
     private String status;
+
+    @Column(name = "target_shade", length = 100)
+    private String targetShade;
+
+    @Column(name = "dyeing_type", length = 30)
+    private String dyeingType;
 }

@@ -129,6 +129,10 @@ public class YarnOutDyeingService {
         entity.setCone(dto.getCone());
         entity.setWeightKg(dto.getWeightKg());
         entity.setRemark(dto.getRemark());
+        entity.setTargetShade(dto.getTargetShade());
+        entity.setDyeingType(dto.getDyeingType() == null || dto.getDyeingType().isBlank()
+            ? "Cone Dyeing" : dto.getDyeingType());
+        entity.setStatus("Active at Dyeing Unit");
     }
 
     private void issueStock(YarnOutDyeingDto request) {

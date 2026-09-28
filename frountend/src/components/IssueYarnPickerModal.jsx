@@ -37,9 +37,9 @@ export const IssueYarnPickerModal = ({
             onChange={event => onSourceFilterChange(event.target.value)}
             style={{ maxWidth: 180 }}
           >
-            <option value="all">All Inward</option>
-            <option value="yarnIn">Yarn In</option>
-            <option value="sizingIn">Sizing In</option>
+            <option value="all">All Stock</option>
+            <option value="yarnIn">Fresh Yarn</option>
+            <option value="sizingIn">Returned Yarn</option>
           </select>
         </div>
 
@@ -84,7 +84,7 @@ export const IssueYarnPickerModal = ({
                   </td>
                   {showSetNo && <td>{row.setNo || '-'}</td>}
                   <td style={{ fontWeight: 700, color: 'var(--primary-blue-dark)' }}>{row.serialLabel}</td>
-                  <td><span className={`badge ${row.type === 'USED' ? 'badge-warning' : 'badge-success'}`}>{row.type || 'FRESH'}</span></td>
+                  <td><span className={`badge ${row.type === 'RETURNED' ? 'badge-warning' : 'badge-success'}`}>{row.sourceLabel || row.type || 'FRESH'}</span></td>
                   <td>{row.countName || '-'}</td>
                   <td>{row.tickitName || '-'}</td>
                   <td style={{ fontWeight: 700, textAlign: 'right' }}>{row.remainingBags}</td>

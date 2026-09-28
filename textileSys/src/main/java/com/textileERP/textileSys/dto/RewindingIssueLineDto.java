@@ -19,5 +19,6 @@ public class RewindingIssueLineDto {
     private BigDecimal bags;
     private BigDecimal cone;
     private BigDecimal weightKg;
+    private String targetOutputType;
     private String remark;
 }

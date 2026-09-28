@@ -44,7 +44,7 @@ public class RewindingIssueService {
 
     @Transactional
     public RewindingIssue create(RewindingIssueDto dto) {
-        validate(dto);
+        validate(dto, null);
         RewindingIssue entity = new RewindingIssue();
         apply(dto, entity);
         return repository.save(entity);
@@ -52,8 +52,9 @@ public class RewindingIssueService {
 
     @Transactional
     public RewindingIssue update(Long id, RewindingIssueDto dto) {
-        validate(dto);
         RewindingIssue entity = getById(id);
+        validate(dto, id);
+        restoreLines(entity);
         apply(dto, entity);
         return repository.save(entity);
     }
@@ -61,10 +62,11 @@ public class RewindingIssueService {
     @Transactional
     public void delete(Long id) {
         RewindingIssue entity = getById(id);
+        restoreLines(entity);
         repository.delete(entity);
     }
 
-    private void validate(RewindingIssueDto dto) {
+    private void validate(RewindingIssueDto dto, Long ignoredId) {
         if (dto == null) {
             throw new RuntimeException("Request body is required");
         }
@@ -85,8 +87,29 @@ public class RewindingIssueService {
             throw new RuntimeException("At least one yarn line is required");
         }
 
-        if (repository.existsByGetpassNoIgnoreCase(dto.getGetpassNo())) {
+        if (repository.existsByGetpassNoIgnoreCase(dto.getGetpassNo())
+                && (ignoredId == null || !repository.findByGetpassNoIgnoreCase(dto.getGetpassNo())
+                .map(existing -> existing.getRewindingIssueId().equals(ignoredId)).orElse(false))) {
             throw new RuntimeException("This getpass number already exists");
+        }
+    }
+
+    private void restoreLines(RewindingIssue entity) {
+        for (RewindingIssueLine line : entity.getLines()) {
+            if (line.getYarnInwardId() != null) {
+                yarnInwardService.restoreIssuedYarn(
+                        line.getYarnInwardId(),
+                        line.getBags(),
+                        line.getCone(),
+                        line.getWeightKg()
+                );
+            } else if (line.getSizingInwardId() != null) {
+                sizingYarnInwardService.restoreIssuedYarn(
+                        line.getSizingInwardId(),
+                        line.getBags(),
+                        line.getWeightKg()
+                );
+            }
         }
     }
 
@@ -114,9 +137,9 @@ public class RewindingIssueService {
             }
 
             if (hasYarnInward) {
-                yarnInwardService.issueYarn(lineDto.getYarnInwardId(), lineDto.getBags(), lineDto.getCone());
+                yarnInwardService.issueYarn(lineDto.getYarnInwardId(), lineDto.getBags(), lineDto.getCone(), lineDto.getWeightKg());
             } else {
-                sizingYarnInwardService.issueYarn(lineDto.getSizingInwardId(), lineDto.getBags());
+                sizingYarnInwardService.issueYarn(lineDto.getSizingInwardId(), lineDto.getBags(), lineDto.getWeightKg());
             }
 
             RewindingIssueLine line = new RewindingIssueLine();
@@ -130,6 +153,7 @@ public class RewindingIssueService {
             line.setBags(lineDto.getBags());
             line.setCone(lineDto.getCone());
             line.setWeightKg(lineDto.getWeightKg());
+            line.setTargetOutputType(lineDto.getTargetOutputType());
             line.setRemark(lineDto.getRemark());
             lines.add(line);
         }
