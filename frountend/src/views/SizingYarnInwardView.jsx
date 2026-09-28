@@ -372,11 +372,6 @@ export const SizingYarnInwardView = () => {
             </div>
 
             <div className="form-group">
-              <label>Set No (Auto-filled)</label>
-              <input className="form-control" value={formData.setNo} readOnly placeholder="Select a sizing set" />
-            </div>
-
-            <div className="form-group">
               <label>Sizing Unit</label>
               <select
                 className="form-control"
@@ -483,7 +478,7 @@ export const SizingYarnInwardView = () => {
                   <thead><tr><th>Sr.</th><th>Item Type</th><th>Yarn Count & Ticket</th><th>Bags Returned</th><th>Cones Returned</th><th>Returned Wt (Kg)</th><th>Destination Warehouse</th><th>Remark</th><th>Action</th></tr></thead>
                   <tbody>{(formData.balanceReturns || []).map((row, index) => <tr key={row.id}>
                     <td>{index + 1}</td>
-                    <td><select className="beam-table-input" value={row.itemType} onChange={e => updateReturnRow(row.id, 'itemType', e.target.value)}><option>Full Bag</option><option>Partial / Loose Bag</option><option>Empty Cones Scrap</option></select></td>
+                    <td><select className="beam-table-input" value={row.itemType} onChange={e => updateReturnRow(row.id, 'itemType', e.target.value)}><option>Full Bag</option><option>Partial / Loose Bag</option><option>Kharad</option></select></td>
                     <td><input className="beam-table-input" value={row.countAndTicket} onChange={e => updateReturnRow(row.id, 'countAndTicket', e.target.value)} placeholder="Count & Ticket" /></td>
                     <td><input type="number" step="0.01" min="0" className="beam-table-input" value={row.bagsReturned} onChange={e => updateReturnRow(row.id, 'bagsReturned', e.target.value)} /></td>
                     <td><input type="number" min="0" className="beam-table-input" value={row.conesReturned} onChange={e => updateReturnRow(row.id, 'conesReturned', e.target.value)} /></td>
