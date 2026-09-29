@@ -30,10 +30,6 @@ public class YarnInwardDto {
     private BigDecimal gstPercent;
     private BigDecimal calculatedAmount;
     private BigDecimal actualAmount;
-    private String paymentStatus;
-    private LocalDate paidDate;
-    private BigDecimal paidAmount;
-    private BigDecimal receivedPayment;
     private BigDecimal billAmount;
     private BigDecimal originalYCone;
     private BigDecimal yCone;

@@ -42,11 +42,6 @@ public class YarnInwardController {
         return ResponseEntity.ok(yarnInwardService.getYarnInwardsByOrderId(orderId));
     }
 
-    @GetMapping("/payment-status/{status}")
-    public ResponseEntity<List<YarnInward>> getYarnInwardsByPaymentStatus(@PathVariable String status) {
-        return ResponseEntity.ok(yarnInwardService.getYarnInwardsByPaymentStatus(status));
-    }
-
     @PostMapping
     public ResponseEntity<YarnInward> createYarnInward(@RequestBody YarnInwardDto request) {
         YarnInward savedYarnInward = yarnInwardService.createYarnInward(request);
