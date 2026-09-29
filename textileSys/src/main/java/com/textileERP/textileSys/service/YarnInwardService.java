@@ -86,17 +86,6 @@ public class YarnInwardService {
     }
 
     // ============================================================
-    // GET BY PAYMENT STATUS
-    // ============================================================
-
-    public List<YarnInward> getYarnInwardsByPaymentStatus(
-            String paymentStatus) {
-
-        return yarnInwardRepository
-                .findByPaymentStatusIgnoreCase(paymentStatus);
-    }
-
-    // ============================================================
     // CREATE
     // ============================================================
 
@@ -846,34 +835,8 @@ public class YarnInwardService {
             }
         }
 
-        // ========================================================
-        // PAYMENT / OTHER FIELDS
-        // ========================================================
-
         entity.setActualAmount(
                 dto.getActualAmount()
-        );
-
-        entity.setPaymentStatus(
-                dto.getPaymentStatus() != null
-                        ? dto.getPaymentStatus()
-                        : "UNPAID"
-        );
-
-        entity.setPaidDate(
-                dto.getPaidDate()
-        );
-
-        entity.setPaidAmount(
-                dto.getPaidAmount() != null
-                        ? dto.getPaidAmount()
-                        : BigDecimal.ZERO
-        );
-
-        entity.setReceivedPayment(
-                dto.getReceivedPayment() != null
-                        ? dto.getReceivedPayment()
-                        : BigDecimal.ZERO
         );
 
         entity.setBillAmount(

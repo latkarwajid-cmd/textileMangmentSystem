@@ -86,19 +86,6 @@ public class YarnInward {
     @Column(name = "actual_amount", precision = 14, scale = 2)
     private BigDecimal actualAmount;
 
-    @Column(name = "payment_status", length = 20)
-    private String paymentStatus = "UNPAID";
-
-    @Column(name = "paid_date")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
-    private LocalDate paidDate;
-
-    @Column(name = "paid_amount", precision = 14, scale = 2)
-    private BigDecimal paidAmount = BigDecimal.ZERO;
-
-    @Column(name = "received_payment", precision = 14, scale = 2)
-    private BigDecimal receivedPayment = BigDecimal.ZERO;
-
     @Column(name = "bill_amount", precision = 14, scale = 2)
     private BigDecimal billAmount;
     @Column(name = "original_cone", precision = 12, scale = 3)

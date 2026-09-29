@@ -34,7 +34,6 @@ export const YarnInwardView = () => {
   const [inwardList, setInwardList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ALL');
   const [orderFilter, setOrderFilter] = useState('ALL');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -233,9 +232,8 @@ export const YarnInwardView = () => {
       item.count?.countName?.toLowerCase().includes(search.toLowerCase()) ||
       item.tickit?.tickitName?.toLowerCase().includes(search.toLowerCase()) ||
       item.storageLocation?.locationName?.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = statusFilter === 'ALL' || item.paymentStatus?.toUpperCase() === statusFilter;
     const matchesOrder = orderFilter === 'ALL' || String(item.order?.orderId) === String(orderFilter);
-    return matchesSearch && matchesStatus && matchesOrder;
+    return matchesSearch && matchesOrder;
   });
 
   return (
@@ -271,18 +269,6 @@ export const YarnInwardView = () => {
                   {o.orderNo} ({o.party?.partyName || 'Order'})
                 </option>
               ))}
-            </select>
-
-            <select
-              className="form-control"
-              style={{ width: '130px' }}
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <option value="ALL">All Statuses</option>
-              <option value="UNPAID">Unpaid</option>
-              <option value="PAID">Paid</option>
-              <option value="PARTIAL">Partial</option>
             </select>
 
           </div>

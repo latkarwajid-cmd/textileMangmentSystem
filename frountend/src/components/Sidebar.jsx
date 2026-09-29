@@ -12,10 +12,11 @@ import {
   Layers3,
   Droplets,
   RefreshCcw,
-  PackageCheck
+  PackageCheck,
+  LogOut
 } from 'lucide-react';
 
-export const Sidebar = () => {
+export const Sidebar = ({ onLogout }) => {
   const { currentTab, setCurrentTab } = useApp();
 
   const navItems = [
@@ -71,8 +72,14 @@ export const Sidebar = () => {
       </nav>
 
       <div className="sidebar-footer">
-        <span>Spring Boot API</span>
-        <span className="badge badge-success" style={{ fontSize: '0.7rem' }}>Connected</span>
+        <div className="sidebar-connection">
+          <span>Spring Boot API</span>
+          <span className="badge badge-success" style={{ fontSize: '0.7rem' }}>Connected</span>
+        </div>
+        <button className="sidebar-logout" onClick={onLogout}>
+          <LogOut size={16} />
+          <span>Log out</span>
+        </button>
       </div>
     </aside>
   );
