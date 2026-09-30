@@ -67,6 +67,11 @@ public class SizingYarnInwardService {
     // Deduct sizing inward stock when it is issued to rewinding.
     @Transactional
     public SizingYarnInward issueYarn(Long sizingInwardId, BigDecimal givenBags) {
+                return issueYarn(sizingInwardId, givenBags, null);
+        }
+
+        @Transactional
+        public SizingYarnInward issueYarn(Long sizingInwardId, BigDecimal givenBags, BigDecimal givenWeightKg) {
         if (givenBags == null || givenBags.compareTo(BigDecimal.ZERO) <= 0) {
             throw new RuntimeException("Issued bags must be greater than zero.");
         }
@@ -78,8 +83,14 @@ public class SizingYarnInwardService {
         }
 
         BigDecimal availableWeight = inward.getWeightKg() == null ? BigDecimal.ZERO : inward.getWeightKg();
+        if (givenWeightKg != null && (givenWeightKg.compareTo(BigDecimal.ZERO) < 0
+                || givenWeightKg.compareTo(availableWeight) > 0)) {
+            throw new RuntimeException("Issued weight must be between 0 and " + availableWeight + " kg.");
+        }
         BigDecimal remainingBags = availableBags.subtract(givenBags);
-        BigDecimal remainingWeight = availableBags.compareTo(BigDecimal.ZERO) > 0
+        BigDecimal remainingWeight = givenWeightKg != null
+                ? availableWeight.subtract(givenWeightKg)
+                : availableBags.compareTo(BigDecimal.ZERO) > 0
                 ? availableWeight.multiply(remainingBags).divide(availableBags, 3, RoundingMode.HALF_UP)
                 : BigDecimal.ZERO;
         inward.setBags(remainingBags);

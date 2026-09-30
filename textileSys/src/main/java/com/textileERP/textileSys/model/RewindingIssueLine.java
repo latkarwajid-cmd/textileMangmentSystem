@@ -52,6 +52,9 @@ public class RewindingIssueLine {
     @Column(name = "weight_kg", precision = 12, scale = 3)
     private BigDecimal weightKg;
 
+    @Column(name = "target_output_type", length = 30)
+    private String targetOutputType;
+
     @Column(name = "remark", columnDefinition = "TEXT")
     private String remark;
 }

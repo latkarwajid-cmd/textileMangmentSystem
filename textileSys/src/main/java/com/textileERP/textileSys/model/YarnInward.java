@@ -122,5 +122,11 @@ public class YarnInward {
     @Column(name = "remark2", columnDefinition = "TEXT")
     private String remark2;
 
+    @Column(name = "target_shade", length = 100)
+    private String targetShade;
+
+    @Column(name = "inventory_status", length = 50)
+    private String inventoryStatus;
+
 
 }

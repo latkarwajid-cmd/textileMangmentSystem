@@ -43,4 +43,7 @@ public class YarnReceiveDyeing {
 
     @Column(name = "remarks", columnDefinition = "TEXT")
     private String remarks;
+
+    @Column(name = "target_shade", length = 100)
+    private String targetShade;
 }

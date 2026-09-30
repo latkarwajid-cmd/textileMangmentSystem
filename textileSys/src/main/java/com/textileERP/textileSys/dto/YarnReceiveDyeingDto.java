@@ -18,4 +18,5 @@ public class YarnReceiveDyeingDto {
     private BigDecimal receivedWeight;
     private BigDecimal wastage;
     private String remarks;
+    private String targetShade;
 }

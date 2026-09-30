@@ -177,6 +177,12 @@ export const api = {
     delete: (id) => request(`/api/rewinding-issues/${id}`, { method: 'DELETE' }),
   },
 
+  rewindingYarnReceive: {
+    getIssue: (getpassNo) => request(`/api/rewinding-yarn-receive/issue/${encodeURIComponent(getpassNo)}`),
+    getByGetpass: (getpassNo) => request(`/api/rewinding-yarn-receive/${encodeURIComponent(getpassNo)}`),
+    complete: (data) => request('/api/rewinding-yarn-receive/complete', { method: 'POST', body: JSON.stringify(data) }),
+  },
+
   // Beam Inward API
   beamInward: {
     getAll: () => request('/api/beam-inward'),

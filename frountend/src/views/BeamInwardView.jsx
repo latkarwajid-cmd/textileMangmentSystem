@@ -1501,7 +1501,8 @@ export const BeamInwardView = () => {
                         step="0.01"
                         className="form-control"
                         value={reconciliation.totalIssuedBags}
-                        onChange={e => setReconciliation({ ...reconciliation, totalIssuedBags: e.target.value })}
+                        readOnly
+                        style={{ background: '#f8fafc' }}
                         placeholder="e.g. 28 Bags"
                       />
                     </div>
@@ -1542,7 +1543,8 @@ export const BeamInwardView = () => {
                         step="0.001"
                         className="form-control"
                         value={reconciliation.issuedGrossWeight}
-                        onChange={e => setReconciliation({ ...reconciliation, issuedGrossWeight: e.target.value })}
+                        readOnly
+                        style={{ background: '#f8fafc' }}
                         placeholder="e.g. 1733.760"
                       />
                     </div>
@@ -1627,7 +1629,7 @@ export const BeamInwardView = () => {
                                 >
                                   <option value="Full Bag">Full Bag</option>
                                   <option value="Partial / Loose Bag">Partial / Loose Bag</option>
-                                  <option value="Empty Cones Scrap">Empty Cones Scrap</option>
+                                  <option value="Kharad">Kharad</option>
                                 </select>
                               </td>
 
