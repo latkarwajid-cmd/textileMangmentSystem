@@ -26,6 +26,7 @@ import {
 import { useApp } from '../context/AppContext';
 import { api } from '../services/api';
 import { IssueYarnPickerModal } from '../components/IssueYarnPickerModal';
+import { getYarnInwardOrigin, sortIssueStockRows } from '../utils/sizingYarnReturn';
 
 
 /* =========================================================
@@ -76,6 +77,50 @@ const totalEndsFromQuality = (quality) => {
   return epi && reedSpace ? String(Number(epi) * Number(reedSpace)) : '';
 };
 
+const evaluateArithmetic = (source) => {
+  const expression = source.trim().replace(/^=/, '').replace(/\s+/g, '');
+  const tokens = expression.match(/(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?|[()+\-*/]/g) || [];
+  if (!expression || tokens.join('') !== expression) throw new Error('Invalid formula');
+
+  let position = 0;
+  const parseFactor = () => {
+    const token = tokens[position++];
+    if (token === '+') return parseFactor();
+    if (token === '-') return -parseFactor();
+    if (token === '(') {
+      const value = parseExpression();
+      if (tokens[position++] !== ')') throw new Error('Missing closing parenthesis');
+      return value;
+    }
+    const value = Number(token);
+    if (!token || !Number.isFinite(value)) throw new Error('Expected a number');
+    return value;
+  };
+  const parseTerm = () => {
+    let value = parseFactor();
+    while (tokens[position] === '*' || tokens[position] === '/') {
+      const operator = tokens[position++];
+      const next = parseFactor();
+      if (operator === '/' && next === 0) throw new Error('Cannot divide by zero');
+      value = operator === '*' ? value * next : value / next;
+    }
+    return value;
+  };
+  const parseExpression = () => {
+    let value = parseTerm();
+    while (tokens[position] === '+' || tokens[position] === '-') {
+      const operator = tokens[position++];
+      const next = parseTerm();
+      value = operator === '+' ? value + next : value - next;
+    }
+    return value;
+  };
+
+  const result = parseExpression();
+  if (position !== tokens.length || !Number.isFinite(result)) throw new Error('Invalid formula');
+  return Number(result.toFixed(6));
+};
+
 
 const nextSetNoFromList = (
   existingSets = []
@@ -114,6 +159,7 @@ const createEmptyHeader = () => ({
 
   partyId: '',
   firmName: '',
+  orderFirmName: '',
   sizingPartyId: '',
   sizingName: '',
 
@@ -241,7 +287,7 @@ export const SizingSetsView = () => {
     if (calculatedEnds && calculatedEnds !== String(header.totalEnds)) {
       setHeader(prev => ({ ...prev, totalEnds: calculatedEnds }));
     }
-  }, [header.quality, header.totalEnds]);
+  }, [header.quality]);
 
 
   /* =========================================================
@@ -376,6 +422,16 @@ export const SizingSetsView = () => {
       [field]: value
     }));
 
+  };
+
+  const handleFormulaKeyDown = (event, field) => {
+    if (event.key !== 'Enter' || !event.currentTarget.value.trim().startsWith('=')) return;
+    event.preventDefault();
+    try {
+      updateHeader(field, String(evaluateArithmetic(event.currentTarget.value)));
+    } catch (error) {
+      addToast(error.message || 'Enter a valid arithmetic formula', 'error');
+    }
   };
 
 
@@ -563,6 +619,9 @@ export const SizingSetsView = () => {
 
         firmName:
           sizingSet.party?.partyName || '',
+
+        orderFirmName:
+          sizingSet.order?.supplier?.partyName || '',
 
         sizingPartyId:
           sizingSet.sizingUnit?.party?.partyId || '',
@@ -754,6 +813,7 @@ export const SizingSetsView = () => {
         partyId: '',
 
         firmName: '',
+        orderFirmName: '',
 
         quality: '',
 
@@ -797,6 +857,9 @@ export const SizingSetsView = () => {
           firmName:
             details.customerName ||
             '',
+
+          orderFirmName:
+            details.supplierName || details.firmName || openOrders.find(item => item.orderNo?.trim().toLowerCase() === orderNo.trim().toLowerCase())?.supplier?.partyName || '',
 
           quality:
             details.quality ||
@@ -860,6 +923,9 @@ export const SizingSetsView = () => {
 
             firmName:
               local.party?.partyName || '',
+
+            orderFirmName:
+              local.supplier?.partyName || '',
 
             quality:
               local.quality || '',
@@ -1203,6 +1269,8 @@ export const SizingSetsView = () => {
                   0,
                   currentAvailableBags
                 );
+              const origin = getYarnInwardOrigin(item);
+              const originLabel = origin === 'dyeing' ? 'Dyeing' : origin === 'rewinding' ? 'Rewinding' : '';
 
 
               /*
@@ -1224,14 +1292,16 @@ export const SizingSetsView = () => {
                 sourceType:
                   'yarnIn',
 
+                origin,
+
                 sourceLabel:
-                  'Yarn In',
+                  'FRESH',
 
                 type:
                   'FRESH',
 
                 serialLabel:
-                  `YIn ${rowId}`,
+                  `${originLabel ? `${originLabel} · ` : ''}${item.billNo || `YIn ${rowId}`}`,
 
                 id:
                   rowId,
@@ -1260,6 +1330,12 @@ export const SizingSetsView = () => {
 
                 remainingBags:
                   remainingBags,
+
+                conePerBag:
+                  item.conePerBag == null ? null : Number(item.conePerBag),
+
+                availableCones:
+                  Number(item.yCone ?? 0),
 
                 weightPerBag:
                   Number(
@@ -1336,6 +1412,18 @@ export const SizingSetsView = () => {
               // not subtract the persisted allocation map a second time.
               const originalBags = Number(item.bags ?? 0);
               const remainingBags = Math.max(0, originalBags);
+              const remarkCones = item.remark?.match(/Cones Returned:\s*([^|]+)/i)?.[1];
+              const issuedConesMatch = item.remark?.match(/Issued:\s*([\d.]+)\s*bags?\s*\/\s*([\d.]+)\s*cones/i);
+              const availableCones = item.conesReturned != null
+                ? Number(item.conesReturned)
+                : Number(remarkCones || 0);
+              const conesPerBag = item.conesPerBag != null
+                ? Number(item.conesPerBag)
+                : issuedConesMatch && Number(issuedConesMatch[1]) > 0
+                  ? Number(issuedConesMatch[2]) / Number(issuedConesMatch[1])
+                  : null;
+              const sizingType = item.itemType || item.remark?.split(' | ')[0] || '';
+              const isFullBag = sizingType.trim().toLowerCase() === 'full bag';
 
 
               /*
@@ -1355,11 +1443,13 @@ export const SizingSetsView = () => {
                 sourceType:
                   'sizingIn',
 
+                origin: 'sizing',
+
                 sourceLabel:
-                  'Sizing In',
+                  isFullBag ? 'FRESH' : 'RETURNED',
 
                 type:
-                  'FRESH',
+                  isFullBag ? 'FRESH' : 'RETURNED',
 
                 serialLabel:
                   `SIn ${rowId}`,
@@ -1388,6 +1478,15 @@ export const SizingSetsView = () => {
 
                 remainingBags:
                   remainingBags,
+
+                conePerBag:
+                  conesPerBag,
+
+                availableCones:
+                  availableCones,
+
+                sizingType:
+                  sizingType,
 
                 weightPerBag:
                   Number(
@@ -1420,10 +1519,7 @@ export const SizingSetsView = () => {
                   '',
 
                 issueCones:
-                  Number(item.cone ?? item.cones ?? 0) ||
-                  (Number(item.weightKg ?? 0) > 0 && originalBags > 0
-                    ? Number(item.weightKg ?? 0) / originalBags
-                    : 0),
+                  availableCones,
 
                 weightPerBag:
                   Number(
@@ -1447,35 +1543,7 @@ export const SizingSetsView = () => {
          * ===================================================
          */
 
-        const sortedRows = [
-          ...yarnRows,
-          ...sizingRows
-        ].sort(
-          (a, b) => {
-
-            const order = {
-              yarnIn: 1,
-              sizingIn: 2
-            };
-
-            return (
-              (
-                order[a.sourceType] ??
-                99
-              ) -
-              (
-                order[b.sourceType] ??
-                99
-              )
-            )
-            ||
-            (
-              Number(a.id) -
-              Number(b.id)
-            );
-
-          }
-        );
+        const sortedRows = sortIssueStockRows([...yarnRows, ...sizingRows]);
 
 
         setIssueRows(
@@ -2218,6 +2286,11 @@ export const SizingSetsView = () => {
 
       event.preventDefault();
 
+      if ([header.totalEnds, header.sizingMtr].some(value => String(value || '').trim().startsWith('='))) {
+        addToast('Press Enter to calculate each formula before saving', 'error');
+        return;
+      }
+
 
       /*
        * Set number.
@@ -2594,6 +2667,8 @@ export const SizingSetsView = () => {
           onBagsChange={updateIssueRowBag}
           onConesChange={updateIssueRowCone}
           onDone={handleIssueDone}
+          showConeDetails
+          showSizingType
         />
 
 
@@ -2977,7 +3052,7 @@ export const SizingSetsView = () => {
                 {/* FIRM NAME */}
 
                 <div className="form-group">
-                  <label>Firm Name</label>
+                  <label>Sizing Firm Name</label>
                   <input
                     type="text"
                     className="form-control"
@@ -2985,6 +3060,11 @@ export const SizingSetsView = () => {
                     onChange={e => updateHeader('sizingName', e.target.value)}
                     placeholder="Enter firm name"
                   />
+                </div>
+
+                <div className="form-group">
+                  <label>Firm Name</label>
+                  <input type="text" className="form-control" value={header.orderFirmName || ''} readOnly placeholder="Auto-filled from order" />
                 </div>
 
 
@@ -3061,8 +3141,8 @@ export const SizingSetsView = () => {
 
 
                   <input
-                    type="number"
-                    min="0"
+                    type="text"
+                    inputMode="decimal"
                     className="form-control"
                     value={
                       header.totalEnds
@@ -3073,7 +3153,8 @@ export const SizingSetsView = () => {
                         e.target.value
                       )
                     }
-                    placeholder="e.g. 7000"
+                    onKeyDown={e => handleFormulaKeyDown(e, 'totalEnds')}
+                    placeholder="calculate or enter value"
                   />
 
                 </div>
@@ -3086,14 +3167,13 @@ export const SizingSetsView = () => {
                 >
 
                   <label>
-                    Target / Cone
+                    Tara
                   </label>
 
 
                   <input
-                    type="number"
-                    min="0"
-                    step="0.001"
+                    type="text"
+                    inputMode="decimal"
                     className="form-control"
                     value={
                       header.cone
@@ -3104,7 +3184,8 @@ export const SizingSetsView = () => {
                         e.target.value
                       )
                     }
-                    placeholder="e.g. 24"
+                    onKeyDown={e => handleFormulaKeyDown(e, 'cone')}
+                    placeholder="calculate or enter value"
                   />
 
                 </div>
@@ -3151,9 +3232,8 @@ export const SizingSetsView = () => {
 
 
                   <input
-                    type="number"
-                    min="0"
-                    step="0.001"
+                    type="text"
+                    inputMode="decimal"
                     className="form-control"
                     value={
                       header.sizingMtr
@@ -3164,7 +3244,8 @@ export const SizingSetsView = () => {
                         e.target.value
                       )
                     }
-                    placeholder="e.g. 120.5"
+                    onKeyDown={e => handleFormulaKeyDown(e, 'sizingMtr')}
+                    placeholder="calculate or enter value"
                   />
 
                 </div>

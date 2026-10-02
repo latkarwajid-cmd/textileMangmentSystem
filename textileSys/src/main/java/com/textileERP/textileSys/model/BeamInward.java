@@ -103,6 +103,9 @@ public class BeamInward {
 
     @Column(name = "remark", columnDefinition = "TEXT")
     private String remark;
+
+    @Column(name = "archived")
+    private Boolean archived = false;
 }
 
 

@@ -164,13 +164,12 @@ export const DashboardView = () => {
                 <th>Weight (Kg)</th>
                 <th>Bill No</th>
                 <th>Amount (₹)</th>
-                <th>Payment Status</th>
               </tr>
             </thead>
             <tbody>
               {recentInwards.length === 0 ? (
                 <tr>
-                  <td colSpan="9" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
+                  <td colSpan="8" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
                     No recent inward records found. Click on 'Yarn Inward' to add one.
                   </td>
                 </tr>
@@ -186,11 +185,6 @@ export const DashboardView = () => {
                     <td>{item.billNo || '-'}</td>
                     <td style={{ fontWeight: 600, color: 'var(--primary-blue-dark)' }}>
                       ₹{item.actualAmount || item.calculatedAmount || '-'}
-                    </td>
-                    <td>
-                      <span className={`badge ${item.paymentStatus === 'PAID' ? 'badge-success' : 'badge-warning'}`}>
-                        {item.paymentStatus || 'UNPAID'}
-                      </span>
                     </td>
                   </tr>
                 ))

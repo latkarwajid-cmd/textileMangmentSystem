@@ -18,6 +18,7 @@ public class YarnInwardDto {
     private Long tickitId;
     private BigDecimal originalBags;
     private BigDecimal bags;
+    private BigDecimal conePerBag;
     private String type;
     private BigDecimal weightKg;
     private BigDecimal weightPerBag;

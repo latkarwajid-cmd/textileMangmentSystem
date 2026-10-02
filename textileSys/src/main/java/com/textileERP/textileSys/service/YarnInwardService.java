@@ -46,7 +46,9 @@ public class YarnInwardService {
     // ============================================================
 
     public List<YarnInward> getAllYarnInwards() {
-        return yarnInwardRepository.findAll();
+        return yarnInwardRepository.findAll().stream()
+                .filter(inward -> !Boolean.TRUE.equals(inward.getArchived()))
+                .toList();
     }
 
     // ============================================================
@@ -82,18 +84,9 @@ public class YarnInwardService {
             Long orderId) {
 
         return yarnInwardRepository
-                .findByOrderOrderId(orderId);
-    }
-
-    // ============================================================
-    // GET BY PAYMENT STATUS
-    // ============================================================
-
-    public List<YarnInward> getYarnInwardsByPaymentStatus(
-            String paymentStatus) {
-
-        return yarnInwardRepository
-                .findByPaymentStatusIgnoreCase(paymentStatus);
+                .findByOrderOrderId(orderId).stream()
+                .filter(inward -> !Boolean.TRUE.equals(inward.getArchived()))
+                .toList();
     }
 
     // ============================================================
@@ -370,7 +363,7 @@ public class YarnInwardService {
                 BigDecimal.ZERO
         ) > 0) {
 
-            yarnInward.setType("USED");
+            yarnInward.setType("REMAINING");
 
         } else {
 
@@ -389,7 +382,7 @@ public class YarnInwardService {
         inward.setYCone(value(inward.getYCone()).add(value(cones)));
         inward.setWeightKg(value(inward.getWeightKg()).add(value(weightKg)));
         BigDecimal originalBags = inward.getOriginalBags();
-        inward.setType(originalBags != null && inward.getBags().compareTo(originalBags) >= 0 ? "FRESH" : "USED");
+        inward.setType(originalBags != null && inward.getBags().compareTo(originalBags) >= 0 ? "FRESH" : "REMAINING");
         return yarnInwardRepository.save(inward);
     }
 
@@ -406,9 +399,8 @@ public class YarnInwardService {
         YarnInward yarnInward =
                 getYarnInwardById(id);
 
-        yarnInwardRepository.delete(
-                yarnInward
-        );
+        yarnInward.setArchived(true);
+        yarnInwardRepository.save(yarnInward);
     }
 
     // ============================================================
@@ -628,6 +620,13 @@ public class YarnInwardService {
         // BAGS + Y CONE
         // ========================================================
 
+        entity.setConePerBag(dto.getConePerBag());
+        BigDecimal totalCones = dto.getYCone();
+        if (totalCones == null && dto.getBags() != null && dto.getConePerBag() != null) {
+            totalCones = dto.getBags().multiply(dto.getConePerBag())
+                    .setScale(3, RoundingMode.HALF_UP);
+        }
+
         if (entity.getYarnInwardId() == null) {
 
             // ----------------------------------------------------
@@ -640,8 +639,8 @@ public class YarnInwardService {
                             : BigDecimal.ZERO;
 
             BigDecimal initialCone =
-                    dto.getYCone() != null
-                            ? dto.getYCone()
+                    totalCones != null
+                            ? totalCones
                             : BigDecimal.ZERO;
 
             entity.setOriginalBags(
@@ -660,7 +659,9 @@ public class YarnInwardService {
                     initialCone
             );
 
-            entity.setType("FRESH");
+            entity.setType(dto.getType() != null && !dto.getType().isBlank()
+                    ? dto.getType().trim().toUpperCase()
+                    : "FRESH");
 
         } else {
 
@@ -689,10 +690,10 @@ public class YarnInwardService {
                 );
             }
 
-            if (dto.getYCone() != null) {
+            if (totalCones != null) {
 
                 entity.setYCone(
-                        dto.getYCone()
+                        totalCones
                 );
             }
 
@@ -846,34 +847,8 @@ public class YarnInwardService {
             }
         }
 
-        // ========================================================
-        // PAYMENT / OTHER FIELDS
-        // ========================================================
-
         entity.setActualAmount(
                 dto.getActualAmount()
-        );
-
-        entity.setPaymentStatus(
-                dto.getPaymentStatus() != null
-                        ? dto.getPaymentStatus()
-                        : "UNPAID"
-        );
-
-        entity.setPaidDate(
-                dto.getPaidDate()
-        );
-
-        entity.setPaidAmount(
-                dto.getPaidAmount() != null
-                        ? dto.getPaidAmount()
-                        : BigDecimal.ZERO
-        );
-
-        entity.setReceivedPayment(
-                dto.getReceivedPayment() != null
-                        ? dto.getReceivedPayment()
-                        : BigDecimal.ZERO
         );
 
         entity.setBillAmount(

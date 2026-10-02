@@ -34,7 +34,9 @@ public class FabricOrderService {
 
     // Get all orders
     public List<FabricOrder> getAllOrders() {
-        return fabricOrderRepository.findAll();
+        return fabricOrderRepository.findAll().stream()
+                .filter(order -> !Boolean.TRUE.equals(order.getArchived()))
+                .toList();
     }
 
     // Get by ID
@@ -48,7 +50,7 @@ public class FabricOrderService {
             throw new RuntimeException("Order number is required");
         }
         String clean = orderNo.trim();
-        java.util.Optional<FabricOrder> orderOpt = fabricOrderRepository.findByOrderNoIgnoreCase(clean);
+        java.util.Optional<FabricOrder> orderOpt = fabricOrderRepository.findActiveByOrderNoIgnoreCase(clean);
         if (orderOpt.isEmpty()) {
             try {
                 Long id = Long.parseLong(clean);
@@ -57,7 +59,7 @@ public class FabricOrderService {
         }
         if (orderOpt.isEmpty() && clean.toLowerCase().startsWith("order ")) {
             String sub = clean.substring(6).trim();
-            orderOpt = fabricOrderRepository.findByOrderNoIgnoreCase(sub);
+            orderOpt = fabricOrderRepository.findActiveByOrderNoIgnoreCase(sub);
         }
         FabricOrder order = orderOpt
                 .orElseThrow(() -> new RuntimeException("Fabric order not found with order no: " + orderNo));
@@ -120,7 +122,7 @@ public class FabricOrderService {
             throw new RuntimeException("Party ID is required for fabric order");
         }
 
-        if (fabricOrderRepository.existsByOrderNoIgnoreCase(request.getOrderNo())) {
+        if (fabricOrderRepository.existsActiveByOrderNoIgnoreCase(request.getOrderNo())) {
             throw new RuntimeException("Fabric order already exists with order no: " + request.getOrderNo());
         }
 
@@ -148,7 +150,7 @@ public class FabricOrderService {
     public FabricOrder updateOrder(Long id, FabricOrderDto request) {
         FabricOrder order = getOrderById(id);
 
-        if (fabricOrderRepository.findByOrderNoIgnoreCase(request.getOrderNo())
+        if (fabricOrderRepository.findActiveByOrderNoIgnoreCase(request.getOrderNo())
                 .filter(existing -> !existing.getOrderId().equals(id))
                 .isPresent()) {
             throw new RuntimeException("Fabric order already exists with order no: " + request.getOrderNo());
@@ -202,6 +204,7 @@ public class FabricOrderService {
     // Delete Order
     public void deleteOrder(Long id) {
         FabricOrder order = getOrderById(id);
-        fabricOrderRepository.delete(order);
+        order.setArchived(true);
+        fabricOrderRepository.save(order);
     }
 }

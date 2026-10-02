@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
@@ -19,8 +19,10 @@ import { BeamInwardView } from './views/BeamInwardView';
 import { RewindingIssueView } from './views/RewindingIssueView';
 import { RewindingYarnView } from './views/RewindingYarnView';
 import { WeftDispatchView } from './views/WeftDispatchView';
+import { LoginView } from './views/LoginView';
+import { api } from './services/api';
 
-const MainContent = () => {
+const MainContent = ({ onLogout }) => {
   const { currentTab } = useApp();
 
   const views = [
@@ -42,7 +44,7 @@ const MainContent = () => {
 
   return (
     <div className="app-layout">
-      <Sidebar />
+      <Sidebar onLogout={onLogout} />
       <div className="main-wrapper">
         <Header />
         <ErrorBoundary>
@@ -59,9 +61,33 @@ const MainContent = () => {
 };
 
 export function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(
+    () => Boolean(sessionStorage.getItem('textile_access_token'))
+  );
+
+  useEffect(() => {
+    const handleExpiredToken = () => setIsAuthenticated(false);
+    window.addEventListener('textile-auth-expired', handleExpiredToken);
+    return () => window.removeEventListener('textile-auth-expired', handleExpiredToken);
+  }, []);
+
+  const handleLogin = async (email, password) => {
+    const result = await api.auth.login(email, password);
+    if (!result?.accessToken) throw new Error('Login did not return an access token.');
+    sessionStorage.setItem('textile_access_token', result.accessToken);
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('textile_access_token');
+    setIsAuthenticated(false);
+  };
+
+  if (!isAuthenticated) return <LoginView onLogin={handleLogin} />;
+
   return (
     <AppProvider>
-      <MainContent />
+      <MainContent onLogout={handleLogout} />
     </AppProvider>
   );
 }

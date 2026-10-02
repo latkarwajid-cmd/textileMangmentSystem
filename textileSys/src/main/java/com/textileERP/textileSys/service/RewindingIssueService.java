@@ -26,7 +26,9 @@ public class RewindingIssueService {
     }
 
     public List<RewindingIssue> getAll() {
-        return repository.findAll();
+        return repository.findAll().stream()
+                .filter(issue -> !Boolean.TRUE.equals(issue.getArchived()))
+                .toList();
     }
 
     public RewindingIssue getById(Long id) {
@@ -39,6 +41,7 @@ public class RewindingIssueService {
             throw new RuntimeException("Getpass number is required");
         }
         return repository.findByGetpassNoIgnoreCase(getpassNo)
+                .filter(issue -> !Boolean.TRUE.equals(issue.getArchived()))
                 .orElseThrow(() -> new RuntimeException("Rewinding issue not found for getpass: " + getpassNo));
     }
 
@@ -55,6 +58,8 @@ public class RewindingIssueService {
         RewindingIssue entity = getById(id);
         validate(dto, id);
         restoreLines(entity);
+        // Flush the restored stock before revalidating the edited issue against it.
+        repository.flush();
         apply(dto, entity);
         return repository.save(entity);
     }
@@ -63,7 +68,8 @@ public class RewindingIssueService {
     public void delete(Long id) {
         RewindingIssue entity = getById(id);
         restoreLines(entity);
-        repository.delete(entity);
+        entity.setArchived(true);
+        repository.save(entity);
     }
 
     private void validate(RewindingIssueDto dto, Long ignoredId) {

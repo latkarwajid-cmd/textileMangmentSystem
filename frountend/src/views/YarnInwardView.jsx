@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
 import { api } from '../services/api';
 import { 
@@ -30,11 +30,10 @@ const formatDate = (date) => {
 };
 
 export const YarnInwardView = () => {
-  const { parties, fabricOrders, tickits, yarnCounts, sizingUnits, yarnStorageLocations, addToast } = useApp();
+  const { currentTab, parties, fabricOrders, tickits, yarnCounts, sizingUnits, yarnStorageLocations, addToast } = useApp();
   const [inwardList, setInwardList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ALL');
   const [orderFilter, setOrderFilter] = useState('ALL');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -49,6 +48,7 @@ export const YarnInwardView = () => {
     storageSizingId: '',
     storagePartyId: '',
     bags: '',
+    conePerBag: '',
     yCone: '',
     weightKg: '',
     weightPerBag: '',
@@ -64,7 +64,7 @@ export const YarnInwardView = () => {
 
   const [viewDetailItem, setViewDetailItem] = useState(null);
 
-  const fetchInwardList = async () => {
+  const fetchInwardList = useCallback(async () => {
     setLoading(true);
     try {
       const data = await api.yarnInward.getAll();
@@ -74,11 +74,11 @@ export const YarnInwardView = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [addToast]);
 
   useEffect(() => {
-    fetchInwardList();
-  }, []);
+    if (currentTab === 'yarn-inward') fetchInwardList();
+  }, [currentTab, fetchInwardList]);
 
   // Real-time calculation effect
   useEffect(() => {
@@ -111,6 +111,18 @@ export const YarnInwardView = () => {
       : { ...prev, weightKg: calculatedWeight });
   }, [formData.bags, formData.weightPerBag]);
 
+  useEffect(() => {
+    const bags = Number(formData.bags);
+    const conePerBag = Number(formData.conePerBag);
+    const totalCones = bags > 0 && conePerBag >= 0 && formData.conePerBag !== ''
+      ? (bags * conePerBag).toFixed(3)
+      : '';
+
+    setFormData(prev => prev.yCone === totalCones
+      ? prev
+      : { ...prev, yCone: totalCones });
+  }, [formData.bags, formData.conePerBag]);
+
   const selectedOrder = fabricOrders.find(o => String(o.orderId) === String(formData.orderId));
   const selectedStorageLocation = yarnStorageLocations.find(location => String(location.storageLocationId) === String(formData.storageLocationId));
   const isSizingStorage = selectedStorageLocation?.locationName?.toLowerCase() === 'sizing';
@@ -140,6 +152,7 @@ export const YarnInwardView = () => {
       storageSizingId: '',
       storagePartyId: '',
       bags: '',
+      conePerBag: '',
       yCone: '',
       weightKg: '',
       rate: '',
@@ -163,6 +176,7 @@ export const YarnInwardView = () => {
       storageSizingId: item.storageSizingUnit?.sizingId || '',
       storagePartyId: item.storageParty?.partyId || '',
       bags: item.bags || '',
+      conePerBag: item.conePerBag ?? (Number(item.bags) > 0 ? (Number(item.yCone || 0) / Number(item.bags)).toFixed(3) : ''),
       yCone: item.yCone ?? '',
       weightKg: item.weightKg || '',
       weightPerBag: item.weightPerBag || '',
@@ -188,6 +202,7 @@ export const YarnInwardView = () => {
         storageSizingId: formData.storageSizingId ? Number(formData.storageSizingId) : null,
         storagePartyId: formData.storagePartyId ? Number(formData.storagePartyId) : null,
         bags: formData.bags ? Number(formData.bags) : null,
+        conePerBag: formData.conePerBag !== '' ? Number(formData.conePerBag) : null,
         yCone: formData.yCone !== '' ? Number(formData.yCone) : null,
         weightKg: formData.weightKg ? Number(formData.weightKg) : null,
         weightPerBag: formData.weightPerBag ? Number(formData.weightPerBag) : null,
@@ -233,9 +248,8 @@ export const YarnInwardView = () => {
       item.count?.countName?.toLowerCase().includes(search.toLowerCase()) ||
       item.tickit?.tickitName?.toLowerCase().includes(search.toLowerCase()) ||
       item.storageLocation?.locationName?.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = statusFilter === 'ALL' || item.paymentStatus?.toUpperCase() === statusFilter;
     const matchesOrder = orderFilter === 'ALL' || String(item.order?.orderId) === String(orderFilter);
-    return matchesSearch && matchesStatus && matchesOrder;
+    return matchesSearch && matchesOrder;
   });
 
   return (
@@ -273,18 +287,6 @@ export const YarnInwardView = () => {
               ))}
             </select>
 
-            <select
-              className="form-control"
-              style={{ width: '130px' }}
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <option value="ALL">All Statuses</option>
-              <option value="UNPAID">Unpaid</option>
-              <option value="PAID">Paid</option>
-              <option value="PARTIAL">Partial</option>
-            </select>
-
           </div>
         </div>
 
@@ -308,6 +310,7 @@ export const YarnInwardView = () => {
                 <th>Weight (Kg)</th>
                 <th>Type</th>
                 <th>Bags</th>
+                <th>Cone/Bag</th>
                 <th>Cone</th>
                 <th>Weight/Bag (Kg)</th>
                 <th>Rate (₹)</th>
@@ -319,13 +322,13 @@ export const YarnInwardView = () => {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="19" style={{ textAlign: 'center', padding: '32px' }}>
+                  <td colSpan="20" style={{ textAlign: 'center', padding: '32px' }}>
                     <div className="spinner" style={{ margin: '0 auto' }}></div>
                   </td>
                 </tr>
               ) : filteredList.length === 0 ? (
                 <tr>
-                  <td colSpan="19" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
+                  <td colSpan="20" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
                     No inward records found. Click 'New Yarn Inward' to record a shipment.
                   </td>
                 </tr>
@@ -348,11 +351,12 @@ export const YarnInwardView = () => {
                     <td>{item.tickit?.tickitName || '-'}</td>
                     <td>{item.weightPerBag ? `${item.weightPerBag} kg` : '-'}</td>
                     <td>
-                      <span className={`badge ${item.type === 'USED' ? 'badge-warning' : 'badge-success'}`}>
-                        {item.type || 'FRESH'}
+                      <span className={`badge ${item.type === 'USED' || item.type === 'REMAINING' ? 'badge-warning' : 'badge-success'}`}>
+                        {item.type === 'USED' ? 'REMAINING' : (item.type || 'FRESH')}
                       </span>
                     </td>
                     <td>{item.bags ?? '-'}</td>
+                    <td>{item.conePerBag ?? '-'}</td>
                     <td>{item.yCone ?? '-'}</td>
                     <td style={{ fontWeight: 600 }}>{item.weightKg ? `${item.weightKg} kg` : '-'}</td>
                     <td>{item.rate ? `₹${item.rate}` : '-'}</td>
@@ -417,6 +421,10 @@ export const YarnInwardView = () => {
                 <div>
                   <div style={{ fontSize: '0.7rem', color: '#0369a1', fontWeight: 600, textTransform: 'uppercase' }}>Customer Party</div>
                   <div style={{ fontWeight: 700, color: '#0f172a' }}>{selectedOrder.party?.partyName || '-'}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.7rem', color: '#0369a1', fontWeight: 600, textTransform: 'uppercase' }}>Firm Name</div>
+                  <div style={{ fontWeight: 700, color: '#0f172a' }}>{selectedOrder.supplier?.partyName || '-'}</div>
                 </div>
                 <div>
                   <div style={{ fontSize: '0.7rem', color: '#0369a1', fontWeight: 600, textTransform: 'uppercase' }}>Fabric Quality</div>
@@ -528,7 +536,8 @@ export const YarnInwardView = () => {
                 <option value="">-- Select Tickit --</option>
                 {tickits.map(t => (
                   <option key={t.tickitId} value={t.tickitId}>
-                    {t.tickitName} ({t.party?.partyName || 'Party'})
+                    {t.tickitName} 
+                    {/* ({t.party?.partyName || 'Party'}) */}
                   </option>
                 ))}
               </select>
@@ -538,7 +547,7 @@ export const YarnInwardView = () => {
               <label>Bags Count</label>
               <input
                 type="number"
-                step="0.001"
+                step="1"
                 className="form-control"
                 value={formData.bags}
                 onChange={(e) => setFormData({ ...formData, bags: e.target.value })}
@@ -547,7 +556,20 @@ export const YarnInwardView = () => {
             </div>
 
             <div className="form-group">
-              <label>Cone</label>
+              <label>Cone per Bag</label>
+              <input
+                type="number"
+                step="0.001"
+                min="0"
+                className="form-control"
+                value={formData.conePerBag}
+                onChange={(e) => setFormData({ ...formData, conePerBag: e.target.value })}
+                placeholder="e.g. 10"
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Total Cone</label>
               <input
                 type="number"
                 step="0.001"
@@ -555,7 +577,7 @@ export const YarnInwardView = () => {
                 className="form-control"
                 value={formData.yCone}
                 onChange={(e) => setFormData({ ...formData, yCone: e.target.value })}
-                placeholder="e.g. 1000"
+                placeholder="Bags x cone per bag"
               />
             </div>
 

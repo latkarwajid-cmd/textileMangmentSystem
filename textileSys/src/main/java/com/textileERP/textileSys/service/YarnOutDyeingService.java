@@ -49,7 +49,9 @@ public class YarnOutDyeingService {
     }
 
     public List<YarnOutDyeing> getAll() {
-        return repository.findAll();
+        return repository.findAll().stream()
+                .filter(issue -> !Boolean.TRUE.equals(issue.getArchived()))
+                .toList();
     }
 
     public YarnOutDyeing getById(Long id) {
@@ -58,11 +60,13 @@ public class YarnOutDyeingService {
     }
 
     public List<YarnOutDyeing> getBySizingSet(Long sizingSetId) {
-        return repository.findBySizingSetSizingSetId(sizingSetId);
+        return repository.findBySizingSetSizingSetId(sizingSetId).stream()
+                .filter(issue -> !Boolean.TRUE.equals(issue.getArchived())).toList();
     }
 
     public List<YarnOutDyeing> getByOrder(Long orderId) {
-        return repository.findByOrderOrderId(orderId);
+        return repository.findByOrderOrderId(orderId).stream()
+                .filter(issue -> !Boolean.TRUE.equals(issue.getArchived())).toList();
     }
 
     @Transactional
@@ -104,11 +108,11 @@ public class YarnOutDyeingService {
     @Transactional
     public void delete(Long id) {
         YarnOutDyeing entity = getById(id);
-        if (hasReceipts(id)) {
-            throw new RuntimeException("This dyeing issue has receipt records and cannot be deleted");
+        if (!hasReceipts(id)) {
+            restoreStock(entity);
         }
-        restoreStock(entity);
-        repository.delete(entity);
+        entity.setArchived(true);
+        repository.save(entity);
     }
 
     private void map(YarnOutDyeingDto dto, YarnOutDyeing entity) {
