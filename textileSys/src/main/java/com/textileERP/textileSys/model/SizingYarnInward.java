@@ -49,10 +49,22 @@ public class SizingYarnInward {
     @Column(name = "weight_kg", precision = 12, scale = 3)
     private BigDecimal weightKg;
 
+    @Column(name = "item_type", length = 50)
+    private String itemType;
+
+    @Column(name = "cones_returned", precision = 12, scale = 3)
+    private BigDecimal conesReturned;
+
+    @Column(name = "cones_per_bag", precision = 12, scale = 3)
+    private BigDecimal conesPerBag;
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "party_id")
     private Parties party;
 
     @Column(name = "remark", columnDefinition = "TEXT")
     private String remark;
+
+    @Column(name = "archived")
+    private Boolean archived = false;
 }

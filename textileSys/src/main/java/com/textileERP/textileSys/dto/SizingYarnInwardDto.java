@@ -28,6 +28,12 @@ public class SizingYarnInwardDto {
 
     private BigDecimal weightKg;
 
+    private String itemType;
+
+    private BigDecimal conesReturned;
+
+    private BigDecimal conesPerBag;
+
     private Long partyId;
 
     private String remark;

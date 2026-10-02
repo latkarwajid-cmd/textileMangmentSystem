@@ -18,6 +18,10 @@ const request = async (endpoint, options = {}) => {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   };
+  const token = sessionStorage.getItem('textile_access_token');
+  if (token && endpoint !== '/api/auth/login') {
+    defaultHeaders.Authorization = `Bearer ${token}`;
+  }
 
   const config = {
     ...options,
@@ -29,23 +33,29 @@ const request = async (endpoint, options = {}) => {
 
   try {
     const response = await fetch(url, config);
-    if (!response.ok) {
-      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+    const responseText = response.status === 204 ? '' : await response.text();
+    let responseData = responseText;
+    if (responseText) {
       try {
-        const errJson = await response.json();
-        if (errJson.message) errorMessage = errJson.message;
-      } catch (e) {
-        const text = await response.text();
-        if (text) errorMessage = text;
+        responseData = JSON.parse(responseText);
+      } catch {
+        // Several endpoints return plain-text success and error messages.
+        responseData = responseText;
       }
+    }
+
+    if (!response.ok) {
+      if (response.status === 401 && endpoint !== '/api/auth/login') {
+        sessionStorage.removeItem('textile_access_token');
+        window.dispatchEvent(new Event('textile-auth-expired'));
+      }
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      if (responseData && typeof responseData === 'object' && responseData.message) errorMessage = responseData.message;
+      else if (typeof responseData === 'string' && responseData) errorMessage = responseData;
       throw new Error(errorMessage);
     }
 
-    const contentType = response.headers.get('content-type');
-    if (contentType && contentType.includes('application/json')) {
-      return await response.json();
-    }
-    return await response.text();
+    return responseData;
   } catch (error) {
     console.error(`API Error on [${options.method || 'GET'}] ${endpoint}:`, error);
     throw error;
@@ -53,6 +63,13 @@ const request = async (endpoint, options = {}) => {
 };
 
 export const api = {
+  auth: {
+    login: (email, password) => request('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    }),
+  },
+
   // Parties API
   parties: {
     getAll: () => request('/api/parties'),
@@ -113,7 +130,6 @@ export const api = {
     getById: (id) => request(`/api/yarn-inward/${id}`),
     getBySupplier: (supplierId) => request(`/api/yarn-inward/supplier/${supplierId}`),
     getByOrder: (orderId) => request(`/api/yarn-inward/order/${orderId}`),
-    getByPaymentStatus: (status) => request(`/api/yarn-inward/payment-status/${status}`),
     create: (data) => request('/api/yarn-inward', { method: 'POST', body: JSON.stringify(data) }),
     update: (id, data) => request(`/api/yarn-inward/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id) => request(`/api/yarn-inward/${id}`, { method: 'DELETE' }),

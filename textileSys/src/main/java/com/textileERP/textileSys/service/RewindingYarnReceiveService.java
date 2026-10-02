@@ -38,11 +38,14 @@ public class RewindingYarnReceiveService {
 
     public RewindingIssue getIssue(String getpassNo) {
         return issueRepository.findByGetpassNoIgnoreCase(getpassNo)
+                .filter(issue -> !Boolean.TRUE.equals(issue.getArchived()))
                 .orElseThrow(() -> new RuntimeException("Rewinding getpass not found: " + getpassNo));
     }
 
     public RewindingYarnReceive getByGetpass(String getpassNo) {
         return receiveRepository.findByRewindingIssueGetpassNoIgnoreCase(getpassNo)
+                .filter(receive -> receive.getRewindingIssue() != null
+                        && !Boolean.TRUE.equals(receive.getRewindingIssue().getArchived()))
                 .orElseThrow(() -> new RuntimeException("No yarn receipt found for getpass: " + getpassNo));
     }
 

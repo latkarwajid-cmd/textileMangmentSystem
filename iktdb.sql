@@ -155,11 +155,6 @@ CREATE TABLE yarn_inward (
     calculated_amount DECIMAL(14,2),
     actual_amount DECIMAL(14,2),
 
-    payment_status VARCHAR(20) DEFAULT 'UNPAID',
-    paid_date DATE,
-    paid_amount DECIMAL(14,2) DEFAULT 0,
-
-    received_payment DECIMAL(14,2) DEFAULT 0,
     bill_amount DECIMAL(14,2),
 
     remark TEXT,
@@ -196,37 +191,7 @@ CREATE TABLE yarn_inward (
 
 
 -- =========================================================
--- 7. PAYMENTS
--- Multiple payments can be made for one yarn inward/bill
--- =========================================================
-
-CREATE TABLE payments (
-    payment_id BIGINT PRIMARY KEY AUTO_INCREMENT,
-
-    yarn_inward_id BIGINT NOT NULL,
-
-    payment_date DATE NOT NULL,
-    amount DECIMAL(14,2) NOT NULL,
-
-    payment_mode VARCHAR(30),
-
-    tds DECIMAL(12,2) DEFAULT 0,
-    gst DECIMAL(12,2) DEFAULT 0,
-    interest DECIMAL(12,2) DEFAULT 0,
-    tcs DECIMAL(12,2) DEFAULT 0,
-    additional_amount DECIMAL(12,2) DEFAULT 0,
-
-    status VARCHAR(20) DEFAULT 'PAID',
-    remark TEXT,
-
-    CONSTRAINT fk_payment_yarn
-        FOREIGN KEY (yarn_inward_id)
-        REFERENCES yarn_inward(yarn_inward_id)
-);
-
-
--- =========================================================
--- 8. YARN OUT FOR WEFT
+-- 7. YARN OUT FOR WEFT
 -- Party here can be different from Fabric Order party
 -- =========================================================
 

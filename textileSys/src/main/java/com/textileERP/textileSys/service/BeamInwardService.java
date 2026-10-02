@@ -47,7 +47,9 @@ public class BeamInwardService {
 
 
     public List<BeamInward> getAll() {
-        return beamInwardRepository.findAll();
+        return beamInwardRepository.findAll().stream()
+                .filter(beam -> !Boolean.TRUE.equals(beam.getArchived()))
+                .toList();
     }
 
     public BeamInward getById(Long id) {
@@ -56,15 +58,18 @@ public class BeamInwardService {
     }
 
     public List<BeamInward> getByOrder(Long orderId) {
-        return beamInwardRepository.findByOrderOrderId(orderId);
+        return beamInwardRepository.findByOrderOrderId(orderId).stream()
+                .filter(beam -> !Boolean.TRUE.equals(beam.getArchived())).toList();
     }
 
     public List<BeamInward> getBySizingSet(Long sizingSetId) {
-        return beamInwardRepository.findBySizingSetSizingSetId(sizingSetId);
+        return beamInwardRepository.findBySizingSetSizingSetId(sizingSetId).stream()
+                .filter(beam -> !Boolean.TRUE.equals(beam.getArchived())).toList();
     }
 
     public List<BeamInward> getByInwardNo(String inwardNo) {
-        return beamInwardRepository.findByInwardNo(inwardNo);
+        return beamInwardRepository.findByInwardNo(inwardNo).stream()
+                .filter(beam -> !Boolean.TRUE.equals(beam.getArchived())).toList();
     }
 
     public String generateNextInwardNo() {
@@ -436,7 +441,8 @@ public class BeamInwardService {
 
     public void delete(Long id) {
         BeamInward b = getById(id);
-        beamInwardRepository.delete(b);
+        b.setArchived(true);
+        beamInwardRepository.save(b);
     }
 }
 

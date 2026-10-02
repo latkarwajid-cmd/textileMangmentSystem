@@ -24,7 +24,9 @@ public class YarnReceiveDyeingService {
     }
 
     public List<YarnReceiveDyeing> getAll() {
-        return repository.findAll();
+        return repository.findAll().stream()
+                .filter(receipt -> !Boolean.TRUE.equals(receipt.getArchived()))
+                .toList();
     }
 
     public YarnReceiveDyeing create(YarnReceiveDyeingDto request) {
@@ -46,7 +48,10 @@ public class YarnReceiveDyeingService {
     }
 
     public void delete(Long id) {
-        repository.deleteById(id);
+        YarnReceiveDyeing receipt = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Yarn receive from dyeing entry not found with id: " + id));
+        receipt.setArchived(true);
+        repository.save(receipt);
     }
 
     private void map(YarnReceiveDyeingDto dto, YarnReceiveDyeing entity) {

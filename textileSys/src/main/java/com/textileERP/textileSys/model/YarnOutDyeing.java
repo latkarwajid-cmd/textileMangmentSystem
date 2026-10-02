@@ -111,4 +111,7 @@ public class YarnOutDyeing {
 
     @Column(name = "dyeing_type", length = 30)
     private String dyeingType;
+
+    @Column(name = "archived")
+    private Boolean archived = false;
 }

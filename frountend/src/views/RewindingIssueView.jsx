@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { api } from '../services/api';
 import { Edit2, Package, CheckCircle2, Plus, Trash2 } from 'lucide-react';
 import { IssueYarnPickerModal } from '../components/IssueYarnPickerModal';
+import { getSizingYarnReturnIssueDetails, getYarnInwardOrigin, sortIssueStockRows } from '../utils/sizingYarnReturn';
 import { Modal } from '../components/Modal';
 
 const emptyForm = {
@@ -33,6 +34,10 @@ export const RewindingIssueView = () => {
     () => parties.filter(party => party.status !== false && String(party.partyType || '').toUpperCase() === 'REWINDING'),
     [parties]
   );
+  const firmParties = useMemo(
+    () => parties.filter(party => party.status !== false && String(party.partyType || '').trim().toUpperCase() === 'FIRM'),
+    [parties]
+  );
 
   const fetchAvailableYarn = async () => {
     setLoadingStock(true);
@@ -47,15 +52,18 @@ export const RewindingIssueView = () => {
           const totalWeight = Number(item.weightKg ?? 0);
           const totalBags = Number(item.bags ?? 0);
           const weightPerBag = totalBags > 0 ? totalWeight / totalBags : 0;
+          const origin = getYarnInwardOrigin(item);
+          const originLabel = origin === 'dyeing' ? 'Dyeing' : origin === 'rewinding' ? 'Rewinding' : '';
 
           return {
             id: item.yarnInwardId,
             key: `yarn-${item.yarnInwardId}`,
             sourceType: 'yarnIn',
-            sourceLabel: 'Fresh Yarn',
+            origin,
+            sourceLabel: 'FRESH',
             type: 'FRESH',
             setNo: '-',
-            serialLabel: item.billNo || `YI-${item.yarnInwardId}`,
+            serialLabel: `${originLabel ? `${originLabel} · ` : ''}${item.billNo || `YI-${item.yarnInwardId}`}`,
             countName: item.count?.countName || item.count?.countNo || '-',
             tickitName: item.tickit?.tickitName || item.tickit?.tickitNo || '-',
             supplierName: item.supplier?.partyName || item.storageParty?.partyName || '-',
@@ -63,6 +71,9 @@ export const RewindingIssueView = () => {
             totalBags,
             remainingBags: totalBags,
             cones: Number(item.yCone ?? 0),
+            availableCones: Number(item.yCone ?? 0),
+            conePerBag: item.conePerBag == null ? null : Number(item.conePerBag),
+            sizingType: '',
             weightPerBag,
             weightKg: totalWeight,
             remark: item.remark || '',
@@ -80,12 +91,15 @@ export const RewindingIssueView = () => {
         .map(item => {
           const totalBags = Number(item.bags ?? 0);
           const totalWeight = Number(item.weightKg ?? 0);
+          const { availableCones, conePerBag, sizingType } = getSizingYarnReturnIssueDetails(item);
+          const isFullBag = sizingType.trim().toLowerCase() === 'full bag';
           return {
             id: item.sizingInwardId,
             key: `sizing-${item.sizingInwardId}`,
             sourceType: 'sizingIn',
-            sourceLabel: 'Returned Yarn',
-            type: 'RETURNED',
+            origin: 'sizing',
+            sourceLabel: isFullBag ? 'FRESH' : 'RETURNED',
+            type: isFullBag ? 'FRESH' : 'RETURNED',
             setNo: item.sizingSet?.setNo || '-',
             serialLabel: `SIn ${item.sizingInwardId}`,
             countName: item.count?.countName || item.count?.countNo || '-',
@@ -94,13 +108,16 @@ export const RewindingIssueView = () => {
             inwardDate: item.inwardDate || '',
             totalBags,
             remainingBags: totalBags,
-            cones: 0,
+            cones: availableCones,
+            availableCones,
+            conePerBag,
+            sizingType,
             weightPerBag: totalBags > 0 ? totalWeight / totalBags : 0,
             weightKg: totalWeight,
             remark: item.remark || '',
             checked: false,
             issueBags: '',
-            issueCones: '0',
+            issueCones: String(availableCones),
             issueWeightKg: 0,
             grossWeight: '',
             targetOutputType: 'CONES',
@@ -110,7 +127,7 @@ export const RewindingIssueView = () => {
       if (yarnResult.status === 'rejected' && sizingResult.status === 'rejected') {
         throw yarnResult.reason || sizingResult.reason;
       }
-      const availableRows = [...yarnRows, ...sizingRows];
+      const availableRows = sortIssueStockRows([...yarnRows, ...sizingRows]);
       setIssueRows(previousRows => {
         const previousByKey = new Map(previousRows.map(row => [row.key, row]));
         return availableRows.map(row => {
@@ -566,13 +583,10 @@ export const RewindingIssueView = () => {
 
               <div className="form-group">
                 <label>Firm Name</label>
-                <input
-                  className="form-control"
-                  value={form.firmName}
-                  onChange={e => updateField('firmName', e.target.value)}
-                  placeholder="Customer / firm name"
-                  required
-                />
+                <select className="form-control" value={form.firmName} onChange={e => updateField('firmName', e.target.value)} required>
+                  <option value="">-- Select Firm --</option>
+                  {firmParties.map(party => <option key={party.partyId} value={party.partyName}>{party.partyName}</option>)}
+                </select>
               </div>
 
               <div className="form-group">
@@ -620,6 +634,14 @@ export const RewindingIssueView = () => {
 
             <div className="section-card" style={{ marginTop: 20, border: '1px solid var(--border-color)' }}>
               <div className="section-card-header" style={{ padding: '12px 16px' }}>
+                <button type="button" className="btn btn-secondary" onClick={async () => {
+                  setSearch('');
+                  setSourceFilter('all');
+                  setShowIssuePicker(true);
+                  await fetchAvailableYarn();
+                }}>
+                  <Package size={16} /> <span>Issue Yarn</span>
+                </button>
                 <div className="section-card-title">
                   <Package size={17} color="var(--primary-blue)" />
                   <h4 style={{ margin: 0 }}>Selected Yarn Batches</h4>
@@ -692,17 +714,6 @@ export const RewindingIssueView = () => {
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
-              <button type="button" className="btn btn-secondary" onClick={async () => {
-                setSearch('');
-                setSourceFilter('all');
-                setShowIssuePicker(true);
-                await fetchAvailableYarn();
-              }}>
-                <Package size={16} /> <span>Issue Yarn</span>
-              </button>
-            </div>
-
             <IssueYarnPickerModal
               isOpen={showIssuePicker}
               onClose={() => setShowIssuePicker(false)}
@@ -717,6 +728,8 @@ export const RewindingIssueView = () => {
               onConesChange={handleConesChange}
               onDone={handleDoneSelecting}
               showSetNo
+              showConeDetails
+              showSizingType
             />
 
             <div
@@ -755,7 +768,10 @@ export const RewindingIssueView = () => {
                 </div>
                 <div className="form-group">
                   <label>Firm Name</label>
-                  <input className="form-control" value={editForm.firmName} onChange={event => updateEditField('firmName', event.target.value)} required />
+                  <select className="form-control" value={editForm.firmName} onChange={event => updateEditField('firmName', event.target.value)} required>
+                    <option value="">-- Select Firm --</option>
+                    {firmParties.map(party => <option key={party.partyId} value={party.partyName}>{party.partyName}</option>)}
+                  </select>
                 </div>
                 <div className="form-group">
                   <label>Dispatch Date</label>

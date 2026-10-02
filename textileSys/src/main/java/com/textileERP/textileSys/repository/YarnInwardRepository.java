@@ -19,8 +19,6 @@ public interface YarnInwardRepository extends JpaRepository<YarnInward, Long> {
 
     List<YarnInward> findByTickitTickitId(Long tickitId);
 
-    List<YarnInward> findByPaymentStatusIgnoreCase(String paymentStatus);
-
     List<YarnInward> findByInwardDateBetween(LocalDate startDate, LocalDate endDate);
 
     List<YarnInward> findByBillNoIgnoreCase(String billNo);

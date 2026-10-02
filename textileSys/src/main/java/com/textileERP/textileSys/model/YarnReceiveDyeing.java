@@ -46,4 +46,7 @@ public class YarnReceiveDyeing {
 
     @Column(name = "target_shade", length = 100)
     private String targetShade;
+
+    @Column(name = "archived")
+    private Boolean archived = false;
 }
