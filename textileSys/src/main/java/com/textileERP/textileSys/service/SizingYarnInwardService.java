@@ -61,7 +61,9 @@ public class SizingYarnInwardService {
     public List<SizingYarnInward>
     getAllSizingYarnInwards() {
 
-        return sizingYarnInwardRepository.findAll();
+        return sizingYarnInwardRepository.findAll().stream()
+                .filter(inward -> !Boolean.TRUE.equals(inward.getArchived()))
+                .toList();
     }
 
     // Deduct sizing inward stock when it is issued to rewinding.
@@ -136,28 +138,31 @@ public class SizingYarnInwardService {
         return sizingYarnInwardRepository
                 .findBySizingSetSizingSetId(
                         sizingSetId
-                );
+                ).stream().filter(inward -> !Boolean.TRUE.equals(inward.getArchived())).toList();
     }
 
     public List<SizingYarnInward>
     getByOrderId(Long orderId) {
 
         return sizingYarnInwardRepository
-                .findByOrderOrderId(orderId);
+                .findByOrderOrderId(orderId).stream()
+                .filter(inward -> !Boolean.TRUE.equals(inward.getArchived())).toList();
     }
 
     public List<SizingYarnInward>
     getBySizingUnitId(Long sizingId) {
 
         return sizingYarnInwardRepository
-                .findBySizingUnitSizingId(sizingId);
+                .findBySizingUnitSizingId(sizingId).stream()
+                .filter(inward -> !Boolean.TRUE.equals(inward.getArchived())).toList();
     }
 
     public List<SizingYarnInward>
     getByPartyId(Long partyId) {
 
         return sizingYarnInwardRepository
-                .findByPartyPartyId(partyId);
+                .findByPartyPartyId(partyId).stream()
+                .filter(inward -> !Boolean.TRUE.equals(inward.getArchived())).toList();
     }
 
     // =========================================================
@@ -239,17 +244,8 @@ public class SizingYarnInwardService {
         SizingYarnInward entity =
                 getSizingYarnInwardById(id);
 
-        if (entity.getSizingSet() != null) {
-
-            throw new RuntimeException(
-                    "Cannot delete Sizing Inward because "
-                            + "it is linked to a Sizing Set"
-            );
-        }
-
-        sizingYarnInwardRepository.delete(
-                entity
-        );
+        entity.setArchived(true);
+        sizingYarnInwardRepository.save(entity);
     }
 
     // =========================================================
@@ -301,7 +297,7 @@ public class SizingYarnInwardService {
 
             FabricOrder order =
                     fabricOrderRepository
-                            .findByOrderNoIgnoreCase(
+                            .findActiveByOrderNoIgnoreCase(
                                     dto.getOrderNo().trim()
                             )
                             .orElseThrow(() ->
@@ -437,6 +433,10 @@ public class SizingYarnInwardService {
         entity.setWeightKg(
                 dto.getWeightKg()
         );
+
+        entity.setItemType(dto.getItemType());
+        entity.setConesReturned(dto.getConesReturned());
+        entity.setConesPerBag(dto.getConesPerBag());
 
         entity.setRemark(
                 dto.getRemark()

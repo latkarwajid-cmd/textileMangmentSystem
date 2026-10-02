@@ -4,6 +4,7 @@ import { useApp } from '../context/AppContext';
 import { api } from '../services/api';
 import { Modal } from '../components/Modal';
 import { IssueYarnPickerModal } from '../components/IssueYarnPickerModal';
+import { getSizingYarnReturnIssueDetails, getYarnInwardOrigin, sortIssueStockRows } from '../utils/sizingYarnReturn';
 
 const today = () => new Date().toISOString().split('T')[0];
 const emptyHeader = { gatePassNo: '', outDate: today(), orderId: '', firmName: '', dyeingUnitId: '', remark: '' };
@@ -29,6 +30,9 @@ export const YarnOutDyeingView = () => {
 
   const dyers = useMemo(() => parties.filter(party => (
     party.status !== false && ['DYEING', 'DYER'].includes(party.partyType?.toUpperCase())
+  )), [parties]);
+  const firms = useMemo(() => parties.filter(party => (
+    party.status !== false && party.partyType?.trim().toUpperCase() === 'FIRM'
   )), [parties]);
   const selectedOrder = fabricOrders.find(order => String(order.orderId) === String(header.orderId));
 
@@ -61,14 +65,18 @@ export const YarnOutDyeingView = () => {
         .map(item => {
           const bags = Number(item.bags || 0);
           const weightKg = Number(item.weightKg || 0);
+          const origin = getYarnInwardOrigin(item);
+          const originLabel = origin === 'dyeing' ? 'Dyeing' : origin === 'rewinding' ? 'Rewinding' : '';
           return {
             key: `yarn-${item.yarnInwardId}`,
-            sourceType: 'yarnIn', sourceLabel: 'Yarn In', type: 'FRESH',
+            sourceType: 'yarnIn', origin, sourceLabel: 'FRESH', type: 'FRESH',
             sourceId: item.yarnInwardId, id: item.yarnInwardId, setNo: '-',
-            serialLabel: `YIn ${item.yarnInwardId}`,
+            serialLabel: `${originLabel ? `${originLabel} · ` : ''}${item.billNo || `YIn ${item.yarnInwardId}`}`,
             countId: item.count?.countId || '', countName: item.count?.countName || '-',
             tickitId: item.tickit?.tickitId || '', tickitName: item.tickit?.tickitName || '-',
             remainingBags: bags, cones: Number(item.yCone || 0),
+            availableCones: Number(item.yCone || 0),
+            conePerBag: item.conePerBag == null ? null : Number(item.conePerBag), sizingType: '',
             weightPerBag: Number(item.weightPerBag || (bags ? weightKg / bags : 0)),
             weightKg, inwardDate: item.inwardDate || '', checked: false, issueBags: '', issueCones: '',
           };
@@ -78,21 +86,24 @@ export const YarnOutDyeingView = () => {
         .map(item => {
           const bags = Number(item.bags || 0);
           const weightKg = Number(item.weightKg || 0);
+          const { availableCones, conePerBag, sizingType } = getSizingYarnReturnIssueDetails(item);
+          const isFullBag = sizingType.trim().toLowerCase() === 'full bag';
           return {
             key: `sizing-${item.sizingInwardId}`,
-            sourceType: 'sizingIn', sourceLabel: 'Sizing In', type: 'FRESH',
+            sourceType: 'sizingIn', origin: 'sizing', sourceLabel: isFullBag ? 'FRESH' : 'RETURNED', type: isFullBag ? 'FRESH' : 'RETURNED',
             sourceId: item.sizingInwardId, id: item.sizingInwardId,
             setNo: item.sizingSet?.setNo || '-',
             serialLabel: `SIn ${item.sizingInwardId}`,
             countId: item.count?.countId || '', countName: item.count?.countName || '-',
             tickitId: item.tickit?.tickitId || '', tickitName: item.tickit?.tickitName || '-',
-            remainingBags: bags, cones: 0,
+            remainingBags: bags, cones: availableCones,
+            availableCones, conePerBag, sizingType,
             weightPerBag: bags ? weightKg / bags : 0,
-            weightKg, inwardDate: item.inwardDate || '', checked: false, issueBags: '', issueCones: '0',
+            weightKg, inwardDate: item.inwardDate || '', checked: false, issueBags: '', issueCones: String(availableCones),
           };
         });
       if (yarnResult.status === 'rejected' && sizingResult.status === 'rejected') throw yarnResult.reason || sizingResult.reason;
-      const rows = [...yarnRows, ...sizingRows];
+      const rows = sortIssueStockRows([...yarnRows, ...sizingRows]);
       setStockRows(previous => {
         const byKey = new Map(previous.map(row => [row.key, row]));
         return rows.map(row => {
@@ -249,7 +260,10 @@ export const YarnOutDyeingView = () => {
     setIsModalOpen(true);
   };
 
-  const handleOrderChange = orderId => setHeader(previous => ({ ...previous, orderId, firmName: previous.firmName }));
+  const handleOrderChange = orderId => {
+    const order = fabricOrders.find(item => String(item.orderId) === String(orderId));
+    setHeader(previous => ({ ...previous, orderId, firmName: order?.supplier?.partyName || '' }));
+  };
 
   const handleSubmit = async event => {
     event.preventDefault();
@@ -360,7 +374,7 @@ export const YarnOutDyeingView = () => {
             <div className="dyeing-header-fields form-grid">
               <div className="form-group"><label>Gate Pass No. *</label><input className="form-control" value={header.gatePassNo} onChange={event => updateHeader('gatePassNo', event.target.value)} placeholder="Enter gate pass number" required /></div>
               <div className="form-group"><label>Date *</label><input type="date" className="form-control" value={header.outDate} onChange={event => updateHeader('outDate', event.target.value)} required /></div>
-              <div className="form-group"><label>Firm Name</label><input className="form-control" value={header.firmName} onChange={event => updateHeader('firmName', event.target.value)} placeholder="Enter firm name" /></div>
+              <div className="form-group"><label>Firm Name</label><select className="form-control" value={header.firmName} onChange={event => updateHeader('firmName', event.target.value)}><option value="">-- Select Firm --</option>{header.firmName && !firms.some(firm => firm.partyName === header.firmName) && <option value={header.firmName}>{header.firmName}</option>}{firms.map(firm => <option key={firm.partyId} value={firm.partyName}>{firm.partyName}</option>)}</select></div>
               <div className="form-group"><label>Order No. *</label><select className="form-control" value={header.orderId} onChange={event => handleOrderChange(event.target.value)} required><option value="">-- Select Order --</option>{fabricOrders.map(order => <option key={order.orderId} value={order.orderId}>{order.orderNo}</option>)}</select></div>
               <div className="form-group"><label>Dyeing Unit Name *</label><select className="form-control" value={header.dyeingUnitId} onChange={event => updateHeader('dyeingUnitId', event.target.value)} required><option value="">-- Select Dyeing Unit --</option>{dyers.map(dyer => <option key={dyer.partyId} value={dyer.partyId}>{dyer.partyName}</option>)}</select></div>
             </div>
@@ -388,6 +402,8 @@ export const YarnOutDyeingView = () => {
               onConesChange={(key, value) => updateStockRow(key, 'issueCones', value)}
               onDone={finishStockSelection}
               showSetNo
+              showConeDetails
+              showSizingType
             />
             <div className="form-group dyeing-remark"><label>Remarks</label><textarea className="form-control" value={header.remark} onChange={event => updateHeader('remark', event.target.value)} placeholder="General dispatch remarks" /></div>
             <div className="dyeing-editor-actions"><button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>Close</button><button type="button" className="btn btn-secondary" onClick={resetDraft}>Clear Draft</button><button type="submit" className="btn btn-primary" disabled={saving}><Save size={17} /> {saving ? 'Saving...' : editingRecord ? 'Update Yarn Out' : 'Save Yarn Out'}</button></div>

@@ -21,7 +21,7 @@ public class FabricOrder {
     @Column(name = "order_id")
     private Long orderId;
 
-    @Column(name = "order_no", length = 50, nullable = false, unique = true)
+    @Column(name = "order_no", length = 50, nullable = false)
     private String orderNo;
 
     @Column(name = "order_date", nullable = false)
@@ -61,4 +61,7 @@ public class FabricOrder {
 
     @Column(name = "complete")
     private Boolean complete = false;
+
+    @Column(name = "archived")
+    private Boolean archived = false;
 }

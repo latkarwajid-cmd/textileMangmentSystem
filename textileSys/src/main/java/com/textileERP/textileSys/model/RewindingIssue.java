@@ -51,4 +51,7 @@ public class RewindingIssue {
     @OneToMany(mappedBy = "rewindingIssue", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @JsonManagedReference
     private List<RewindingIssueLine> lines = new ArrayList<>();
+
+    @Column(name = "archived")
+    private Boolean archived = false;
 }

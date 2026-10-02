@@ -592,8 +592,7 @@ public class SizingSetService {
                         : sizingUnitRepository
                                 .findFirstByPartyPartyIdAndActiveTrue(request.getSizingPartyId())
                                 .map(SizingUnit::getSizingId)
-                                .orElseThrow(() -> new RuntimeException(
-                                        "No active sizing unit found for party: " + request.getSizingPartyId()));
+                                .orElseGet(() -> createOrReactivateSizingUnit(request.getSizingPartyId()).getSizingId());
 
         if (sizingId != null) {
 
@@ -814,6 +813,21 @@ public class SizingSetService {
                     "OPEN"
             );
         }
+    }
+
+    private SizingUnit createOrReactivateSizingUnit(Long partyId) {
+        Parties sizingParty = partiesRepository.findById(partyId)
+                .orElseThrow(() -> new RuntimeException("Sizing party not found with id: " + partyId));
+
+        SizingUnit sizingUnit = sizingUnitRepository.findFirstByPartyPartyId(partyId)
+                .orElseGet(() -> {
+                    SizingUnit unit = new SizingUnit();
+                    unit.setSizingName(sizingParty.getPartyName());
+                    unit.setParty(sizingParty);
+                    return unit;
+                });
+        sizingUnit.setActive(true);
+        return sizingUnitRepository.save(sizingUnit);
     }
 
     // ============================================================
@@ -1152,6 +1166,7 @@ public class SizingSetService {
                 deductSizingInwardStock(
                         sizingInward,
                         bags,
+                        cones,
                         index
                 );
             }
@@ -1368,7 +1383,7 @@ public class SizingSetService {
 
                 } else {
 
-                    inward.setType("USED");
+                    inward.setType("REMAINING");
                 }
 
                 yarnInwardRepository.save(inward);
@@ -1395,6 +1410,13 @@ public class SizingSetService {
                                 bags
                         )
                 );
+
+                BigDecimal currentCones = sizingInwardAvailableCones(inward);
+                if (currentCones != null) {
+                    inward.setConesReturned(currentCones.add(
+                            line.getCones() == null ? BigDecimal.ZERO : line.getCones()
+                    ).setScale(3, RoundingMode.HALF_UP));
+                }
 
                 sizingYarnInwardRepository.save(
                         inward
@@ -1507,11 +1529,11 @@ public class SizingSetService {
         );
 
         /*
-         * Any issued quantity means USED.
+         * Any issued quantity means the remaining stock is partial.
          */
         if (bags.compareTo(BigDecimal.ZERO) > 0
                 || issuedCones.compareTo(BigDecimal.ZERO) > 0) {
-            inward.setType("USED");
+            inward.setType("REMAINING");
         }
 
         yarnInwardRepository.save(inward);
@@ -1524,6 +1546,7 @@ public class SizingSetService {
     private void deductSizingInwardStock(
             SizingYarnInward inward,
             BigDecimal bags,
+            BigDecimal cones,
             int lineNo
     ) {
 
@@ -1554,9 +1577,30 @@ public class SizingSetService {
                 )
         );
 
+        BigDecimal availableCones = sizingInwardAvailableCones(inward);
+        if (availableCones != null) {
+            BigDecimal issuedCones = cones == null ? BigDecimal.ZERO : cones;
+            if (issuedCones.compareTo(availableCones) > 0) {
+                throw new RuntimeException(
+                        "Insufficient Sizing In cone stock for line " + lineNo
+                                + ". Available: " + availableCones + ", Requested: " + issuedCones
+                );
+            }
+            inward.setConesReturned(availableCones.subtract(issuedCones)
+                    .setScale(3, RoundingMode.HALF_UP));
+        }
+
         sizingYarnInwardRepository.save(
                 inward
         );
+    }
+
+    private BigDecimal sizingInwardAvailableCones(SizingYarnInward inward) {
+        if (inward.getConesReturned() != null) return inward.getConesReturned();
+        if (inward.getRemark() == null) return null;
+        Matcher matcher = Pattern.compile("Cones Returned:\\s*([\\d.]+)", Pattern.CASE_INSENSITIVE)
+                .matcher(inward.getRemark());
+        return matcher.find() ? new BigDecimal(matcher.group(1)) : null;
     }
 
     // ============================================================

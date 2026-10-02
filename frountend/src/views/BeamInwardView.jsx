@@ -51,6 +51,51 @@ const formatNum = (val, decimals = 2) => {
   return isNaN(num) ? '-' : num.toLocaleString('en-IN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 };
 
+const evaluateArithmetic = source => {
+  const expression = source.trim().replace(/^=/, '').replace(/\s+/g, '');
+  const tokens = expression.match(/(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?|[()+\-*/]/g) || [];
+  if (!expression || tokens.join('') !== expression) throw new Error('Enter a valid arithmetic formula');
+
+  let position = 0;
+  const parseExpression = () => {
+    const parseFactor = () => {
+      const token = tokens[position++];
+      if (token === '+') return parseFactor();
+      if (token === '-') return -parseFactor();
+      if (token === '(') {
+        const value = parseExpression();
+        if (tokens[position++] !== ')') throw new Error('Missing closing parenthesis');
+        return value;
+      }
+      const value = Number(token);
+      if (!token || !Number.isFinite(value)) throw new Error('Expected a number');
+      return value;
+    };
+    const parseTerm = () => {
+      let value = parseFactor();
+      while (tokens[position] === '*' || tokens[position] === '/') {
+        const operator = tokens[position++];
+        const next = parseFactor();
+        if (operator === '/' && next === 0) throw new Error('Cannot divide by zero');
+        value = operator === '*' ? value * next : value / next;
+      }
+      return value;
+    };
+
+    let value = parseTerm();
+    while (tokens[position] === '+' || tokens[position] === '-') {
+      const operator = tokens[position++];
+      const next = parseTerm();
+      value = operator === '+' ? value + next : value - next;
+    }
+    return value;
+  };
+
+  const result = parseExpression();
+  if (position !== tokens.length || !Number.isFinite(result)) throw new Error('Enter a valid arithmetic formula');
+  return Number(result.toFixed(6));
+};
+
 const createEmptyHeader = () => ({
   inwardNo: '',
   inwardDate: todayDate(),
@@ -74,6 +119,7 @@ const createEmptyHeader = () => ({
   totalBeamsCount: 1,
   orderId: '',
   orderNo: '',
+  orderFirmName: '',
   remark: ''
 });
 
@@ -107,7 +153,7 @@ const createEmptyReturnRow = (srNo = 1, countTicket = '', countId = '', tickitId
 });
 
 export const BeamInwardView = () => {
-  const { sizingUnits, parties, yarnCounts, tickits, yarnStorageLocations, addToast } = useApp();
+  const { currentTab, sizingUnits, parties, yarnCounts, tickits, yarnStorageLocations, addToast } = useApp();
 
   // Active Main Navigation: 'entry' | 'history' | 'flange-tracker'
   const [activeTab, setActiveTab] = useState('entry');
@@ -150,6 +196,16 @@ export const BeamInwardView = () => {
   const [viewBeamModal, setViewBeamModal] = useState(null);
   const [editBeamModal, setEditBeamModal] = useState(null);
   const [editForm, setEditForm] = useState(null);
+
+  const handleTotalEndsKeyDown = event => {
+    if (event.key !== 'Enter' || !event.currentTarget.value.trim().startsWith('=')) return;
+    event.preventDefault();
+    try {
+      setHeader(previous => ({ ...previous, totalEnds: String(evaluateArithmetic(event.currentTarget.value)) }));
+    } catch (error) {
+      addToast(error.message || 'Enter a valid arithmetic formula', 'error');
+    }
+  };
 
   /* =========================================================
      FETCH DATA
@@ -201,6 +257,10 @@ export const BeamInwardView = () => {
     fetchSizingSets();
     generateNextInwardNumber();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (currentTab === 'beam-inward') fetchSizingSets();
+  }, [currentTab, fetchSizingSets]);
 
   /* =========================================================
      REACTIVITY: SIZING SET LOOKUP (Zero Full-Page Reload)
@@ -273,6 +333,7 @@ export const BeamInwardView = () => {
       const orderObj = targetSet.order || null;
       const orderId = lookup?.orderId || orderObj?.orderId || '';
       const orderNo = lookup?.orderNo || orderObj?.orderNo || '';
+      const orderFirmName = lookup?.supplierName || lookup?.firmName || orderObj?.supplier?.partyName || '';
 
       // Comprehensive Count & Ticket Resolution
       let cName = lookup?.countName || '';
@@ -419,6 +480,7 @@ export const BeamInwardView = () => {
         sizingName: sizingName || prev.sizingName,
         orderId: orderId || prev.orderId,
         orderNo: orderNo || prev.orderNo,
+        orderFirmName: orderFirmName || prev.orderFirmName,
         shed: lookup?.shed || prev.shed || 'Kalawant Shed 3'
       }));
 
@@ -1112,7 +1174,7 @@ export const BeamInwardView = () => {
 
                 {/* 7. Client / Party Name (Auto-filled & Editable) */}
                 <div className="form-group">
-                  <label>Client / Party Name</label>
+                  <label>Party Name</label>
                   <input
                     type="text"
                     className="form-control"
@@ -1122,17 +1184,11 @@ export const BeamInwardView = () => {
                   />
                 </div>
 
-                {/* 8. Shed / Mill Owner */}
+ 
+
                 <div className="form-group">
-                  <label>Firm Name *</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="e.g. Kalawant Shed 3"
-                    value={header.shed}
-                    onChange={e => setHeader({ ...header, shed: e.target.value })}
-                    required
-                  />
+                  <label>Order Firm Name</label>
+                  <input type="text" className="form-control" value={header.orderFirmName || ''} readOnly placeholder="Auto-filled from linked order" />
                 </div>
 
                 {/* 9. Quality (Auto-filled & Editable) */}
@@ -1163,11 +1219,13 @@ export const BeamInwardView = () => {
                 <div className="form-group">
                   <label>Total Ends</label>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
                     className="form-control"
                     value={header.totalEnds || ''}
                     onChange={e => setHeader({ ...header, totalEnds: e.target.value })}
-                    placeholder="e.g. 7000"
+                    onKeyDown={handleTotalEndsKeyDown}
+                    placeholder="Enter value or = formula"
                   />
                 </div>
 
@@ -1405,8 +1463,8 @@ export const BeamInwardView = () => {
                                   .filter(p => String(p.partyType || '').toUpperCase() === 'WEAVER')
                                   .sort((a, b) => (a.partyName || '').localeCompare(b.partyName || ''))
                                   .map(party => (
-                                    <option key={party.partyId} value={`Weaver (${party.partyName})`}>
-                                      {`Weaver (${party.partyName})`}
+                                    <option key={party.partyId} value={`${party.partyName}(Weaver)`}>
+                                      {`${party.partyName}(Weaver)`}
                                     </option>
                                   ))}
                               </select>
@@ -1465,6 +1523,17 @@ export const BeamInwardView = () => {
                       </tfoot>
                     </table>
                   </div>
+                </div>
+                <div className="form-group" style={{ padding: '0 16px 16px', marginBottom: 0 }}>
+                  <label htmlFor="beam-inward-remark">Remark</label>
+                  <textarea
+                    id="beam-inward-remark"
+                    className="form-control"
+                    rows={3}
+                    value={header.remark || ''}
+                    onChange={e => setHeader(prev => ({ ...prev, remark: e.target.value }))}
+                    placeholder="Add an overall remark for this beam inward entry"
+                  />
                 </div>
               </div>
             </div>

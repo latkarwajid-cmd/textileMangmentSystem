@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
 import { api } from '../services/api';
 import { Plus, Search, Edit2, Trash2, RotateCcw, Scale, Calculator } from 'lucide-react';
 import { Modal } from '../components/Modal';
 import { OrderNumberField } from '../components/OrderNumberField';
 
-const createEmptyReturnRow = (srNo = 1, countAndTicket = '', countId = '', tickitId = '') => ({
+const createEmptyReturnRow = (srNo = 1, countAndTicket = '', countId = '', tickitId = '', itemType = 'Full Bag') => ({
   id: `ret-${Date.now()}-${Math.random()}`,
   srNo,
-  itemType: 'Partial / Loose Bag',
+  itemType,
   countId,
   tickitId,
   countAndTicket,
@@ -20,7 +20,7 @@ const createEmptyReturnRow = (srNo = 1, countAndTicket = '', countId = '', ticki
 });
 
 export const SizingYarnInwardView = () => {
-  const { parties, fabricOrders, tickits, yarnCounts, sizingUnits, yarnStorageLocations, addToast } = useApp();
+  const { currentTab, parties, fabricOrders, tickits, yarnCounts, sizingUnits, yarnStorageLocations, addToast } = useApp();
   const [inwardList, setInwardList] = useState([]);
   const [sizingSets, setSizingSets] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -60,10 +60,22 @@ export const SizingYarnInwardView = () => {
     }
   };
 
+  const fetchSizingSets = useCallback(async () => {
+    try {
+      const data = await api.sizingSets.getAll();
+      setSizingSets(Array.isArray(data) ? data.filter(set => set.status !== 'DELETED') : []);
+    } catch {
+      // Keep the currently loaded options if the refresh fails.
+    }
+  }, []);
+
   useEffect(() => {
     fetchInwardList();
-    api.sizingSets.getAll().then(data => setSizingSets(Array.isArray(data) ? data.filter(s => s.status !== 'DELETED') : [])).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (currentTab === 'sizing-yarn-inward') fetchSizingSets();
+  }, [currentTab, fetchSizingSets]);
 
   const openCreateModal = () => {
     setEditingItem(null);
@@ -102,7 +114,13 @@ export const SizingYarnInwardView = () => {
       weightKg: item.weightKg || '',
       remark: item.remark || '',
       reconciliation: { totalIssuedBags: '', emptyConeTareGrams: '60', conesPerBag: '32', issuedGrossWeight: '' },
-      balanceReturns: [createEmptyReturnRow(1, '', item.count?.countId || '', item.tickit?.tickitId || '')],
+      balanceReturns: [createEmptyReturnRow(
+        1,
+        '',
+        item.count?.countId || '',
+        item.tickit?.tickitId || '',
+        item.itemType || item.remark?.split(' | ')[0] || 'Full Bag'
+      )],
     });
     setIsModalOpen(true);
   };
@@ -111,7 +129,7 @@ export const SizingYarnInwardView = () => {
     e.preventDefault();
     try {
       const returnRows = formData.balanceReturns?.filter(row => row.returnedWeightKg || row.bagsReturned || row.conesReturned) || [];
-      const rowsToSave = returnRows.length ? returnRows : [{ countId: formData.countId, tickitId: formData.tickitId, bagsReturned: formData.bags, returnedWeightKg: formData.weightKg, itemType: 'Partial / Loose Bag', destinationWarehouse: 'Main Raw Yarn Warehouse', remark: formData.remark }];
+      const rowsToSave = returnRows.length ? returnRows : [{ countId: formData.countId, tickitId: formData.tickitId, bagsReturned: formData.bags, returnedWeightKg: formData.weightKg, itemType: 'Full Bag', destinationWarehouse: 'Main Raw Yarn Warehouse', remark: formData.remark }];
       const makePayload = row => ({
         sizingSetId: formData.sizingSetId ? Number(formData.sizingSetId) : null,
         orderNo: formData.orderNo || null,
@@ -123,6 +141,9 @@ export const SizingYarnInwardView = () => {
         partyId: formData.partyId ? Number(formData.partyId) : null,
         bags: row.bagsReturned ? Number(row.bagsReturned) : null,
         weightKg: row.returnedWeightKg ? Number(row.returnedWeightKg) : null,
+        itemType: row.itemType || null,
+        conesReturned: row.conesReturned ? Number(row.conesReturned) : null,
+        conesPerBag: formData.reconciliation.conesPerBag ? Number(formData.reconciliation.conesPerBag) : null,
         remark: [
           row.itemType,
           `Count & Ticket: ${row.countAndTicket || '-'}`,
@@ -159,6 +180,7 @@ export const SizingYarnInwardView = () => {
       partyId: order?.party?.partyId || '',
     }));
   };
+  const selectedOrder = fabricOrders.find(order => String(order.orderId) === String(formData.orderId));
 
   const handleSizingSetChange = async sizingSetId => {
     const selectedSet = sizingSets.find(set => String(set.sizingSetId) === String(sizingSetId));
@@ -227,6 +249,7 @@ export const SizingYarnInwardView = () => {
       item.party?.partyName?.toLowerCase().includes(search.toLowerCase()) ||
       item.order?.orderNo?.toLowerCase().includes(search.toLowerCase()) ||
       item.sizingUnit?.sizingName?.toLowerCase().includes(search.toLowerCase()) ||
+      (item.itemType || item.remark?.split(' | ')[0] || '').toLowerCase().includes(search.toLowerCase()) ||
       item.count?.countName?.toLowerCase().includes(search.toLowerCase()) ||
       item.tickit?.tickitName?.toLowerCase().includes(search.toLowerCase())
     )
@@ -268,6 +291,7 @@ export const SizingYarnInwardView = () => {
             <thead>
               <tr>
                 <th>ID</th>
+                <th>Type</th>
                 <th>Order No</th>
                 <th>Inward Date</th>
                 <th>Sizing Unit</th>
@@ -283,13 +307,13 @@ export const SizingYarnInwardView = () => {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="11" style={{ textAlign: 'center', padding: '32px' }}>
+                  <td colSpan="12" style={{ textAlign: 'center', padding: '32px' }}>
                     <div className="spinner" style={{ margin: '0 auto' }}></div>
                   </td>
                 </tr>
               ) : filteredList.length === 0 ? (
                 <tr>
-                  <td colSpan="11" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-dim)' }}>
+                  <td colSpan="12" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-dim)' }}>
                     No yarn returns from sizing found. Record the first return above.
                   </td>
                 </tr>
@@ -297,6 +321,22 @@ export const SizingYarnInwardView = () => {
                 filteredList.map((item) => (
                   <tr key={item.sizingInwardId}>
                     <td>#{item.sizingInwardId}</td>
+                    <td>
+                      {(() => {
+                        const itemType = item.itemType || item.remark?.split(' | ')[0] || '';
+                        const dashboardType = itemType.trim().toLowerCase() === 'full bag' ? 'FRESH' : itemType;
+                        const typeStyle = itemType === 'Full Bag'
+                          ? { background: '#dcfce7', color: '#166534', border: '1px solid #86efac' }
+                          : itemType === 'Kharad'
+                            ? { background: '#fee2e2', color: '#991b1b', border: '1px solid #fca5a5' }
+                            : { background: '#fef3c7', color: '#92400e', border: '1px solid #fcd34d' };
+                        return itemType ? (
+                          <span style={{ ...typeStyle, display: 'inline-block', padding: '4px 9px', borderRadius: 6, fontWeight: 600, whiteSpace: 'nowrap' }}>
+                            {dashboardType}
+                          </span>
+                        ) : '-';
+                      })()}
+                    </td>
                     <td style={{ fontWeight: 600, color: 'var(--accent-cyan)' }}>
                       {item.order?.orderNo || '-'}
                     </td>
@@ -345,9 +385,27 @@ export const SizingYarnInwardView = () => {
         size="lg"
       >
         <form onSubmit={handleSubmit}>
+                                    <div className="form-group">
+              <label>Sizing Set</label>
+              <select
+                className="form-control"
+                value={formData.sizingSetId}
+                onChange={(e) => handleSizingSetChange(e.target.value)}
+              >
+                <option value="">-- Select Sizing Set --</option>
+                {sizingSets.map(set => <option key={set.sizingSetId} value={set.sizingSetId}>{set.setNo || `Set #${set.sizingSetId}`}</option>)}
+              </select>
+            </div>
+            
           <div className="form-grid">
             <OrderNumberField orders={fabricOrders} value={formData.orderNo} onChange={handleOrderChange} required />
+            <div className="form-group">
+              <label>Firm Name</label>
+              <input className="form-control" value={selectedOrder?.supplier?.partyName || ''} readOnly placeholder="Auto-filled from order" />
+            </div>
+              
 
+            
             <div className="form-group">
               <label>Inward Date *</label>
               <input
@@ -359,17 +417,7 @@ export const SizingYarnInwardView = () => {
               />
             </div>
 
-            <div className="form-group">
-              <label>Sizing Set</label>
-              <select
-                className="form-control"
-                value={formData.sizingSetId}
-                onChange={(e) => handleSizingSetChange(e.target.value)}
-              >
-                <option value="">-- Select Sizing Set --</option>
-                {sizingSets.map(set => <option key={set.sizingSetId} value={set.sizingSetId}>{set.setNo || `Set #${set.sizingSetId}`}</option>)}
-              </select>
-            </div>
+
 
             <div className="form-group">
               <label>Sizing Unit</label>
@@ -466,11 +514,11 @@ export const SizingYarnInwardView = () => {
                 <button type="button" className="btn btn-secondary btn-sm" onClick={addReturnRow}><Plus size={14} /> Add Return Row</button>
               </div>
               <div className="form-grid-4">
-                <div className="form-group"><label>Total Yarn Issued (Bags)</label><input type="number" step="0.01" className="form-control" value={formData.reconciliation.totalIssuedBags} onChange={e => setFormData({ ...formData, reconciliation: { ...formData.reconciliation, totalIssuedBags: e.target.value } })} /></div>
-                <div className="form-group"><label>Cones Per Bag</label><input type="number" className="form-control" value={formData.reconciliation.conesPerBag} onChange={e => setFormData({ ...formData, reconciliation: { ...formData.reconciliation, conesPerBag: e.target.value } })} /></div>
+                <div className="form-group"><label>Total Yarn Issued (Bags)</label><input type="number" step="0.01" className="form-control" value={formData.reconciliation.totalIssuedBags} readOnly /></div>
+                <div className="form-group"><label>Cones Per Bag</label><input type="number" className="form-control" value={formData.reconciliation.conesPerBag} readOnly /></div>
                 <div className="form-group"><label>Total Issued Cones</label><input className="form-control" value={reconciliationSummary.issuedCones} readOnly /></div>
-                <div className="form-group"><label>Issued Gross Weight (Kg)</label><input type="number" step="0.001" className="form-control" value={formData.reconciliation.issuedGrossWeight} onChange={e => setFormData({ ...formData, reconciliation: { ...formData.reconciliation, issuedGrossWeight: e.target.value } })} /></div>
-                <div className="form-group"><label>Empty Cone Tare Weight (g)</label><input type="number" step="0.1" className="form-control" value={formData.reconciliation.emptyConeTareGrams} onChange={e => setFormData({ ...formData, reconciliation: { ...formData.reconciliation, emptyConeTareGrams: e.target.value } })} /></div>
+                <div className="form-group"><label>Issued Gross Weight (Kg)</label><input type="number" step="0.001" className="form-control" value={formData.reconciliation.issuedGrossWeight} readOnly /></div>
+                <div className="form-group"><label>Empty Cone Tare Weight (g)</label><input type="number" step="0.1" className="form-control" value={formData.reconciliation.emptyConeTareGrams} readOnly /></div>
                 <div className="form-group"><label>Net Yarn Issued (Kg)</label><input className="form-control" value={Math.max(0, reconciliationSummary.issuedGrossWeight - reconciliationSummary.tareKg).toFixed(3)} readOnly /></div>
               </div>
               <div className="table-responsive">
@@ -478,7 +526,7 @@ export const SizingYarnInwardView = () => {
                   <thead><tr><th>Sr.</th><th>Item Type</th><th>Yarn Count & Ticket</th><th>Bags Returned</th><th>Cones Returned</th><th>Returned Wt (Kg)</th><th>Destination Warehouse</th><th>Remark</th><th>Action</th></tr></thead>
                   <tbody>{(formData.balanceReturns || []).map((row, index) => <tr key={row.id}>
                     <td>{index + 1}</td>
-                    <td><select className="beam-table-input" value={row.itemType} onChange={e => updateReturnRow(row.id, 'itemType', e.target.value)}><option>Full Bag</option><option>Partial / Loose Bag</option><option>Kharad</option></select></td>
+                    <td><select className="beam-table-input" value={row.itemType} onChange={e => updateReturnRow(row.id, 'itemType', e.target.value)}><option>Full Bag</option><option>Kharad</option></select></td>
                     <td><input className="beam-table-input" value={row.countAndTicket} onChange={e => updateReturnRow(row.id, 'countAndTicket', e.target.value)} placeholder="Count & Ticket" /></td>
                     <td><input type="number" step="0.01" min="0" className="beam-table-input" value={row.bagsReturned} onChange={e => updateReturnRow(row.id, 'bagsReturned', e.target.value)} /></td>
                     <td><input type="number" min="0" className="beam-table-input" value={row.conesReturned} onChange={e => updateReturnRow(row.id, 'conesReturned', e.target.value)} /></td>

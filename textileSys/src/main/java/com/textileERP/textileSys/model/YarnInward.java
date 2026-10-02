@@ -94,6 +94,9 @@ public class YarnInward {
     @Column(name = "cone", precision = 12, scale = 3)
     private BigDecimal yCone;
 
+    @Column(name = "cone_per_bag", precision = 12, scale = 3)
+    private BigDecimal conePerBag;
+
 //NEW CHANGES IN DB
     @Column(name = "days")
     private Integer days;
@@ -127,6 +130,9 @@ public class YarnInward {
 
     @Column(name = "inventory_status", length = 50)
     private String inventoryStatus;
+
+    @Column(name = "archived")
+    private Boolean archived = false;
 
 
 }

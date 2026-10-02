@@ -27,8 +27,29 @@ const formatDate = (date) => {
   return String(date).substring(0, 10);
 };
 
+const getNextOrderNo = (orders) => {
+  const numberedOrders = orders
+    .map(order => String(order.orderNo || '').trim().match(/^(.*?)(\d+)$/))
+    .filter(Boolean)
+    .map(match => ({ prefix: match[1], number: Number(match[2]), width: match[2].length }));
+
+  if (numberedOrders.length === 0) return '1';
+
+  const latest = numberedOrders.reduce((highest, current) =>
+    current.number > highest.number ? current : highest
+  );
+  return `${latest.prefix}${String(latest.number + 1).padStart(latest.width, '0')}`;
+};
+
+const formatIndianAmount = (amount) => Number(amount || 0).toLocaleString('en-IN', {
+  notation: 'standard',
+  maximumFractionDigits: 2,
+});
+
 export const FabricOrdersView = () => {
   const { parties, yarnCounts, tickits, addToast, refreshMasters } = useApp();
+  const firmParties = parties.filter(party => party.status !== false && party.partyType?.trim().toUpperCase() === 'FIRM');
+  const customerParties = parties.filter(party => party.status !== false && party.partyType?.trim().toUpperCase() === 'CUSTOMER');
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
@@ -40,6 +61,7 @@ export const FabricOrdersView = () => {
     orderNo: '',
     orderDate: new Date().toISOString().split('T')[0],
     partyId: '',
+    supplierId: '',
     countId: '',
     tickitId: '',
     // supplierId: '',
@@ -73,9 +95,10 @@ export const FabricOrdersView = () => {
   const openCreateModal = () => {
     setEditingOrder(null);
     setFormData({
-      orderNo: '',
+      orderNo: getNextOrderNo(orders),
       orderDate: new Date().toISOString().split('T')[0],
       partyId: parties.length > 0 ? parties[0].partyId : '',
+      supplierId: '',
       countId: '',
       tickitId: '',
       // supplierId: '',
@@ -95,6 +118,7 @@ export const FabricOrdersView = () => {
       orderNo: order.orderNo || '',
       orderDate: formatDate(order.orderDate),
       partyId: order.party?.partyId || '',
+      supplierId: order.supplier?.partyId || '',
       countId: order.count?.countId || '',
       tickitId: order.tickit?.tickitId || '',
       // supplierId: order.supplier?.partyId || '',
@@ -115,6 +139,7 @@ export const FabricOrdersView = () => {
         orderNo: formData.orderNo,
         orderDate: formData.orderDate,
         partyId: Number(formData.partyId),
+        supplierId: formData.supplierId ? Number(formData.supplierId) : null,
         countId: formData.countId ? Number(formData.countId) : null,
         tickitId: formData.tickitId ? Number(formData.tickitId) : null,
         // supplierId: formData.supplierId ? Number(formData.supplierId) : null,
@@ -163,6 +188,7 @@ export const FabricOrdersView = () => {
     const matchesSearch = 
       o.orderNo?.toLowerCase().includes(search.toLowerCase()) ||
       o.party?.partyName?.toLowerCase().includes(search.toLowerCase()) ||
+      o.supplier?.partyName?.toLowerCase().includes(search.toLowerCase()) ||
       o.quality?.toLowerCase().includes(search.toLowerCase());
     const matchesStatus = statusFilter === 'ALL' || o.status?.toUpperCase() === statusFilter;
     return matchesSearch && matchesStatus;
@@ -208,7 +234,7 @@ export const FabricOrdersView = () => {
           </div>
           <div className="stat-info">
             <h3>Total Order Value</h3>
-            <div className="stat-value">₹{totalValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
+            <div className="stat-value">₹{formatIndianAmount(totalValue)}</div>
           </div>
         </div>
       </div>
@@ -262,6 +288,7 @@ export const FabricOrdersView = () => {
                 <th>Order No</th>
                 <th>Order Date</th>
                 <th>Customer Party</th>
+                <th>Firm Name</th>
                 <th>Quality / Spec</th>
                 <th>Rate (₹)</th>
                 <th>Ordered Meters</th>
@@ -276,13 +303,13 @@ export const FabricOrdersView = () => {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="12" style={{ textAlign: 'center', padding: '32px' }}>
+                  <td colSpan="13" style={{ textAlign: 'center', padding: '32px' }}>
                     <div className="spinner" style={{ margin: '0 auto' }}></div>
                   </td>
                 </tr>
               ) : filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan="12" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
+                  <td colSpan="13" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
                     No fabric orders found. Click 'New Fabric Order' to create one.
                   </td>
                 </tr>
@@ -305,6 +332,7 @@ export const FabricOrdersView = () => {
                           {order.party?.partyName || '-'}
                         </span>
                       </td>
+                      <td>{order.supplier?.partyName || '-'}</td>
                       <td>{order.quality || '-'}</td>
                       <td>{order.rate ? `₹${order.rate}` : '-'}</td>
                       <td style={{ fontWeight: 600 }}>{ordered ? `${ordered.toLocaleString()} m` : '-'}</td>
@@ -315,7 +343,7 @@ export const FabricOrdersView = () => {
                         {balance.toLocaleString()} m
                       </td>
                       <td style={{ fontWeight: 600, color: 'var(--primary-blue-dark)' }}>
-                        {val ? `₹${val.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '-'}
+                        {val ? `₹${formatIndianAmount(val)}` : '-'}
                       </td>
                       <td>
                         <span className={`badge ${order.status === 'COMPLETED' ? 'badge-success' : (order.status === 'OPEN' ? 'badge-info' : 'badge-warning')}`}>
@@ -373,16 +401,21 @@ export const FabricOrdersView = () => {
               />
             </div>
 
-            <div className="form-group">
-              <label>Order Date *</label>
-              <input
-                type="date"
+                        <div className="form-group">
+              <label>Firm Name</label>
+              <select
                 className="form-control"
-                value={formData.orderDate}
-                onChange={(e) => setFormData({ ...formData, orderDate: e.target.value })}
-                required
-              />
+                value={formData.supplierId}
+                onChange={(e) => setFormData({ ...formData, supplierId: e.target.value })}
+              >
+                <option value="">-- Select Firm --</option>
+                {firmParties.map(firm => (
+                  <option key={firm.partyId} value={firm.partyId}>{firm.partyName}</option>
+                ))}
+              </select>
             </div>
+
+
 
             <div className="form-group col-span-2">
               <label>Customer / Client Party *</label>
@@ -393,9 +426,9 @@ export const FabricOrdersView = () => {
                 required
               >
                 <option value="">-- Select Customer Party --</option>
-                {parties.map(p => (
+                {customerParties.map(p => (
                   <option key={p.partyId} value={p.partyId}>
-                    {p.partyName} ({p.partyType || 'Customer'} - GST: {p.gstNo || 'N/A'})
+                    {p.partyName}
                   </option>
                 ))}
               </select>
@@ -436,17 +469,16 @@ export const FabricOrdersView = () => {
               />
             </div>
 
-            {/* <div className="form-group">
-              <label>Supplier Party</label>
-              <select className="form-control" value={formData.supplierId} onChange={(e) => setFormData({ ...formData, supplierId: e.target.value })}>
-                <option value="">-- Select Supplier --</option>
-                {parties.map(party => <option key={party.partyId} value={party.partyId}>{party.partyName}</option>)}
-              </select>
-            </div> */}
-
-
-
-
+              <div className="form-group">
+              <label>Order Date *</label>
+              <input
+                type="date"
+                className="form-control"
+                value={formData.orderDate}
+                onChange={(e) => setFormData({ ...formData, orderDate: e.target.value })}
+                required
+              />
+            </div>
 
 
 
@@ -526,7 +558,7 @@ export const FabricOrdersView = () => {
                   Estimated Total Order Value:
                 </span>
                 <span style={{ color: '#0369a1', fontWeight: 700, fontSize: '1.1rem' }}>
-                  ₹{(Number(formData.orderedMeters) * Number(formData.rate)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ₹{formatIndianAmount(Number(formData.orderedMeters) * Number(formData.rate))}
                 </span>
               </div>
             )}
