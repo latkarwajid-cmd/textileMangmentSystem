@@ -13,11 +13,8 @@ import {
   Droplets,
   RefreshCcw,
   PackageCheck,
-<<<<<<< HEAD
-  Send
-=======
+  Send,
   LogOut
->>>>>>> main
 } from 'lucide-react';
 
 export const Sidebar = ({ onLogout }) => {

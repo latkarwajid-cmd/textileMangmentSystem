@@ -18,12 +18,9 @@ import { YarnReceiveDyeingView } from './views/YarnReceiveDyeingView';
 import { BeamInwardView } from './views/BeamInwardView';
 import { RewindingIssueView } from './views/RewindingIssueView';
 import { RewindingYarnView } from './views/RewindingYarnView';
-<<<<<<< HEAD
 import { WeftDispatchView } from './views/WeftDispatchView';
-=======
 import { LoginView } from './views/LoginView';
 import { api } from './services/api';
->>>>>>> main
 
 const MainContent = ({ onLogout }) => {
   const { currentTab } = useApp();
