@@ -15,8 +15,10 @@ export const IssueYarnPickerModal = ({
   onConesChange,
   onDone,
   showSetNo = false,
+  showConeDetails = false,
+  showSizingType = false,
 }) => {
-  const columnCount = 11 + (showSetNo ? 1 : 0);
+  const columnCount = 11 + (showSetNo ? 1 : 0) + (showConeDetails ? 2 : 0) + (showSizingType ? 1 : 0);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Issue Yarn" size="lg">
@@ -51,11 +53,14 @@ export const IssueYarnPickerModal = ({
                 {showSetNo && <th>Set No</th>}
                 <th>Serial</th>
                 <th>Type</th>
+                {showSizingType && <th>Sizing Type</th>}
                 <th>Count</th>
                 <th>Tickit</th>
                 <th>Available Bags</th>
                 <th>Given Bags</th>
-                <th>Cone</th>
+                {showConeDetails && <th>Cone/Bag</th>}
+                {showConeDetails && <th>Total Cones</th>}
+                <th>{showConeDetails ? 'Given Cones' : 'Cone'}</th>
                 <th>Weight/Bag (Kg)</th>
                 <th>Weight (Kg)</th>
                 <th>Inward Date</th>
@@ -85,6 +90,15 @@ export const IssueYarnPickerModal = ({
                   {showSetNo && <td>{row.setNo || '-'}</td>}
                   <td style={{ fontWeight: 700, color: 'var(--primary-blue-dark)' }}>{row.serialLabel}</td>
                   <td><span className={`badge ${row.type === 'RETURNED' ? 'badge-warning' : 'badge-success'}`}>{row.sourceLabel || row.type || 'FRESH'}</span></td>
+                  {showSizingType && (() => {
+                    const type = row.sizingType || '';
+                    const color = type === 'Full Bag'
+                      ? { background: '#dcfce7', color: '#166534', border: '1px solid #86efac' }
+                      : type === 'Kharad'
+                        ? { background: '#fee2e2', color: '#991b1b', border: '1px solid #fca5a5' }
+                        : { background: '#fef3c7', color: '#92400e', border: '1px solid #fcd34d' };
+                    return <td>{type ? <span style={{ ...color, display: 'inline-block', padding: '4px 8px', borderRadius: 6, whiteSpace: 'nowrap' }}>{type}</span> : '-'}</td>;
+                  })()}
                   <td>{row.countName || '-'}</td>
                   <td>{row.tickitName || '-'}</td>
                   <td style={{ fontWeight: 700, textAlign: 'right' }}>{row.remainingBags}</td>
@@ -101,6 +115,8 @@ export const IssueYarnPickerModal = ({
                       placeholder={String(row.remainingBags)}
                     />
                   </td>
+                  {showConeDetails && <td>{row.conePerBag == null ? '-' : Number(row.conePerBag).toFixed(3)}</td>}
+                  {showConeDetails && <td>{row.availableCones == null ? '-' : Number(row.availableCones).toFixed(3)}</td>}
                   <td>
                     <input
                       type="number"

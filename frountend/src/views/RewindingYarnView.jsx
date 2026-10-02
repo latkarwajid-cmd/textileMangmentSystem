@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Package, Plus, Printer, Save, Search, Trash2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { api } from '../services/api';
@@ -16,35 +16,63 @@ export const RewindingYarnView = () => {
   const [receipt, setReceipt] = useState(null);
   const [receiveDate, setReceiveDate] = useState(today());
   const [lines, setLines] = useState([emptyLine()]);
+  const [rewindingIssues, setRewindingIssues] = useState([]);
+  const [loadingIssues, setLoadingIssues] = useState(false);
   const [returnedEmptyCones, setReturnedEmptyCones] = useState('');
   const [scrapWeightKg, setScrapWeightKg] = useState('');
   const [balanceReturnWeightKg, setBalanceReturnWeightKg] = useState('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const searchRequestRef = useRef(0);
 
   const issuedWeight = useMemo(() => (entry?.lines || []).reduce((sum, line) => sum + (Number(line.weightKg) || 0), 0), [entry]);
   const receivedWeight = useMemo(() => lines.reduce((sum, line) => sum + (Number(line.grossWeightKg) || 0), 0), [lines]);
   const shortage = issuedWeight - receivedWeight - (Number(scrapWeightKg) || 0) - (Number(balanceReturnWeightKg) || 0);
   const expectedOutput = [...new Set((entry?.lines || []).map(line => line.targetOutputType).filter(Boolean))].join(', ');
 
-  const handleSearch = async () => {
-    const trimmed = getpassNo.trim();
+  useEffect(() => {
+    const loadIssues = async () => {
+      try {
+        setLoadingIssues(true);
+        const data = await api.rewindingIssues.getAll();
+        setRewindingIssues(Array.isArray(data) ? data : []);
+      } catch (error) {
+        addToast(error.message || 'Failed to load rewinding gatepasses', 'error');
+      } finally {
+        setLoadingIssues(false);
+      }
+    };
+    loadIssues();
+  }, [addToast]);
+
+  const handleSearch = async (requestedGetpassNo = getpassNo) => {
+    const trimmed = requestedGetpassNo.trim();
     if (!trimmed) { addToast('Please enter a getpass number', 'error'); return; }
+    const requestId = ++searchRequestRef.current;
+    setEntry(null);
+    setReceipt(null);
     try {
       setLoading(true);
       const data = await api.rewindingYarnReceive.getIssue(trimmed);
+      if (requestId !== searchRequestRef.current) return;
+      setGetpassNo(trimmed);
       setEntry(data);
       const completed = String(data.status || '').toUpperCase() === 'COMPLETED';
-      setReceipt(completed ? await api.rewindingYarnReceive.getByGetpass(trimmed) : null);
+      const receiptData = completed ? await api.rewindingYarnReceive.getByGetpass(trimmed) : null;
+      if (requestId !== searchRequestRef.current) return;
+      setReceipt(receiptData);
       setReceiveDate(today());
       setReturnedEmptyCones(''); setScrapWeightKg(''); setBalanceReturnWeightKg('');
       const first = data.lines?.[0];
       setLines([emptyLine(first ? `${first.countName || ''} ${first.tickitName || ''}`.trim() : '')]);
     } catch (err) {
+      if (requestId !== searchRequestRef.current) return;
       setEntry(null);
       setReceipt(null);
       addToast(err.message || 'No rewinding dispatch found for this getpass', 'error');
-    } finally { setLoading(false); }
+    } finally {
+      if (requestId === searchRequestRef.current) setLoading(false);
+    }
   };
 
   const updateLine = (index, field, value) => setLines(previous => previous.map((line, lineIndex) => lineIndex === index ? { ...line, [field]: value } : line));
@@ -78,6 +106,15 @@ export const RewindingYarnView = () => {
   const completedScrapWeight = Number(receipt?.scrapWeightKg || 0);
   const completedBalanceWeight = Number(receipt?.balanceReturnWeightKg || 0);
   const completedShortage = issuedWeight - completedReceivedWeight - completedScrapWeight - completedBalanceWeight;
+  const filteredIssues = rewindingIssues.filter(issue => {
+    const query = getpassNo.trim().toLowerCase();
+    if (!query) return true;
+    const lineSearch = (issue.lines || []).some(line =>
+      `${line.countName || ''} ${line.tickitName || ''} ${line.setNo || ''}`.toLowerCase().includes(query)
+    );
+    return [issue.getpassNo, issue.rewindingName, issue.firmName, issue.issueDate]
+      .some(value => String(value || '').toLowerCase().includes(query)) || lineSearch;
+  });
 
   return (
     <div className="content-area">
@@ -86,8 +123,50 @@ export const RewindingYarnView = () => {
           <div className="section-card-title"><Package size={20} color="var(--primary-blue)" /><div><h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700 }}>Yarn Inward from Rewinding</h3><span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Receive finished yarn and complete the rewinding gatepass</span></div></div>
         </div>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 20, flexWrap: 'wrap' }}>
-          <div className="search-box" style={{ flex: 1, minWidth: 260 }}><Search size={16} /><input value={getpassNo} onChange={event => setGetpassNo(event.target.value)} onKeyDown={event => event.key === 'Enter' && handleSearch()} placeholder="Enter gatepass number" /></div>
+          <div className="search-box" style={{ flex: 1, minWidth: 260 }}><Search size={16} /><input value={getpassNo} onChange={event => { searchRequestRef.current += 1; setGetpassNo(event.target.value); setEntry(null); setReceipt(null); setLoading(false); }} onKeyDown={event => event.key === 'Enter' && handleSearch()} placeholder="Enter gatepass number" /></div>
           <button type="button" className="btn btn-primary" onClick={handleSearch} disabled={loading}><Search size={16} /> {loading ? 'Searching...' : 'Fetch Gatepass'}</button>
+        </div>
+
+        <div className="table-responsive" style={{ marginTop: 20 }}>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Getpass No.</th><th>Dispatch Date</th><th>Rewinding Party</th><th>Count & Ticket</th>
+                <th>Set No.</th><th>Bags</th><th>Cones</th><th>Issued Weight (Kg)</th><th>Expected Output</th><th>Status</th><th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loadingIssues ? (
+                <tr><td colSpan="11" style={{ textAlign: 'center', padding: 28 }}>Loading available gatepasses...</td></tr>
+              ) : filteredIssues.length === 0 ? (
+                <tr><td colSpan="11" style={{ textAlign: 'center', padding: 28, color: 'var(--text-muted)' }}>No rewinding gatepasses found.</td></tr>
+              ) : filteredIssues.map(issue => {
+                const issueLines = issue.lines || [];
+                const countTickets = [...new Set(issueLines.map(line => `${line.countName || ''} ${line.tickitName || ''}`.trim()).filter(Boolean))].join(', ');
+                const setNos = [...new Set(issueLines.map(line => line.setNo).filter(Boolean))].join(', ');
+                const bags = issueLines.reduce((sum, line) => sum + (Number(line.bags) || 0), 0);
+                const cones = issueLines.reduce((sum, line) => sum + (Number(line.cone) || 0), 0);
+                const weight = issueLines.reduce((sum, line) => sum + (Number(line.weightKg) || 0), 0);
+                const output = [...new Set(issueLines.map(line => line.targetOutputType).filter(Boolean))].join(', ');
+                const completed = String(issue.status || '').toUpperCase() === 'COMPLETED';
+                return (
+                  <tr key={issue.rewindingIssueId}>
+                    <td style={{ fontWeight: 700 }}>{issue.getpassNo}</td>
+                    <td>{issue.issueDate || '-'}</td>
+                    <td>{issue.rewindingName || issue.firmName || '-'}</td>
+                    <td>{countTickets || '-'}</td>
+                    <td>{setNos || '-'}</td>
+                    <td>{bags}</td>
+                    <td>{cones}</td>
+                    <td>{weight.toFixed(3)}</td>
+                    <td>{output || '-'}</td>
+                    <td><span className={`badge ${completed ? 'badge-success' : 'badge-info'}`}>{issue.status || 'ISSUED'}</span></td>
+                    <td><button type="button" className="btn btn-secondary btn-sm" onClick={() => handleSearch(issue.getpassNo)} disabled={loading}>{completed ? 'View' : 'Receive'}</button></td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
 
         {!entry ? <div style={{ textAlign: 'center', padding: 36, color: 'var(--text-muted)' }}>Search a gatepass to load its issued yarn baseline.</div> : isCompleted ? (
@@ -100,6 +179,8 @@ export const RewindingYarnView = () => {
                 <div className="form-group"><label>Rewinding Party</label><input className="form-control" value={entry.rewindingName || ''} readOnly /></div>
                 <div className="form-group"><label>Receive Date</label><input className="form-control" value={receipt?.receiveDate || ''} readOnly /></div>
                 <div className="form-group"><label>Issued Count / Ticket</label><input className="form-control" value={countAndTicket || '-'} readOnly /></div>
+                <div className="form-group"><label>Issued Bags</label><input className="form-control" value={issuedBags} readOnly /></div>
+                <div className="form-group"><label>Issued Cones</label><input className="form-control" value={issuedCones} readOnly /></div>
                 <div className="form-group"><label>Issued Weight (Kg)</label><input className="form-control" value={issuedWeight.toFixed(3)} readOnly /></div>
                 <div className="form-group"><label>Received Weight (Kg)</label><input className="form-control" value={completedReceivedWeight.toFixed(3)} readOnly /></div>
                 <div className="form-group"><label>Expected Output</label><input className="form-control" value={expectedOutput || '-'} readOnly /></div>
