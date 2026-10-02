@@ -12,7 +12,8 @@ import {
   Layers3,
   Droplets,
   RefreshCcw,
-  PackageCheck
+  PackageCheck,
+  Send
 } from 'lucide-react';
 
 export const Sidebar = () => {
@@ -30,6 +31,7 @@ export const Sidebar = () => {
     { id: 'sizing-yarn-inward', label: 'Yarn Return from Sizing', icon: RotateCcw, section: 'Transactions' },
     { id: 'rewinding-issue', label: 'Yarn Issue to Rewinding', icon: RefreshCcw, section: 'Transactions' },
     { id: 'rewinding-yarn', label: 'Yarn from Rewinding', icon: RotateCcw, section: 'Transactions' },
+    { id: 'weft-dispatch', label: 'Yarn Issue to Weaving', icon: Send, section: 'Transactions' },
     { id: 'yarn-out-dyeing', label: 'Yarn Out Dyeing', icon: Droplets, section: 'Transactions' },
     { id: 'yarn-receive-dyeing', label: 'Yarn Receive from Dyeing', icon: PackageCheck, section: 'Transactions' },
   ];

@@ -18,6 +18,7 @@ import { YarnReceiveDyeingView } from './views/YarnReceiveDyeingView';
 import { BeamInwardView } from './views/BeamInwardView';
 import { RewindingIssueView } from './views/RewindingIssueView';
 import { RewindingYarnView } from './views/RewindingYarnView';
+import { WeftDispatchView } from './views/WeftDispatchView';
 
 const MainContent = () => {
   const { currentTab } = useApp();
@@ -36,6 +37,7 @@ const MainContent = () => {
     ['sizing-yarn-inward', <SizingYarnInwardView />],
     ['rewinding-issue', <RewindingIssueView />],
     ['rewinding-yarn', <RewindingYarnView />],
+    ['weft-dispatch', <WeftDispatchView />],
   ];
 
   return (
