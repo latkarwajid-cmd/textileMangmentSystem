@@ -51,26 +51,35 @@
 
 .weft-yarn-grid-wrap {
   width: 100%;
-  overflow-x: hidden;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
 }
 
 .weft-yarn-grid {
   width: 100%;
+  min-width: 1180px;
   table-layout: fixed;
   font-size: 0.76rem;
 }
 
 .weft-yarn-grid th,
 .weft-yarn-grid td {
-  padding: 9px 6px;
+  padding: 10px 8px;
   text-align: center;
   vertical-align: middle;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
-.weft-yarn-grid th {
+.data-table.weft-yarn-grid th {
   line-height: 1.25;
   white-space: normal;
+  overflow-wrap: anywhere;
+  padding: 10px 8px;
+}
+
+.data-table.weft-yarn-grid td {
+  padding: 8px 6px;
+  overflow-wrap: anywhere;
 }
 
 .weft-yarn-grid td .form-control {
