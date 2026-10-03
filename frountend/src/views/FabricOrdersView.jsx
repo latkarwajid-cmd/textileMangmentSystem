@@ -46,17 +46,10 @@ const formatIndianAmount = (amount) => Number(amount || 0).toLocaleString('en-IN
   maximumFractionDigits: 2,
 });
 
-const FABRIC_BUYER_TYPES = new Set(['CUSTOMER', 'CLIENT', 'TRADER', 'BUYER']);
-
 export const FabricOrdersView = () => {
   const { parties, yarnCounts, tickits, addToast, refreshMasters } = useApp();
   const firmParties = parties.filter(party => party.status !== false && party.partyType?.trim().toUpperCase() === 'FIRM');
-  const customerParties = parties
-    .filter(party => party.status !== false && (
-      FABRIC_BUYER_TYPES.has(party.partyType?.trim().toUpperCase()) ||
-      party.partyType?.trim().toUpperCase() === 'SUPPLIER'
-    ))
-    .sort((a, b) => (a.partyName || '').localeCompare(b.partyName || ''));
+  const customerParties = parties.filter(party => party.status !== false && party.partyType?.trim().toUpperCase() === 'CUSTOMER');
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
@@ -104,7 +97,7 @@ export const FabricOrdersView = () => {
     setFormData({
       orderNo: getNextOrderNo(orders),
       orderDate: new Date().toISOString().split('T')[0],
-      partyId: '',
+      partyId: parties.length > 0 ? parties[0].partyId : '',
       supplierId: '',
       countId: '',
       tickitId: '',
@@ -425,14 +418,14 @@ export const FabricOrdersView = () => {
 
 
             <div className="form-group col-span-2">
-              <label>Customer / Supplier Party *</label>
+              <label>Customer / Client Party *</label>
               <select
                 className="form-control"
                 value={formData.partyId}
                 onChange={(e) => setFormData({ ...formData, partyId: e.target.value })}
                 required
               >
-                <option value="">-- Select Customer / Supplier Party --</option>
+                <option value="">-- Select Customer Party --</option>
                 {customerParties.map(p => (
                   <option key={p.partyId} value={p.partyId}>
                     {p.partyName}

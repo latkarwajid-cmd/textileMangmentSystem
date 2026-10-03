@@ -1,5 +1,6 @@
 import { CheckCircle2, Loader2, Package, Search } from 'lucide-react';
 import { Modal } from './Modal';
+import { CalculatorInput } from './CalculatorInput';
 
 export const IssueYarnPickerModal = ({
   isOpen,
@@ -103,29 +104,27 @@ export const IssueYarnPickerModal = ({
                   <td>{row.tickitName || '-'}</td>
                   <td style={{ fontWeight: 700, textAlign: 'right' }}>{row.remainingBags}</td>
                   <td>
-                    <input
-                      type="number"
+                    <CalculatorInput
                       min="0"
                       max={row.remainingBags}
                       step="1"
                       className="form-control"
                       value={row.issueBags}
                       disabled={!row.checked}
-                      onChange={event => onBagsChange(row.key, event.target.value)}
+                      onChange={value => onBagsChange(row.key, value)}
                       placeholder={String(row.remainingBags)}
                     />
                   </td>
                   {showConeDetails && <td>{row.conePerBag == null ? '-' : Number(row.conePerBag).toFixed(3)}</td>}
                   {showConeDetails && <td>{row.availableCones == null ? '-' : Number(row.availableCones).toFixed(3)}</td>}
                   <td>
-                    <input
-                      type="number"
+                    <CalculatorInput
                       min="0"
                       step="1"
                       className="form-control"
                       value={row.issueCones ?? ''}
                       disabled={!row.checked}
-                      onChange={event => onConesChange(row.key, event.target.value)}
+                      onChange={value => onConesChange(row.key, value)}
                       placeholder="Cone"
                     />
                   </td>

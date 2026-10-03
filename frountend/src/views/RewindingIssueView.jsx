@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { api } from '../services/api';
 import { Edit2, Package, CheckCircle2, Plus, Trash2 } from 'lucide-react';
 import { IssueYarnPickerModal } from '../components/IssueYarnPickerModal';
+import { CalculatorInput } from '../components/CalculatorInput';
 import { getSizingYarnReturnIssueDetails, getYarnInwardOrigin, sortIssueStockRows } from '../utils/sizingYarnReturn';
 import { Modal } from '../components/Modal';
 
@@ -809,9 +810,9 @@ export const RewindingIssueView = () => {
                         <td>{line.seNo || '-'}</td>
                         <td>{line.countName || '-'}</td>
                         <td>{line.tickitName || '-'}</td>
-                        <td><input type="number" min="0" step="0.001" className="form-control" value={line.bags} onChange={event => updateEditLine(index, 'bags', event.target.value)} required /></td>
-                        <td><input type="number" min="0" step="0.001" className="form-control" value={line.cone} onChange={event => updateEditLine(index, 'cone', event.target.value)} /></td>
-                        <td><input type="number" min="0" step="0.001" className="form-control" value={line.weightKg} onChange={event => updateEditLine(index, 'weightKg', event.target.value)} /></td>
+                        <td><CalculatorInput min="0" step="0.001" className="form-control" value={line.bags} onChange={value => updateEditLine(index, 'bags', value)} required /></td>
+                        <td><CalculatorInput min="0" step="0.001" className="form-control" value={line.cone} onChange={value => updateEditLine(index, 'cone', value)} /></td>
+                        <td><CalculatorInput min="0" step="0.001" className="form-control" value={line.weightKg} onChange={value => updateEditLine(index, 'weightKg', value)} /></td>
                         <td>
                           <select className="form-control" value={line.targetOutputType} onChange={event => updateEditLine(index, 'targetOutputType', event.target.value)}>
                             <option value="CONES">Cones</option>
