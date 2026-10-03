@@ -136,7 +136,7 @@ export const YarnInwardView = () => {
       orderId: order?.orderId || '',
       countId: order?.count?.countId || '',
       tickitId: order?.tickit?.tickitId || '',
-      supplierId: order?.supplier?.partyId || '',
+      supplierId: order?.party?.partyId || '',
     }));
   };
 

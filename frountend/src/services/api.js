@@ -177,6 +177,14 @@ export const api = {
     delete: (id) => request(`/api/rewinding-issues/${id}`, { method: 'DELETE' }),
   },
 
+  weftDispatches: {
+    getAll: () => request('/api/weft-dispatches'),
+    create: (data) => request('/api/weft-dispatches', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => request(`/api/weft-dispatches/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    setStatus: (id, value) => request(`/api/weft-dispatches/${id}/status?value=${encodeURIComponent(value)}`, { method: 'PUT' }),
+    delete: (id) => request(`/api/weft-dispatches/${id}`, { method: 'DELETE' }),
+  },
+
   rewindingYarnReceive: {
     getIssue: (getpassNo) => request(`/api/rewinding-yarn-receive/issue/${encodeURIComponent(getpassNo)}`),
     getByGetpass: (getpassNo) => request(`/api/rewinding-yarn-receive/${encodeURIComponent(getpassNo)}`),

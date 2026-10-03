@@ -49,7 +49,9 @@ const formatIndianAmount = (amount) => Number(amount || 0).toLocaleString('en-IN
 export const FabricOrdersView = () => {
   const { parties, yarnCounts, tickits, addToast, refreshMasters } = useApp();
   const firmParties = parties.filter(party => party.status !== false && party.partyType?.trim().toUpperCase() === 'FIRM');
-  const customerParties = parties.filter(party => party.status !== false && party.partyType?.trim().toUpperCase() === 'CUSTOMER');
+  const customerParties = parties.filter(party =>
+    party.status !== false && ['CUSTOMER', 'SUPPLIER'].includes(party.partyType?.trim().toUpperCase())
+  );
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
@@ -418,14 +420,14 @@ export const FabricOrdersView = () => {
 
 
             <div className="form-group col-span-2">
-              <label>Customer / Client Party *</label>
+              <label>Customer / Supplier Party *</label>
               <select
                 className="form-control"
                 value={formData.partyId}
                 onChange={(e) => setFormData({ ...formData, partyId: e.target.value })}
                 required
               >
-                <option value="">-- Select Customer Party --</option>
+                <option value="">-- Select Customer / Supplier Party --</option>
                 {customerParties.map(p => (
                   <option key={p.partyId} value={p.partyId}>
                     {p.partyName}

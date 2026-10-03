@@ -18,6 +18,7 @@ import { YarnReceiveDyeingView } from './views/YarnReceiveDyeingView';
 import { BeamInwardView } from './views/BeamInwardView';
 import { RewindingIssueView } from './views/RewindingIssueView';
 import { RewindingYarnView } from './views/RewindingYarnView';
+import { WeftDispatchView } from './views/WeftDispatchView';
 import { LoginView } from './views/LoginView';
 import { api } from './services/api';
 
@@ -38,6 +39,7 @@ const MainContent = ({ onLogout }) => {
     ['sizing-yarn-inward', <SizingYarnInwardView />],
     ['rewinding-issue', <RewindingIssueView />],
     ['rewinding-yarn', <RewindingYarnView />],
+    ['weft-dispatch', <WeftDispatchView />],
   ];
 
   return (
