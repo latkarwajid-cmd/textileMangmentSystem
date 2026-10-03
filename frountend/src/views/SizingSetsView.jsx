@@ -3049,19 +3049,6 @@ export const SizingSetsView = () => {
                 </div>
 
 
-                {/* FIRM NAME */}
-
-                <div className="form-group">
-                  <label>Sizing Firm Name</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={header.sizingName}
-                    onChange={e => updateHeader('sizingName', e.target.value)}
-                    placeholder="Enter firm name"
-                  />
-                </div>
-
                 <div className="form-group">
                   <label>Firm Name</label>
                   <input type="text" className="form-control" value={header.orderFirmName || ''} readOnly placeholder="Auto-filled from order" />

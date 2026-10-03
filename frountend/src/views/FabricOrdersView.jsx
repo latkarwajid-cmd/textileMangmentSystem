@@ -46,7 +46,7 @@ const formatIndianAmount = (amount) => Number(amount || 0).toLocaleString('en-IN
   maximumFractionDigits: 2,
 });
 
-const FABRIC_BUYER_TYPES = new Set(['CUSTOMER', 'CLIENT', 'TRADER', 'BUYER']);
+const FABRIC_BUYER_TYPES = new Set(['CUSTOMER', 'CLIENT', 'TRADER', 'BUYER', 'SUPPLIER']);
 
 export const FabricOrdersView = () => {
   const { parties, yarnCounts, tickits, addToast, refreshMasters } = useApp();
@@ -431,7 +431,7 @@ export const FabricOrdersView = () => {
                 onChange={(e) => setFormData({ ...formData, partyId: e.target.value })}
                 required
               >
-                <option value="">-- Select Customer Party --</option>
+                <option value="">-- Select Customer or Supplier --</option>
                 {customerParties.map(p => (
                   <option key={p.partyId} value={p.partyId}>
                     {p.partyName}
