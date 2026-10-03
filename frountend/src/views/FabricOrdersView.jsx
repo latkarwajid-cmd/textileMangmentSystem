@@ -46,10 +46,16 @@ const formatIndianAmount = (amount) => Number(amount || 0).toLocaleString('en-IN
   maximumFractionDigits: 2,
 });
 
+const FABRIC_BUYER_TYPES = new Set(['CUSTOMER', 'CLIENT', 'TRADER', 'BUYER']);
+
 export const FabricOrdersView = () => {
   const { parties, yarnCounts, tickits, addToast, refreshMasters } = useApp();
   const firmParties = parties.filter(party => party.status !== false && party.partyType?.trim().toUpperCase() === 'FIRM');
-  const customerParties = parties.filter(party => party.status !== false && party.partyType?.trim().toUpperCase() === 'CUSTOMER');
+  // Fabric orders are for finished fabric buyers. Processing vendors belong
+  // in their respective dispatch workflows, not in this customer selector.
+  const customerParties = parties
+    .filter(party => party.status !== false && FABRIC_BUYER_TYPES.has(party.partyType?.trim().toUpperCase()))
+    .sort((a, b) => (a.partyName || '').localeCompare(b.partyName || ''));
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
@@ -97,7 +103,7 @@ export const FabricOrdersView = () => {
     setFormData({
       orderNo: getNextOrderNo(orders),
       orderDate: new Date().toISOString().split('T')[0],
-      partyId: parties.length > 0 ? parties[0].partyId : '',
+      partyId: '',
       supplierId: '',
       countId: '',
       tickitId: '',
