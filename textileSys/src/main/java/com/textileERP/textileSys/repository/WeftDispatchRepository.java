@@ -6,4 +6,5 @@ public interface WeftDispatchRepository extends JpaRepository<WeftDispatch,Long>
  boolean existsByInternalGatepassNoIgnoreCase(String no);
  boolean existsByChallanNoIgnoreCase(String no);
  List<WeftDispatch> findBySetNoIgnoreCase(String setNo);
+ List<WeftDispatch> findBySizingSetSizingSetId(Long sizingSetId);
 }

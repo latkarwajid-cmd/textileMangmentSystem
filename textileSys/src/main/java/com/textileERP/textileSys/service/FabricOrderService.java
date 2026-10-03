@@ -6,11 +6,16 @@ import com.textileERP.textileSys.model.FabricOrder;
 import com.textileERP.textileSys.model.Parties;
 import com.textileERP.textileSys.model.Tickits;
 import com.textileERP.textileSys.model.YarnCount;
+import com.textileERP.textileSys.repository.BeamInwardRepository;
 import com.textileERP.textileSys.repository.FabricOrderRepository;
 import com.textileERP.textileSys.repository.PartiesRepository;
+import com.textileERP.textileSys.repository.SizingSetRepository;
 import com.textileERP.textileSys.repository.TickitsRepository;
+import com.textileERP.textileSys.repository.WeftDispatchRepository;
 import com.textileERP.textileSys.repository.YarnCountRepository;
+import com.textileERP.textileSys.repository.YarnOutDyeingRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -23,13 +28,23 @@ public class FabricOrderService {
     private final PartiesRepository partiesRepository;
     private final YarnCountRepository yarnCountRepository;
     private final TickitsRepository tickitsRepository;
+    private final SizingSetRepository sizingSetRepository;
+    private final BeamInwardRepository beamInwardRepository;
+    private final WeftDispatchRepository weftDispatchRepository;
+    private final YarnOutDyeingRepository yarnOutDyeingRepository;
 
     public FabricOrderService(FabricOrderRepository fabricOrderRepository, PartiesRepository partiesRepository,
-            YarnCountRepository yarnCountRepository, TickitsRepository tickitsRepository) {
+            YarnCountRepository yarnCountRepository, TickitsRepository tickitsRepository,
+            SizingSetRepository sizingSetRepository, BeamInwardRepository beamInwardRepository,
+            WeftDispatchRepository weftDispatchRepository, YarnOutDyeingRepository yarnOutDyeingRepository) {
         this.fabricOrderRepository = fabricOrderRepository;
         this.partiesRepository = partiesRepository;
         this.yarnCountRepository = yarnCountRepository;
         this.tickitsRepository = tickitsRepository;
+        this.sizingSetRepository = sizingSetRepository;
+        this.beamInwardRepository = beamInwardRepository;
+        this.weftDispatchRepository = weftDispatchRepository;
+        this.yarnOutDyeingRepository = yarnOutDyeingRepository;
     }
 
     // Get all orders
@@ -147,6 +162,7 @@ public class FabricOrderService {
     }
 
     // Update Order
+    @Transactional
     public FabricOrder updateOrder(Long id, FabricOrderDto request) {
         FabricOrder order = getOrderById(id);
 
@@ -183,7 +199,38 @@ public class FabricOrderService {
             order.setComplete(request.getComplete());
         }
 
-        return fabricOrderRepository.save(order);
+        FabricOrder savedOrder = fabricOrderRepository.save(order);
+        synchronizeRelatedQuality(savedOrder.getOrderId(), savedOrder.getQuality());
+        return savedOrder;
+    }
+
+    private void synchronizeRelatedQuality(Long orderId, String quality) {
+        sizingSetRepository.findByOrderOrderId(orderId).forEach(set -> {
+            set.setQuality(quality);
+            sizingSetRepository.save(set);
+
+            beamInwardRepository.findBySizingSetSizingSetId(set.getSizingSetId()).forEach(beam -> {
+                beam.setQuality(quality);
+                beamInwardRepository.save(beam);
+            });
+            weftDispatchRepository.findBySizingSetSizingSetId(set.getSizingSetId()).forEach(dispatch -> {
+                dispatch.setQuality(quality);
+                weftDispatchRepository.save(dispatch);
+            });
+            yarnOutDyeingRepository.findBySizingSetSizingSetId(set.getSizingSetId()).forEach(record -> {
+                record.setQuality(quality);
+                yarnOutDyeingRepository.save(record);
+            });
+        });
+
+        beamInwardRepository.findByOrderOrderId(orderId).forEach(beam -> {
+            beam.setQuality(quality);
+            beamInwardRepository.save(beam);
+        });
+        yarnOutDyeingRepository.findByOrderOrderId(orderId).forEach(record -> {
+            record.setQuality(quality);
+            yarnOutDyeingRepository.save(record);
+        });
     }
 
     private YarnCount findCount(Long id) {

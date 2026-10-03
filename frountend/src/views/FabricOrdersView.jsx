@@ -46,6 +46,8 @@ const formatIndianAmount = (amount) => Number(amount || 0).toLocaleString('en-IN
   maximumFractionDigits: 2,
 });
 
+const FABRIC_BUYER_TYPES = new Set(['CUSTOMER', 'CLIENT', 'TRADER', 'BUYER', 'SUPPLIER']);
+
 export const FabricOrdersView = () => {
   const { parties, yarnCounts, tickits, addToast, refreshMasters } = useApp();
   const firmParties = parties.filter(party => party.status !== false && party.partyType?.trim().toUpperCase() === 'FIRM');
