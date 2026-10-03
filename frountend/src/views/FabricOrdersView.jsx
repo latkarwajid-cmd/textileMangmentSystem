@@ -51,10 +51,11 @@ const FABRIC_BUYER_TYPES = new Set(['CUSTOMER', 'CLIENT', 'TRADER', 'BUYER', 'SU
 export const FabricOrdersView = () => {
   const { parties, yarnCounts, tickits, addToast, refreshMasters } = useApp();
   const firmParties = parties.filter(party => party.status !== false && party.partyType?.trim().toUpperCase() === 'FIRM');
-  // Fabric orders are for finished fabric buyers. Processing vendors belong
-  // in their respective dispatch workflows, not in this customer selector.
   const customerParties = parties
-    .filter(party => party.status !== false && FABRIC_BUYER_TYPES.has(party.partyType?.trim().toUpperCase()))
+    .filter(party => party.status !== false && (
+      FABRIC_BUYER_TYPES.has(party.partyType?.trim().toUpperCase()) ||
+      party.partyType?.trim().toUpperCase() === 'SUPPLIER'
+    ))
     .sort((a, b) => (a.partyName || '').localeCompare(b.partyName || ''));
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -424,14 +425,14 @@ export const FabricOrdersView = () => {
 
 
             <div className="form-group col-span-2">
-              <label>Customer / Client Party *</label>
+              <label>Customer / Supplier Party *</label>
               <select
                 className="form-control"
                 value={formData.partyId}
                 onChange={(e) => setFormData({ ...formData, partyId: e.target.value })}
                 required
               >
-                <option value="">-- Select Customer or Supplier --</option>
+                <option value="">-- Select Customer / Supplier Party --</option>
                 {customerParties.map(p => (
                   <option key={p.partyId} value={p.partyId}>
                     {p.partyName}

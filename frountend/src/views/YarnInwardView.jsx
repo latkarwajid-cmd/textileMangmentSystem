@@ -136,7 +136,7 @@ export const YarnInwardView = () => {
       orderId: order?.orderId || '',
       countId: order?.count?.countId || '',
       tickitId: order?.tickit?.tickitId || '',
-      supplierId: order?.supplier?.partyId || '',
+      supplierId: order?.party?.partyId || '',
     }));
   };
 
@@ -241,6 +241,10 @@ export const YarnInwardView = () => {
   };
 
   const filteredList = inwardList.filter(item => {
+    // Dyeing receipts and other unlinked receive lots remain in inventory for issue
+    // workflows, but do not belong in the order-based Yarn Inward register.
+    if (item.type?.trim().toUpperCase() === 'DYED' || !item.order?.orderId) return false;
+
     const matchesSearch = 
       item.billNo?.toLowerCase().includes(search.toLowerCase()) ||
       item.order?.orderNo?.toLowerCase().includes(search.toLowerCase()) ||
