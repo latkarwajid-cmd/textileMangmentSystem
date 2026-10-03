@@ -51,7 +51,9 @@ const FABRIC_BUYER_TYPES = new Set(['CUSTOMER', 'CLIENT', 'TRADER', 'BUYER', 'SU
 export const FabricOrdersView = () => {
   const { parties, yarnCounts, tickits, addToast, refreshMasters } = useApp();
   const firmParties = parties.filter(party => party.status !== false && party.partyType?.trim().toUpperCase() === 'FIRM');
-  const customerParties = parties.filter(party => party.status !== false && party.partyType?.trim().toUpperCase() === 'CUSTOMER');
+  const customerParties = parties
+    .filter(party => party.status !== false && FABRIC_BUYER_TYPES.has(party.partyType?.trim().toUpperCase()))
+    .sort((a, b) => (a.partyName || '').localeCompare(b.partyName || ''));
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
@@ -66,7 +68,6 @@ export const FabricOrdersView = () => {
     supplierId: '',
     countId: '',
     tickitId: '',
-    // supplierId: '',
     quality: '',
     rate: '',
     orderedMeters: '',
@@ -99,11 +100,10 @@ export const FabricOrdersView = () => {
     setFormData({
       orderNo: getNextOrderNo(orders),
       orderDate: new Date().toISOString().split('T')[0],
-      partyId: parties.length > 0 ? parties[0].partyId : '',
+      partyId: '',
       supplierId: '',
       countId: '',
       tickitId: '',
-      // supplierId: '',
       quality: '',
       rate: '',
       orderedMeters: '',
@@ -123,7 +123,6 @@ export const FabricOrdersView = () => {
       supplierId: order.supplier?.partyId || '',
       countId: order.count?.countId || '',
       tickitId: order.tickit?.tickitId || '',
-      // supplierId: order.supplier?.partyId || '',
       quality: order.quality || '',
       rate: order.rate || '',
       orderedMeters: order.orderedMeters || '',
@@ -144,7 +143,6 @@ export const FabricOrdersView = () => {
         supplierId: formData.supplierId ? Number(formData.supplierId) : null,
         countId: formData.countId ? Number(formData.countId) : null,
         tickitId: formData.tickitId ? Number(formData.tickitId) : null,
-        // supplierId: formData.supplierId ? Number(formData.supplierId) : null,
         quality: formData.quality,
         rate: formData.rate ? Number(formData.rate) : null,
         orderedMeters: formData.orderedMeters ? Number(formData.orderedMeters) : null,
@@ -420,14 +418,14 @@ export const FabricOrdersView = () => {
 
 
             <div className="form-group col-span-2">
-              <label>Customer / Client Party *</label>
+              <label>Customer / Supplier Party *</label>
               <select
                 className="form-control"
                 value={formData.partyId}
                 onChange={(e) => setFormData({ ...formData, partyId: e.target.value })}
                 required
               >
-                <option value="">-- Select Customer Party --</option>
+                <option value="">-- Select Customer / Supplier Party --</option>
                 {customerParties.map(p => (
                   <option key={p.partyId} value={p.partyId}>
                     {p.partyName}
