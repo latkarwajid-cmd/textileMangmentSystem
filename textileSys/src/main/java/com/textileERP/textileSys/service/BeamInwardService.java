@@ -48,7 +48,7 @@ public class BeamInwardService {
 
     public List<BeamInward> getAll() {
         return beamInwardRepository.findAll().stream()
-                .filter(beam -> !Boolean.TRUE.equals(beam.getArchived()))
+                .filter(this::isActive)
                 .toList();
     }
 
@@ -59,17 +59,22 @@ public class BeamInwardService {
 
     public List<BeamInward> getByOrder(Long orderId) {
         return beamInwardRepository.findByOrderOrderId(orderId).stream()
-                .filter(beam -> !Boolean.TRUE.equals(beam.getArchived())).toList();
+                .filter(this::isActive).toList();
     }
 
     public List<BeamInward> getBySizingSet(Long sizingSetId) {
         return beamInwardRepository.findBySizingSetSizingSetId(sizingSetId).stream()
-                .filter(beam -> !Boolean.TRUE.equals(beam.getArchived())).toList();
+                .filter(this::isActive).toList();
     }
 
     public List<BeamInward> getByInwardNo(String inwardNo) {
         return beamInwardRepository.findByInwardNo(inwardNo).stream()
-                .filter(beam -> !Boolean.TRUE.equals(beam.getArchived())).toList();
+                .filter(this::isActive).toList();
+    }
+
+    private boolean isActive(BeamInward beam) {
+        return !Boolean.TRUE.equals(beam.getArchived())
+                && !"DELETED".equalsIgnoreCase(beam.getStatus());
     }
 
     public String generateNextInwardNo() {
@@ -445,4 +450,3 @@ public class BeamInwardService {
         beamInwardRepository.save(b);
     }
 }
-

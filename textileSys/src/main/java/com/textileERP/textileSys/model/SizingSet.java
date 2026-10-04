@@ -24,7 +24,7 @@ public class SizingSet {
     @Column(name = "sizing_set_id")
     private Long sizingSetId;
 
-    @Column(name = "set_no", length = 50, nullable = false, unique = true)
+    @Column(name = "set_no", length = 50, nullable = false)
     private String setNo;
 
     @Column(name = "set_date")

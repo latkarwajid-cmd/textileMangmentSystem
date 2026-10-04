@@ -271,8 +271,6 @@ public class SizingSetService {
                 Pattern.compile("SET-(\\d+)", Pattern.CASE_INSENSITIVE);
 
         for (SizingSet set : sets) {
-
-            // Skip soft-deleted records so they don't inflate the counter.
             if ("DELETED".equalsIgnoreCase(set.getStatus())) {
                 continue;
             }
@@ -323,7 +321,7 @@ public class SizingSetService {
         validateSetNo(setNo);
 
         if (sizingSetRepository
-                .existsBySetNoIgnoreCase(setNo)) {
+                .existsActiveSetNoIgnoreCase(setNo)) {
 
             throw new RuntimeException(
                     "Sizing set already exists with set no: "
@@ -381,14 +379,8 @@ public class SizingSetService {
 
         validateSetNo(setNo);
 
-        Optional<SizingSet> duplicate =
-                sizingSetRepository
-                        .findBySetNoIgnoreCase(setNo);
-
-        if (duplicate.isPresent()
-                && !duplicate.get()
-                .getSizingSetId()
-                .equals(id)) {
+        if (sizingSetRepository
+                .existsActiveSetNoIgnoreCaseExcludingId(setNo, id)) {
 
             throw new RuntimeException(
                     "Sizing set already exists with set no: "
@@ -1908,4 +1900,3 @@ public class SizingSetService {
         return null;
     }
 }
-

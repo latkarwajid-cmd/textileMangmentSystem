@@ -1,6 +1,7 @@
 package com.textileERP.textileSys.controller;
 
 import com.textileERP.textileSys.dto.YarnReceiveDyeingDto;
+import com.textileERP.textileSys.dto.YarnInventoryLinkDto;
 import com.textileERP.textileSys.model.YarnReceiveDyeing;
 import com.textileERP.textileSys.service.YarnReceiveDyeingService;
 import org.springframework.http.HttpStatus;
@@ -23,6 +24,11 @@ public class YarnReceiveDyeingController {
     @GetMapping
     public ResponseEntity<List<YarnReceiveDyeing>> getAll() {
         return ResponseEntity.ok(service.getAll());
+    }
+
+    @GetMapping("/inventory-links")
+    public ResponseEntity<List<YarnInventoryLinkDto>> getInventoryLinks() {
+        return ResponseEntity.ok(service.getInventoryLinks());
     }
 
     @PostMapping
