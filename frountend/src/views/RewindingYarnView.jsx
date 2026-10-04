@@ -10,7 +10,7 @@ const emptyLine = (countAndTicket = '') => ({
 });
 
 export const RewindingYarnView = () => {
-  const { addToast, yarnStorageLocations } = useApp();
+  const { addToast, currentTab, yarnStorageLocations } = useApp();
   const [getpassNo, setGetpassNo] = useState('');
   const [entry, setEntry] = useState(null);
   const [receipt, setReceipt] = useState(null);
@@ -31,19 +31,26 @@ export const RewindingYarnView = () => {
   const expectedOutput = [...new Set((entry?.lines || []).map(line => line.targetOutputType).filter(Boolean))].join(', ');
 
   useEffect(() => {
+    if (currentTab !== 'rewinding-yarn') return undefined;
+
+    let cancelled = false;
     const loadIssues = async () => {
       try {
         setLoadingIssues(true);
         const data = await api.rewindingIssues.getAll();
-        setRewindingIssues(Array.isArray(data) ? data : []);
+        if (!cancelled) setRewindingIssues(Array.isArray(data) ? data : []);
       } catch (error) {
-        addToast(error.message || 'Failed to load rewinding gatepasses', 'error');
+        if (!cancelled) addToast(error.message || 'Failed to load rewinding gatepasses', 'error');
       } finally {
-        setLoadingIssues(false);
+        if (!cancelled) setLoadingIssues(false);
       }
     };
+
     loadIssues();
-  }, [addToast]);
+    return () => {
+      cancelled = true;
+    };
+  }, [addToast, currentTab]);
 
   const handleSearch = async (requestedGetpassNo = getpassNo) => {
     const trimmed = requestedGetpassNo.trim();
