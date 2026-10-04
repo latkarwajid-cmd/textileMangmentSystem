@@ -4,16 +4,24 @@ import com.textileERP.textileSys.dto.FabricOrderDto;
 import com.textileERP.textileSys.dto.OrderDetailsDto;
 import com.textileERP.textileSys.model.FabricOrder;
 import com.textileERP.textileSys.model.Parties;
+import com.textileERP.textileSys.model.RewindingIssue;
 import com.textileERP.textileSys.model.Tickits;
 import com.textileERP.textileSys.model.YarnCount;
+import com.textileERP.textileSys.model.YarnOutDyeing;
+import jakarta.persistence.EntityManager;
 import com.textileERP.textileSys.repository.BeamInwardRepository;
 import com.textileERP.textileSys.repository.FabricOrderRepository;
 import com.textileERP.textileSys.repository.PartiesRepository;
+import com.textileERP.textileSys.repository.RewindingIssueRepository;
+import com.textileERP.textileSys.repository.RewindingYarnReceiveRepository;
 import com.textileERP.textileSys.repository.SizingSetRepository;
+import com.textileERP.textileSys.repository.SizingYarnInwardRepository;
 import com.textileERP.textileSys.repository.TickitsRepository;
 import com.textileERP.textileSys.repository.WeftDispatchRepository;
 import com.textileERP.textileSys.repository.YarnCountRepository;
+import com.textileERP.textileSys.repository.YarnInwardRepository;
 import com.textileERP.textileSys.repository.YarnOutDyeingRepository;
+import com.textileERP.textileSys.repository.YarnReceiveDyeingRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,22 +37,38 @@ public class FabricOrderService {
     private final YarnCountRepository yarnCountRepository;
     private final TickitsRepository tickitsRepository;
     private final SizingSetRepository sizingSetRepository;
+    private final SizingYarnInwardRepository sizingYarnInwardRepository;
     private final BeamInwardRepository beamInwardRepository;
     private final WeftDispatchRepository weftDispatchRepository;
+    private final YarnInwardRepository yarnInwardRepository;
     private final YarnOutDyeingRepository yarnOutDyeingRepository;
+    private final YarnReceiveDyeingRepository yarnReceiveDyeingRepository;
+    private final EntityManager entityManager;
+    private final RewindingIssueRepository rewindingIssueRepository;
+    private final RewindingYarnReceiveRepository rewindingYarnReceiveRepository;
 
     public FabricOrderService(FabricOrderRepository fabricOrderRepository, PartiesRepository partiesRepository,
             YarnCountRepository yarnCountRepository, TickitsRepository tickitsRepository,
-            SizingSetRepository sizingSetRepository, BeamInwardRepository beamInwardRepository,
-            WeftDispatchRepository weftDispatchRepository, YarnOutDyeingRepository yarnOutDyeingRepository) {
+            SizingSetRepository sizingSetRepository, SizingYarnInwardRepository sizingYarnInwardRepository,
+            BeamInwardRepository beamInwardRepository, WeftDispatchRepository weftDispatchRepository,
+            YarnInwardRepository yarnInwardRepository, YarnOutDyeingRepository yarnOutDyeingRepository,
+            YarnReceiveDyeingRepository yarnReceiveDyeingRepository, EntityManager entityManager,
+            RewindingIssueRepository rewindingIssueRepository,
+            RewindingYarnReceiveRepository rewindingYarnReceiveRepository) {
         this.fabricOrderRepository = fabricOrderRepository;
         this.partiesRepository = partiesRepository;
         this.yarnCountRepository = yarnCountRepository;
         this.tickitsRepository = tickitsRepository;
         this.sizingSetRepository = sizingSetRepository;
+        this.sizingYarnInwardRepository = sizingYarnInwardRepository;
         this.beamInwardRepository = beamInwardRepository;
         this.weftDispatchRepository = weftDispatchRepository;
+        this.yarnInwardRepository = yarnInwardRepository;
         this.yarnOutDyeingRepository = yarnOutDyeingRepository;
+        this.yarnReceiveDyeingRepository = yarnReceiveDyeingRepository;
+        this.entityManager = entityManager;
+        this.rewindingIssueRepository = rewindingIssueRepository;
+        this.rewindingYarnReceiveRepository = rewindingYarnReceiveRepository;
     }
 
     // Get all orders
@@ -249,9 +273,84 @@ public class FabricOrderService {
     }
 
     // Delete Order
+    @Transactional
     public void deleteOrder(Long id) {
         FabricOrder order = getOrderById(id);
+
+        sizingSetRepository.findByOrderOrderId(id).forEach(sizingSet -> {
+            weftDispatchRepository.deleteAll(
+                    weftDispatchRepository.findBySizingSetSizingSetId(sizingSet.getSizingSetId()));
+            beamInwardRepository.deleteAll(
+                    beamInwardRepository.findBySizingSetSizingSetId(sizingSet.getSizingSetId()));
+                deleteYarnOutDyeingRecords(
+                    yarnOutDyeingRepository.findBySizingSetSizingSetId(sizingSet.getSizingSetId()));
+        });
+
+        List<Long> sizingInwardIds = sizingYarnInwardRepository.findByOrderOrderId(id).stream()
+            .map(sizingInward -> sizingInward.getSizingInwardId())
+            .toList();
+        List<Long> yarnInwardIds = yarnInwardRepository.findByOrderOrderId(id).stream()
+            .map(yarnInward -> yarnInward.getYarnInwardId())
+            .toList();
+        deleteLinkedRewindingIssues(sizingInwardIds, yarnInwardIds);
+
+        deleteLegacyOrderLinkedRecords(id);
+        sizingSetRepository.deleteAll(sizingSetRepository.findByOrderOrderId(id));
+        entityManager.flush();
+        sizingYarnInwardRepository.deleteAll(sizingYarnInwardRepository.findByOrderOrderId(id));
+        entityManager.flush();
+        yarnInwardRepository.deleteAll(yarnInwardRepository.findByOrderOrderId(id));
+        beamInwardRepository.deleteAll(beamInwardRepository.findByOrderOrderId(id));
+        deleteYarnOutDyeingRecords(yarnOutDyeingRepository.findByOrderOrderId(id));
+
         order.setArchived(true);
         fabricOrderRepository.save(order);
+    }
+
+    private void deleteLegacyOrderLinkedRecords(Long orderId) {
+        String[] tables = {
+                "yarn_out_weft",
+                "yarn_returns",
+                "fabric_dispatch",
+            "finish_fabric_inward",
+            "fabric_process_out",
+            "fabric_inward"
+        };
+
+        for (String table : tables) {
+            entityManager.createNativeQuery("DELETE FROM " + table + " WHERE order_id = :orderId")
+                    .setParameter("orderId", orderId)
+                    .executeUpdate();
+        }
+    }
+
+    private void deleteLinkedRewindingIssues(List<Long> sizingInwardIds, List<Long> yarnInwardIds) {
+        List<RewindingIssue> linkedIssues = rewindingIssueRepository.findAll().stream()
+                .filter(issue -> issue.getLines().stream().anyMatch(line ->
+                        (line.getSizingInwardId() != null && sizingInwardIds.contains(line.getSizingInwardId()))
+                                || (line.getYarnInwardId() != null && yarnInwardIds.contains(line.getYarnInwardId()))))
+                .toList();
+
+        linkedIssues.forEach(issue -> {
+            rewindingYarnReceiveRepository.findByRewindingIssueGetpassNoIgnoreCase(issue.getGetpassNo())
+                    .ifPresent(rewindingYarnReceiveRepository::delete);
+            rewindingYarnReceiveRepository.flush();
+            rewindingIssueRepository.delete(issue);
+        });
+        rewindingIssueRepository.flush();
+    }
+
+    private void deleteYarnOutDyeingRecords(List<YarnOutDyeing> records) {
+        records.forEach(record -> {
+            Long dyeingOutId = record.getDyeingOutId();
+            yarnReceiveDyeingRepository.deleteAll(
+                    yarnReceiveDyeingRepository.findByYarnOutDyeingDyeingOutId(dyeingOutId));
+            entityManager.flush();
+            entityManager.createNativeQuery(
+                    "DELETE FROM dyed_yarn_inward WHERE dyeing_out_id = :dyeingOutId")
+                    .setParameter("dyeingOutId", dyeingOutId)
+                    .executeUpdate();
+        });
+        yarnOutDyeingRepository.deleteAll(records);
     }
 }

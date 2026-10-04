@@ -78,6 +78,8 @@ export const FabricOrdersView = () => {
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState(null);
+  const [deleteConfirmationStep, setDeleteConfirmationStep] = useState(1);
+  const [deleteOrderNumber, setDeleteOrderNumber] = useState('');
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -168,11 +170,14 @@ export const FabricOrdersView = () => {
 
   const handleDelete = async () => {
     if (!orderToDelete) return;
+    if (deleteOrderNumber.trim() !== String(orderToDelete.orderNo).trim()) return;
     try {
       await api.fabricOrders.delete(orderToDelete.orderId);
       addToast('Fabric order deleted successfully', 'success');
       setIsDeleteModalOpen(false);
       setOrderToDelete(null);
+      setDeleteConfirmationStep(1);
+      setDeleteOrderNumber('');
       fetchOrders();
       refreshMasters();
     } catch (err) {
@@ -365,7 +370,12 @@ export const FabricOrdersView = () => {
                           <button
                             className="btn-icon"
                             style={{ color: 'var(--color-danger)' }}
-                            onClick={() => { setOrderToDelete(order); setIsDeleteModalOpen(true); }}
+                            onClick={() => {
+                              setOrderToDelete(order);
+                              setDeleteConfirmationStep(1);
+                              setDeleteOrderNumber('');
+                              setIsDeleteModalOpen(true);
+                            }}
                             title="Delete Order"
                           >
                             <Trash2 size={16} />
@@ -578,19 +588,61 @@ export const FabricOrdersView = () => {
       {/* Delete Confirmation Modal */}
       <Modal
         isOpen={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
-        title="Confirm Order Deletion"
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setDeleteConfirmationStep(1);
+          setDeleteOrderNumber('');
+        }}
+        title={deleteConfirmationStep === 1 ? 'Confirm Order Deletion' : 'Final Confirmation Required'}
       >
-        <p style={{ color: 'var(--text-muted)', marginBottom: '20px' }}>
-          Are you sure you want to delete Fabric Order <strong style={{ color: 'var(--text-main)' }}>{orderToDelete?.orderNo}</strong>?
-        </p>
+        {deleteConfirmationStep === 1 ? (
+          <>
+            <p style={{ color: 'var(--text-muted)', marginBottom: '12px' }}>
+              This will permanently remove Fabric Order <strong style={{ color: 'var(--text-main)' }}>{orderToDelete?.orderNo}</strong> and all linked sizing sets, yarn inward, beams, dyeing, and dispatch records.
+            </p>
+            <p style={{ color: 'var(--color-danger)', fontWeight: 600, marginBottom: '20px' }}>
+              This action cannot be undone.
+            </p>
+          </>
+        ) : (
+          <>
+            <p style={{ color: 'var(--text-muted)', marginBottom: '12px' }}>
+              To confirm deletion, type the order number exactly:
+            </p>
+            <p style={{ fontWeight: 700, color: 'var(--text-main)', marginBottom: '10px' }}>
+              {orderToDelete?.orderNo}
+            </p>
+            <input
+              type="text"
+              className="form-control"
+              value={deleteOrderNumber}
+              onChange={(e) => setDeleteOrderNumber(e.target.value)}
+              placeholder="Type order number"
+              autoFocus
+            />
+          </>
+        )}
         <div className="modal-footer" style={{ padding: '0', border: 'none', background: 'transparent' }}>
-          <button className="btn btn-secondary" onClick={() => setIsDeleteModalOpen(false)}>
+          <button className="btn btn-secondary" onClick={() => {
+            setIsDeleteModalOpen(false);
+            setDeleteConfirmationStep(1);
+            setDeleteOrderNumber('');
+          }}>
             Cancel
           </button>
-          <button className="btn btn-danger" onClick={handleDelete}>
-            Delete Order
-          </button>
+          {deleteConfirmationStep === 1 ? (
+            <button className="btn btn-danger" onClick={() => setDeleteConfirmationStep(2)}>
+              Continue
+            </button>
+          ) : (
+            <button
+              className="btn btn-danger"
+              onClick={handleDelete}
+              disabled={deleteOrderNumber.trim() !== String(orderToDelete?.orderNo || '').trim()}
+            >
+              Delete Order and Linked Records
+            </button>
+          )}
         </div>
       </Modal>
     </div>

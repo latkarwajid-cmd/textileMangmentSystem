@@ -41,6 +41,7 @@ const MainContent = ({ onLogout }) => {
     ['rewinding-yarn', <RewindingYarnView />],
     ['weft-dispatch', <WeftDispatchView />],
   ];
+  const activeView = views.find(([tab]) => tab === currentTab)?.[1] || null;
 
   return (
     <div className="app-layout">
@@ -48,11 +49,9 @@ const MainContent = ({ onLogout }) => {
       <div className="main-wrapper">
         <Header />
         <ErrorBoundary>
-          {views.map(([tab, view]) => (
-            <div key={tab} className={`view-panel ${currentTab === tab ? 'view-panel-active' : ''}`} aria-hidden={currentTab !== tab}>
-              {view}
-            </div>
-          ))}
+          <div className="view-panel view-panel-active">
+            {activeView}
+          </div>
         </ErrorBoundary>
       </div>
       <ToastContainer />
