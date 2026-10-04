@@ -56,7 +56,8 @@ public class BeamInwardService {
         boolean orderArchived = beam.getOrder() != null && Boolean.TRUE.equals(beam.getOrder().getArchived());
         boolean sizingSetDeleted = beam.getSizingSet() != null
                 && "DELETED".equalsIgnoreCase(beam.getSizingSet().getStatus());
-        return !Boolean.TRUE.equals(beam.getArchived()) && !orderArchived && !sizingSetDeleted;
+        boolean deleted = "DELETED".equalsIgnoreCase(beam.getStatus());
+        return !Boolean.TRUE.equals(beam.getArchived()) && !deleted && !orderArchived && !sizingSetDeleted;
     }
 
     public BeamInward getById(Long id) {
@@ -452,4 +453,3 @@ public class BeamInwardService {
         beamInwardRepository.save(b);
     }
 }
-

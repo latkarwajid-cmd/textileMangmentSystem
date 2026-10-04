@@ -108,6 +108,11 @@ public class YarnOutDyeingService {
     @Transactional
     public void delete(Long id) {
         YarnOutDyeing entity = getById(id);
+        yarnReceiveDyeingRepository.findByYarnOutDyeingDyeingOutId(id).forEach(receipt ->
+                yarnInwardService.archiveYarnInwardByBillNo(
+                        receipt.getGatePassNo() + "-DYED-" + receipt.getYarnReceiveDyeingId()
+                )
+        );
         if (!hasReceipts(id)) {
             restoreStock(entity);
         }

@@ -234,7 +234,7 @@ CREATE TABLE yarn_out_weft (
 CREATE TABLE sizing_sets (
     sizing_set_id BIGINT PRIMARY KEY AUTO_INCREMENT,
 
-    set_no VARCHAR(50) NOT NULL UNIQUE,
+    set_no VARCHAR(50) NOT NULL,
     set_date DATE,
     part_no VARCHAR(50),
     lasa VARCHAR(255),

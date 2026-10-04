@@ -214,7 +214,12 @@ export const BeamInwardView = () => {
     setLoading(true);
     try {
       const data = await api.beamInward.getAll();
-      setAllBeams(Array.isArray(data) ? data : []);
+      setAllBeams(Array.isArray(data)
+        ? data.filter(beam =>
+            !Boolean(beam.archived) &&
+            String(beam.status || '').toUpperCase() !== 'DELETED'
+          )
+        : []);
     } catch (err) {
       addToast(err.message || 'Failed to load beam records', 'error');
     } finally {
@@ -259,8 +264,11 @@ export const BeamInwardView = () => {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (currentTab === 'beam-inward') fetchSizingSets();
-  }, [currentTab, fetchSizingSets]);
+    if (currentTab === 'beam-inward') {
+      fetchAllBeams();
+      fetchSizingSets();
+    }
+  }, [currentTab, fetchAllBeams, fetchSizingSets]);
 
   /* =========================================================
      REACTIVITY: SIZING SET LOOKUP (Zero Full-Page Reload)

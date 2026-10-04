@@ -89,7 +89,7 @@ export const YarnInwardView = () => {
     if (weight > 0 && rate > 0) {
       const base = weight * rate;
       const total = gst > 0 ? base * (1 + gst / 100) : base;
-      const rounded = total.toFixed(2);
+      const rounded = String(Math.round(total));
       setFormData(prev => ({
         ...prev,
         calculatedAmount: rounded,
@@ -103,7 +103,7 @@ export const YarnInwardView = () => {
     const bags = Number(formData.bags);
     const weightPerBag = Number(formData.weightPerBag);
     const calculatedWeight = bags > 0 && weightPerBag > 0
-      ? (bags * weightPerBag).toFixed(3)
+      ? String(Math.round(bags * weightPerBag))
       : '';
 
     setFormData(prev => prev.weightKg === calculatedWeight
@@ -115,7 +115,7 @@ export const YarnInwardView = () => {
     const bags = Number(formData.bags);
     const conePerBag = Number(formData.conePerBag);
     const totalCones = bags > 0 && conePerBag >= 0 && formData.conePerBag !== ''
-      ? (bags * conePerBag).toFixed(3)
+      ? String(Math.round(bags * conePerBag))
       : '';
 
     setFormData(prev => prev.yCone === totalCones
@@ -176,7 +176,7 @@ export const YarnInwardView = () => {
       storageSizingId: item.storageSizingUnit?.sizingId || '',
       storagePartyId: item.storageParty?.partyId || '',
       bags: item.bags || '',
-      conePerBag: item.conePerBag ?? (Number(item.bags) > 0 ? (Number(item.yCone || 0) / Number(item.bags)).toFixed(3) : ''),
+      conePerBag: item.conePerBag ?? (Number(item.bags) > 0 ? String(Math.round(Number(item.yCone || 0) / Number(item.bags))) : ''),
       yCone: item.yCone ?? '',
       weightKg: item.weightKg || '',
       weightPerBag: item.weightPerBag || '',
@@ -563,7 +563,7 @@ export const YarnInwardView = () => {
               <label>Cone per Bag</label>
               <input
                 type="number"
-                step="0.001"
+                step="1"
                 min="0"
                 className="form-control"
                 value={formData.conePerBag}
@@ -576,7 +576,7 @@ export const YarnInwardView = () => {
               <label>Total Cone</label>
               <input
                 type="number"
-                step="0.001"
+                step="1"
                 min="0"
                 className="form-control"
                 value={formData.yCone}
@@ -640,7 +640,7 @@ export const YarnInwardView = () => {
               <label>Calculated Amount (₹) (Auto)</label>
               <input
                 type="number"
-                step="0.01"
+                step="1"
                 className="form-control"
                 value={formData.calculatedAmount}
                 onChange={(e) => setFormData({ ...formData, calculatedAmount: e.target.value })}

@@ -129,8 +129,6 @@ const nextSetNoFromList = (
   let maxNumber = 0;
 
   existingSets.forEach(item => {
-    // Skip soft-deleted records so they don't inflate the counter
-    if ((item?.status || '').toUpperCase() === 'DELETED') return;
     const match = String(item?.setNo || '').match(/(\d+)$/);
     if (match) {
 
@@ -311,6 +309,7 @@ export const SizingSetsView = () => {
       const nextLine = { ...line, [field]: value };
       if (field === 'givenBags') {
         nextLine.weightKg = Number(value || 0) * Number(line.weightPerBag || 0);
+        nextLine.cones = Number(value || 0) * Number(line.conePerBag || 0);
       }
       return nextLine;
     }));
@@ -331,13 +330,12 @@ export const SizingSetsView = () => {
         const data =
           await api.sizingSets.getAll();
 
+        const sets = Array.isArray(data) ? data : [];
         setSizingSets(
-          Array.isArray(data)
-            ? data.filter(
+          sets.filter(
                 item =>
                   item.status !== 'DELETED'
               )
-            : []
         );
 
       } catch (err) {
@@ -750,6 +748,9 @@ export const SizingSetsView = () => {
 
                 cones:
                   line.cones ?? 0,
+
+                conePerBag:
+                  line.conePerBag ?? null,
 
                 weightPerBag:
                   line.weightPerBag ?? '',
@@ -1207,15 +1208,75 @@ export const SizingSetsView = () => {
          */
         const [
           yarnResult,
-          sizingResult
+          sizingResult,
+          dyeingReceiptResult,
+          dyeingInventoryLinksResult,
+          rewindingIssueResult,
+          rewindingInventoryLinksResult
         ] =
           await Promise.allSettled([
 
             api.yarnInward.getAll(),
 
-            api.sizingYarnInward.getAll()
+            api.sizingYarnInward.getAll(),
+
+            api.yarnReceiveDyeing.getAll(),
+
+            api.yarnReceiveDyeing.getInventoryLinks(),
+
+            api.rewindingIssues.getAll(),
+
+            api.rewindingYarnReceive.getInventoryLinks()
 
           ]);
+
+        const activeDyeingReceiptIds = new Set(
+          dyeingReceiptResult.status === 'fulfilled'
+            ? dyeingReceiptResult.value.map(receipt => String(receipt.yarnReceiveDyeingId))
+            : []
+        );
+        const dyeingInventoryIds = new Set(
+          dyeingInventoryLinksResult.status === 'fulfilled'
+            ? dyeingInventoryLinksResult.value.map(link => String(link.inventoryYarnInwardId))
+            : []
+        );
+        const activeDyeingInventoryIds = new Set(
+          dyeingInventoryLinksResult.status === 'fulfilled'
+            ? dyeingInventoryLinksResult.value
+                .filter(link => link.active)
+                .map(link => String(link.inventoryYarnInwardId))
+            : []
+        );
+        const activeRewindingGetpasses = new Set(
+          rewindingIssueResult.status === 'fulfilled'
+            ? rewindingIssueResult.value.map(issue => String(issue.getpassNo || '').trim().toLowerCase())
+            : []
+        );
+        const rewindingInventoryIds = new Set(
+          rewindingInventoryLinksResult.status === 'fulfilled'
+            ? rewindingInventoryLinksResult.value.map(link => String(link.inventoryYarnInwardId))
+            : []
+        );
+        const activeRewindingInventoryIds = new Set(
+          rewindingInventoryLinksResult.status === 'fulfilled'
+            ? rewindingInventoryLinksResult.value
+                .filter(link => link.active)
+                .map(link => String(link.inventoryYarnInwardId))
+            : []
+        );
+
+        if (dyeingReceiptResult.status === 'rejected') {
+          addToast('Could not verify dyeing receipts for Issue Yarn', 'error');
+        }
+        if (dyeingInventoryLinksResult.status === 'rejected') {
+          addToast('Could not verify dyeing inventory for Issue Yarn', 'error');
+        }
+        if (rewindingIssueResult.status === 'rejected') {
+          addToast('Could not verify rewinding issues for Issue Yarn', 'error');
+        }
+        if (rewindingInventoryLinksResult.status === 'rejected') {
+          addToast('Could not verify rewinding inventory for Issue Yarn', 'error');
+        }
 
 
         /*
@@ -1357,6 +1418,12 @@ export const SizingSetsView = () => {
                   item.inwardDate ||
                   '',
 
+                billNo:
+                  item.billNo || '',
+
+                remark2:
+                  item.remark2 || '',
+
                 sourceFrom:
                   'Warehouse',
 
@@ -1377,7 +1444,37 @@ export const SizingSetsView = () => {
 
             }
           )
-          .filter(Boolean);
+          .filter(Boolean)
+          .filter(row => {
+            const inwardId = String(row.id);
+            if (row.origin === 'dyeing') {
+              const receiptId = String(row.billNo.match(/-DYED-(\d+)$/i)?.[1] || '');
+              return dyeingInventoryIds.has(inwardId)
+                && activeDyeingInventoryIds.has(inwardId)
+                && receiptId !== ''
+                && activeDyeingReceiptIds.has(receiptId);
+            }
+
+            if (row.origin === 'rewinding') {
+              const getpassNo = String(row.remark2 || '')
+                .match(/Rewound yarn received from\s+(.+)$/i)?.[1]
+                ?.trim()
+                .toLowerCase()
+                || String(row.billNo || '').replace(/-\d+$/, '').trim().toLowerCase();
+              return rewindingInventoryIds.has(inwardId)
+                && activeRewindingInventoryIds.has(inwardId)
+                && Boolean(getpassNo && activeRewindingGetpasses.has(getpassNo));
+            }
+
+            if (dyeingInventoryIds.has(inwardId)) {
+              return activeDyeingInventoryIds.has(inwardId);
+            }
+            if (rewindingInventoryIds.has(inwardId)) {
+              return activeRewindingInventoryIds.has(inwardId);
+            }
+
+            return true;
+          });
 
 
         /* ===================================================
@@ -1634,6 +1731,10 @@ export const SizingSetsView = () => {
                   )
                 : '',
 
+            issueCones: checked
+              ? String(Number(row.remainingBags || 0) * Number(row.conePerBag || 0))
+              : '',
+
             // keep weightPerBag available for display / calc
             weightPerBag: row.weightPerBag ?? 0,
 
@@ -1698,9 +1799,7 @@ export const SizingSetsView = () => {
 
               issueBags: '',
 
-              issueCones:
-                row.issueCones ??
-                0,
+              issueCones: '',
 
               weightKg:
                 0,
@@ -1757,6 +1856,11 @@ export const SizingSetsView = () => {
               String(
                 safeValue
               ),
+
+            // Cones follow the issued bag quantity for this yarn lot.
+            issueCones: String(
+              safeValue * Number(row.conePerBag || 0)
+            ),
 
             type:
               issueType,
@@ -1994,7 +2098,10 @@ export const SizingSetsView = () => {
               ),
 
             cones:
-              issuedCones,
+              issuedQuantity * Number(row.conePerBag || 0),
+
+            conePerBag:
+              row.conePerBag ?? null,
 
             weightPerBag:
               row.weightPerBag ?? null,
@@ -2482,7 +2589,9 @@ export const SizingSetsView = () => {
               sourceFrom:
                 line.sourceType === 'sizingIn'
                   ? 'Sizing'
-                  : (line.sourceLabel || line.sourceFrom || null),
+                  : line.sourceType === 'yarnIn'
+                    ? 'Yarn In'
+                    : (line.sourceLabel || line.sourceFrom || null),
 
               freshWinding:
                 line.type === 'USED'
@@ -2858,7 +2967,7 @@ export const SizingSetsView = () => {
                     type="text"
                     className="form-control"
                     value={
-                      header.setNo
+                      header.setNo ?? ''
                     }
                     onChange={e =>
                       updateHeader(
@@ -2909,7 +3018,7 @@ export const SizingSetsView = () => {
                   <select
                     className="form-control"
                     value={
-                      header.orderNo
+                      header.orderNo ?? ''
                     }
                     onChange={e =>
                       handleOrderChange(
@@ -2997,7 +3106,7 @@ export const SizingSetsView = () => {
                     type="date"
                     className="form-control"
                     value={
-                      header.setDate
+                      header.setDate ?? ''
                     }
                     onChange={e =>
                       updateHeader(
@@ -3035,7 +3144,7 @@ export const SizingSetsView = () => {
                     type="text"
                     className="form-control"
                     value={
-                      header.firmName
+                      header.firmName ?? ''
                     }
                     onChange={e =>
                       updateHeader(
@@ -3061,7 +3170,7 @@ export const SizingSetsView = () => {
                   <label>Sizing Unit</label>
                   <select
                     className="form-control"
-                    value={header.sizingPartyId}
+                    value={header.sizingPartyId ?? ''}
                     onChange={e => {
                       setHeader(prev => ({
                         ...prev,
@@ -3102,7 +3211,7 @@ export const SizingSetsView = () => {
                     type="text"
                     className="form-control"
                     value={
-                      header.quality
+                      header.quality ?? ''
                     }
                     onChange={e =>
                       updateHeader(
@@ -3132,7 +3241,7 @@ export const SizingSetsView = () => {
                     inputMode="decimal"
                     className="form-control"
                     value={
-                      header.totalEnds
+                      header.totalEnds ?? ''
                     }
                     onChange={e =>
                       updateHeader(
@@ -3163,7 +3272,7 @@ export const SizingSetsView = () => {
                     inputMode="decimal"
                     className="form-control"
                     value={
-                      header.cone
+                      header.cone ?? ''
                     }
                     onChange={e =>
                       updateHeader(
@@ -3193,7 +3302,7 @@ export const SizingSetsView = () => {
                     type="text"
                     className="form-control"
                     value={
-                      header.partNo
+                      header.partNo ?? ''
                     }
                     onChange={e =>
                       updateHeader(
@@ -3223,7 +3332,7 @@ export const SizingSetsView = () => {
                     inputMode="decimal"
                     className="form-control"
                     value={
-                      header.sizingMtr
+                      header.sizingMtr ?? ''
                     }
                     onChange={e =>
                       updateHeader(

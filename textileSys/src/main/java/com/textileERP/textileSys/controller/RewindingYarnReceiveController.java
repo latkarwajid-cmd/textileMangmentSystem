@@ -1,11 +1,14 @@
 package com.textileERP.textileSys.controller;
 
 import com.textileERP.textileSys.dto.RewindingYarnReceiveDto;
+import com.textileERP.textileSys.dto.YarnInventoryLinkDto;
 import com.textileERP.textileSys.model.RewindingIssue;
 import com.textileERP.textileSys.model.RewindingYarnReceive;
 import com.textileERP.textileSys.service.RewindingYarnReceiveService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/rewinding-yarn-receive")
@@ -25,6 +28,11 @@ public class RewindingYarnReceiveController {
     @GetMapping("/{getpassNo}")
     public ResponseEntity<RewindingYarnReceive> getByGetpass(@PathVariable String getpassNo) {
         return ResponseEntity.ok(service.getByGetpass(getpassNo));
+    }
+
+    @GetMapping("/inventory-links")
+    public ResponseEntity<List<YarnInventoryLinkDto>> getInventoryLinks() {
+        return ResponseEntity.ok(service.getInventoryLinks());
     }
 
     @PostMapping("/complete")
