@@ -41,6 +41,7 @@ const evaluateArithmetic = source => {
 
   const result = parseExpression();
   if (position !== tokens.length || !Number.isFinite(result)) throw new Error('Enter a valid arithmetic formula');
+  if (result < 0) throw new Error('Value cannot be negative');
   return String(Number(result.toFixed(6)));
 };
 
@@ -54,7 +55,13 @@ export const CalculatorInput = ({ value, onChange, onKeyDown, ...inputProps }) =
     const nextValue = event.target.value;
     setDraftState({ source: controlledValue, draft: nextValue });
     setFormulaError('');
-    if (!nextValue.trim().startsWith('=')) onChange?.(nextValue);
+    if (!nextValue.trim().startsWith('=')) {
+      if (/^\s*-/.test(nextValue)) {
+        setFormulaError('Value cannot be negative');
+        return;
+      }
+      onChange?.(nextValue);
+    }
   };
 
   const handleKeyDown = event => {
