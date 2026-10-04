@@ -20,11 +20,11 @@ import java.util.*;
   repo.delete(old); repo.flush(); return create(d);
  }
  @Transactional public WeftDispatch create(WeftDispatchDto d){
-  if(d==null||d.sizingSetId==null||d.challanNo==null||d.challanNo.isBlank()||d.internalGatepassNo==null||d.internalGatepassNo.isBlank()||d.firmName==null||d.firmName.isBlank()||d.lines==null||d.lines.isEmpty()) throw new IllegalArgumentException("Set No, challan number, firm name, internal gatepass and at least one stock line are required");
+  if(d==null||d.sizingSetId==null||d.challanNo==null||d.challanNo.isBlank()||d.internalGatepassNo==null||d.internalGatepassNo.isBlank()||d.firmName==null||d.firmName.isBlank()||d.weavingUnit==null||d.weavingUnit.isBlank()||d.lines==null||d.lines.isEmpty()) throw new IllegalArgumentException("Set No, challan number, firm name, weaving unit, internal gatepass and at least one stock line are required");
   if(repo.existsByInternalGatepassNoIgnoreCase(d.internalGatepassNo.trim())) throw new IllegalArgumentException("Internal gatepass number already exists");
   if(repo.existsByChallanNoIgnoreCase(d.challanNo.trim())) throw new IllegalArgumentException("Challan number already exists");
   SizingSet set=sets.findById(d.sizingSetId).orElseThrow(()->new IllegalArgumentException("Set not found"));
-  WeftDispatch e=new WeftDispatch(); e.setSizingSet(set); e.setSetNo(set.getSetNo()); e.setInternalGatepassNo(d.internalGatepassNo.trim()); e.setPartyGatepassNo(d.partyGatepassNo); e.setDispatchDate(d.dispatchDate==null?LocalDate.now():d.dispatchDate); e.setFirmName(d.firmName); e.setQuality(d.quality); e.setWeaverPartyName(d.weaverPartyName); e.setBeamSerialNo(d.beamSerialNo); e.setPreviousSetNo(d.previousSetNo); e.setRemarks(d.remarks);
+    WeftDispatch e=new WeftDispatch(); e.setSizingSet(set); e.setSetNo(set.getSetNo()); e.setInternalGatepassNo(d.internalGatepassNo.trim()); e.setPartyGatepassNo(d.partyGatepassNo); e.setDispatchDate(d.dispatchDate==null?LocalDate.now():d.dispatchDate); e.setFirmName(d.firmName); e.setQuality(d.quality); e.setWeaverPartyName(d.weaverPartyName); e.setWeavingUnit(d.weavingUnit); e.setBeamSerialNo(d.beamSerialNo); e.setPreviousSetNo(d.previousSetNo); e.setRemarks(d.remarks);
   BigDecimal total=BigDecimal.ZERO; List<WeftDispatchLine> lines=new ArrayList<>();
   for(WeftDispatchDto.Line l:d.lines){ if(l.sourceId==null||l.issuedBags==null||l.issuedBags.signum()<=0||l.grossWeight==null||l.grossWeight.signum()<=0) throw new IllegalArgumentException("Each yarn line requires a stock source, positive bags and positive weight");
    String type=String.valueOf(l.sourceType).toUpperCase(Locale.ROOT);

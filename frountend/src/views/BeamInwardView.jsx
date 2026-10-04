@@ -116,7 +116,6 @@ const createEmptyHeader = () => ({
   tickitName: '',
   countAndTicket: '',
   totalEnds: '',
-  totalBeamsCount: 1,
   orderId: '',
   orderNo: '',
   orderFirmName: '',
@@ -523,23 +522,20 @@ export const BeamInwardView = () => {
   const handleAddBeamRow = () => {
     setBeamRows(prev => {
       const nextSr = prev.length + 1;
-      return [...prev, createEmptyBeamRow(nextSr, String(nextSr))];
-    });
-  };
+      const firstRow = prev[0] || {};
+      const newRow = createEmptyBeamRow(nextSr, String(nextSr));
 
-  const handleGenerateBeams = (count) => {
-    const num = parseInt(count, 10);
-    if (isNaN(num) || num <= 0) {
-      addToast('Please enter a valid beam count greater than 0', 'warning');
-      return;
-    }
-    const newRows = [];
-    for (let i = 1; i <= num; i++) {
-      newRows.push(createEmptyBeamRow(i, String(i)));
-    }
-    setBeamRows(newRows);
-    setHeader(prev => ({ ...prev, totalBeamsCount: num }));
-    addToast(`Generated ${num} beam rows`, 'info');
+      return [
+        ...prev,
+        {
+          ...newRow,
+          cuts: firstRow.cuts,
+          meter: firstRow.meter,
+          grossWeight: firstRow.grossWeight,
+          tareWeight: firstRow.tareWeight,
+        },
+      ];
+    });
   };
 
   const handleRemoveBeamRow = (id) => {
@@ -1238,32 +1234,6 @@ export const BeamInwardView = () => {
                   />
                 </div>
 
-                {/* 12. Total Beams Count */}
-                <div className="form-group">
-                  <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span>Total Beams Count</span>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>In this delivery</span>
-                  </label>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <input
-                      type="number"
-                      min="1"
-                      max="100"
-                      className="form-control"
-                      value={header.totalBeamsCount}
-                      onChange={e => setHeader({ ...header, totalBeamsCount: e.target.value })}
-                    />
-                    <button
-                      type="button"
-                      className="btn btn-secondary btn-sm"
-                      onClick={() => handleGenerateBeams(header.totalBeamsCount)}
-                      title="Set Rows"
-                      style={{ whiteSpace: 'nowrap' }}
-                    >
-                      Set Grid
-                    </button>
-                  </div>
-                </div>
               </div>
 
               {/* Order Reference Note */}

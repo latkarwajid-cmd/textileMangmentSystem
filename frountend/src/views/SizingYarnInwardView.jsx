@@ -4,6 +4,7 @@ import { api } from '../services/api';
 import { Plus, Search, Edit2, Trash2, RotateCcw, Scale, Calculator } from 'lucide-react';
 import { Modal } from '../components/Modal';
 import { OrderNumberField } from '../components/OrderNumberField';
+import { CalculatorInput } from '../components/CalculatorInput';
 
 const createEmptyReturnRow = (srNo = 1, countAndTicket = '', countId = '', tickitId = '', itemType = 'Full Bag') => ({
   id: `ret-${Date.now()}-${Math.random()}`,
@@ -129,6 +130,12 @@ export const SizingYarnInwardView = () => {
     e.preventDefault();
     try {
       const returnRows = formData.balanceReturns?.filter(row => row.returnedWeightKg || row.bagsReturned || row.conesReturned) || [];
+      const issuedBags = Number(formData.reconciliation?.totalIssuedBags) || 0;
+      const returnedBags = returnRows.reduce((sum, row) => sum + (Number(row.bagsReturned) || 0), 0);
+      if (returnedBags > issuedBags) {
+        addToast(`Returned bags cannot exceed issued bags (${issuedBags})`, 'error');
+        return;
+      }
       const rowsToSave = returnRows.length ? returnRows : [{ countId: formData.countId, tickitId: formData.tickitId, bagsReturned: formData.bags, returnedWeightKg: formData.weightKg, itemType: 'Full Bag', destinationWarehouse: 'Main Raw Yarn Warehouse', remark: formData.remark }];
       const makePayload = row => ({
         sizingSetId: formData.sizingSetId ? Number(formData.sizingSetId) : null,
@@ -150,7 +157,6 @@ export const SizingYarnInwardView = () => {
           `Cones Returned: ${row.conesReturned || 0}`,
           `Destination: ${row.destinationWarehouse || '-'}`,
           `Issued: ${formData.reconciliation.totalIssuedBags || 0} bags / ${reconciliationSummary.issuedCones} cones / ${formData.reconciliation.issuedGrossWeight || 0} kg`,
-          `Tare: ${formData.reconciliation.emptyConeTareGrams || 60} g`,
           row.remark || formData.remark
         ].filter(Boolean).join(' | '),
       });
@@ -215,7 +221,14 @@ export const SizingYarnInwardView = () => {
     }
   };
 
-  const updateReturnRow = (id, field, value) => setFormData(prev => ({ ...prev, balanceReturns: prev.balanceReturns.map(row => row.id === id ? { ...row, [field]: value } : row) }));
+  const updateReturnRow = (id, field, value) => setFormData(prev => {
+    if (field !== 'bagsReturned') return { ...prev, balanceReturns: prev.balanceReturns.map(row => row.id === id ? { ...row, [field]: value } : row) };
+    const issuedBags = Number(prev.reconciliation?.totalIssuedBags) || 0;
+    const otherReturnedBags = prev.balanceReturns.reduce((sum, row) => row.id === id ? sum : sum + (Number(row.bagsReturned) || 0), 0);
+    const maxForRow = Math.max(0, issuedBags - otherReturnedBags);
+    const numericValue = value === '' ? '' : Math.min(Math.max(Number(value) || 0, 0), maxForRow).toString();
+    return { ...prev, balanceReturns: prev.balanceReturns.map(row => row.id === id ? { ...row, bagsReturned: numericValue } : row) };
+  });
   const addReturnRow = () => setFormData(prev => ({ ...prev, balanceReturns: [...(prev.balanceReturns || []), createEmptyReturnRow((prev.balanceReturns || []).length + 1, '', prev.countId, prev.tickitId)] }));
   const removeReturnRow = id => setFormData(prev => ({ ...prev, balanceReturns: prev.balanceReturns.length === 1 ? [createEmptyReturnRow(1, '', prev.countId, prev.tickitId)] : prev.balanceReturns.filter(row => row.id !== id).map((row, index) => ({ ...row, srNo: index + 1 })) }));
 
@@ -223,12 +236,11 @@ export const SizingYarnInwardView = () => {
     const issuedBags = Number(formData.reconciliation?.totalIssuedBags) || 0;
     const conesPerBag = Number(formData.reconciliation?.conesPerBag) || 32;
     const issuedCones = issuedBags * conesPerBag;
-    const tareKg = issuedCones * ((Number(formData.reconciliation?.emptyConeTareGrams) || 60) / 1000);
     const issuedGrossWeight = Number(formData.reconciliation?.issuedGrossWeight) || 0;
     const returnedWeight = (formData.balanceReturns || []).reduce((sum, row) => sum + (Number(row.returnedWeightKg) || 0), 0);
     const returnedBags = (formData.balanceReturns || []).reduce((sum, row) => sum + (Number(row.bagsReturned) || 0), 0);
     const returnedCones = (formData.balanceReturns || []).reduce((sum, row) => sum + (Number(row.conesReturned) || 0), 0);
-    return { issuedBags, issuedCones, tareKg, issuedGrossWeight, returnedWeight, returnedBags, returnedCones, consumed: Math.max(0, issuedGrossWeight - tareKg - returnedWeight) };
+    return { issuedBags, issuedCones, issuedGrossWeight, returnedWeight, returnedBags, returnedCones, consumed: Math.max(0, issuedGrossWeight - returnedWeight) };
   })();
 
   const handleDelete = async () => {
@@ -518,8 +530,6 @@ export const SizingYarnInwardView = () => {
                 <div className="form-group"><label>Cones Per Bag</label><input type="number" className="form-control" value={formData.reconciliation.conesPerBag} readOnly /></div>
                 <div className="form-group"><label>Total Issued Cones</label><input className="form-control" value={reconciliationSummary.issuedCones} readOnly /></div>
                 <div className="form-group"><label>Issued Gross Weight (Kg)</label><input type="number" step="0.001" className="form-control" value={formData.reconciliation.issuedGrossWeight} readOnly /></div>
-                <div className="form-group"><label>Empty Cone Tare Weight (g)</label><input type="number" step="0.1" className="form-control" value={formData.reconciliation.emptyConeTareGrams} readOnly /></div>
-                <div className="form-group"><label>Net Yarn Issued (Kg)</label><input className="form-control" value={Math.max(0, reconciliationSummary.issuedGrossWeight - reconciliationSummary.tareKg).toFixed(3)} readOnly /></div>
               </div>
               <div className="table-responsive">
                 <table className="beam-table">
@@ -528,8 +538,8 @@ export const SizingYarnInwardView = () => {
                     <td>{index + 1}</td>
                     <td><select className="beam-table-input" value={row.itemType} onChange={e => updateReturnRow(row.id, 'itemType', e.target.value)}><option>Full Bag</option><option>Kharad</option></select></td>
                     <td><input className="beam-table-input" value={row.countAndTicket} onChange={e => updateReturnRow(row.id, 'countAndTicket', e.target.value)} placeholder="Count & Ticket" /></td>
-                    <td><input type="number" step="0.01" min="0" className="beam-table-input" value={row.bagsReturned} onChange={e => updateReturnRow(row.id, 'bagsReturned', e.target.value)} /></td>
-                    <td><input type="number" min="0" className="beam-table-input" value={row.conesReturned} onChange={e => updateReturnRow(row.id, 'conesReturned', e.target.value)} /></td>
+                    <td><CalculatorInput min="0" step="0.01" className="beam-table-input" value={row.bagsReturned} onChange={value => updateReturnRow(row.id, 'bagsReturned', value)} /></td>
+                    <td><CalculatorInput min="0" className="beam-table-input" value={row.conesReturned} onChange={value => updateReturnRow(row.id, 'conesReturned', value)} /></td>
                     <td><input type="number" step="0.001" min="0" className="beam-table-input" value={row.returnedWeightKg} onChange={e => updateReturnRow(row.id, 'returnedWeightKg', e.target.value)} /></td>
                     <td><select className="beam-table-input" value={row.destinationWarehouse} onChange={e => updateReturnRow(row.id, 'destinationWarehouse', e.target.value)}><option>Main Raw Yarn Warehouse</option><option>Shed 1 Raw Storage</option><option>Shed 2 Raw Storage</option><option>Kalawant Warehouse</option>{yarnStorageLocations.map(loc => <option key={loc.locationId} value={loc.locationName}>{loc.locationName}</option>)}</select></td>
                     <td><input className="beam-table-input" value={row.remark} onChange={e => updateReturnRow(row.id, 'remark', e.target.value)} placeholder="Return notes" /></td>

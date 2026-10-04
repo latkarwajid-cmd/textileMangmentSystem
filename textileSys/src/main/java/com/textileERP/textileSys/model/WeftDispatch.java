@@ -22,6 +22,7 @@ public class WeftDispatch {
  @Column(name="firm_name", length=200) private String firmName;
  @Column(name="quality", length=255) private String quality;
  @Column(name="weaver_party_name", length=200) private String weaverPartyName;
+ @Column(name="weaving_unit", length=200) private String weavingUnit;
  @Column(name="beam_serial_no", length=100) private String beamSerialNo;
  @Column(name="previous_set_no", length=100) private String previousSetNo;
  @Column(name="remarks", columnDefinition="TEXT") private String remarks;

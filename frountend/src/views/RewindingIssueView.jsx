@@ -15,6 +15,14 @@ const emptyForm = {
   remark: '',
 };
 
+const nextGatepassNumber = records => {
+  const highest = records.reduce((max, record) => {
+    const match = String(record.getpassNo || '').match(/(\d+)$/);
+    return match ? Math.max(max, Number(match[1])) : max;
+  }, 0);
+  return `GP-${String(highest + 1).padStart(3, '0')}`;
+};
+
 export const RewindingIssueView = () => {
   const { addToast, parties } = useApp();
   const [form, setForm] = useState(emptyForm);
@@ -469,6 +477,7 @@ export const RewindingIssueView = () => {
               onClick={() => {
                 setForm({
                   ...emptyForm,
+                  getpassNo: nextGatepassNumber(rewindingRecords),
                   issueDate: new Date().toISOString().split('T')[0],
                 });
                 setShowIssuePicker(false);
@@ -578,6 +587,7 @@ export const RewindingIssueView = () => {
                   value={form.getpassNo}
                   onChange={e => updateField('getpassNo', e.target.value)}
                   placeholder="e.g. GP-001"
+                  readOnly={!editingRecord}
                   required
                 />
               </div>

@@ -10,6 +10,13 @@ import { getSizingYarnReturnIssueDetails, getYarnInwardOrigin, sortIssueStockRow
 const today = () => new Date().toISOString().split('T')[0];
 const emptyHeader = { gatePassNo: '', outDate: today(), orderId: '', firmName: '', dyeingUnitId: '', remark: '' };
 const emptyLine = () => ({ key: '', sourceType: '', sourceId: null, setNo: '', serialLabel: '', countId: '', countName: '', tickitId: '', tickitName: '', bags: '', availableBags: '', cone: '', weightKg: '', targetShade: '', dyeingType: 'Cone Dyeing' });
+const nextGatepassNumber = records => {
+  const highest = records.reduce((max, record) => {
+    const match = String(record.gatePassNo || '').match(/(\d+)$/);
+    return match ? Math.max(max, Number(match[1])) : max;
+  }, 0);
+  return `GP-${String(highest + 1).padStart(3, '0')}`;
+};
 
 export const YarnOutDyeingView = () => {
   const { parties, fabricOrders, addToast } = useApp();
@@ -229,6 +236,7 @@ export const YarnOutDyeingView = () => {
   const openModal = () => {
     resetDraft();
     setEditingRecord(null);
+    setHeader(previous => ({ ...previous, gatePassNo: nextGatepassNumber(records) }));
     setIsModalOpen(true);
   };
 
@@ -373,7 +381,7 @@ export const YarnOutDyeingView = () => {
         <form onSubmit={handleSubmit}>
           <div className="dyeing-editor">
             <div className="dyeing-header-fields form-grid">
-              <div className="form-group"><label>Gate Pass No. *</label><input className="form-control" value={header.gatePassNo} onChange={event => updateHeader('gatePassNo', event.target.value)} placeholder="Enter gate pass number" required /></div>
+              <div className="form-group"><label>Gate Pass No. *</label><input className="form-control" value={header.gatePassNo} onChange={event => updateHeader('gatePassNo', event.target.value)} placeholder="Enter gate pass number" readOnly={!editingRecord} required /></div>
               <div className="form-group"><label>Date *</label><input type="date" className="form-control" value={header.outDate} onChange={event => updateHeader('outDate', event.target.value)} required /></div>
               <div className="form-group"><label>Firm Name</label><select className="form-control" value={header.firmName} onChange={event => updateHeader('firmName', event.target.value)}><option value="">-- Select Firm --</option>{header.firmName && !firms.some(firm => firm.partyName === header.firmName) && <option value={header.firmName}>{header.firmName}</option>}{firms.map(firm => <option key={firm.partyId} value={firm.partyName}>{firm.partyName}</option>)}</select></div>
               <div className="form-group"><label>Order No. *</label><select className="form-control" value={header.orderId} onChange={event => handleOrderChange(event.target.value)} required><option value="">-- Select Order --</option>{fabricOrders.map(order => <option key={order.orderId} value={order.orderId}>{order.orderNo}</option>)}</select></div>

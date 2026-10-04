@@ -25,6 +25,18 @@ import { api } from './services/api';
 const MainContent = ({ onLogout }) => {
   const { currentTab } = useApp();
 
+  const preventNegativeNumberInput = event => {
+    if (event.target.matches('input[type="number"]') && ['-', 'e', 'E'].includes(event.key)) {
+      event.preventDefault();
+    }
+  };
+
+  const preventNegativeNumberPaste = event => {
+    if (event.target.matches('input[type="number"]') && event.clipboardData.getData('text').includes('-')) {
+      event.preventDefault();
+    }
+  };
+
   const views = [
     ['dashboard', <DashboardView />],
     ['parties', <PartiesView />],
@@ -49,7 +61,11 @@ const MainContent = ({ onLogout }) => {
       <div className="main-wrapper">
         <Header />
         <ErrorBoundary>
-          <div className="view-panel view-panel-active">
+          <div
+            className="view-panel view-panel-active"
+            onKeyDownCapture={preventNegativeNumberInput}
+            onPasteCapture={preventNegativeNumberPaste}
+          >
             {activeView}
           </div>
         </ErrorBoundary>
