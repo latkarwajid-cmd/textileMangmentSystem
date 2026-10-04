@@ -1151,7 +1151,8 @@ export const BeamInwardView = () => {
                     <option value="">-- Select Sizing Set No --</option>
                     {sizingSets.map(s => (
                       <option key={s.sizingSetId} value={s.sizingSetId}>
-                        {s.setNo} {s.party?.partyName ? `(${s.party.partyName})` : ''}
+                        {s.setNo} 
+                        {s.party?.partyName ? `(${s.party.partyName})` : ''}
                       </option>
                     ))}
                   </select>
@@ -1159,7 +1160,7 @@ export const BeamInwardView = () => {
 
                 {/* 5. Sizing Party Name (Outside Sizer Unit) */}
                 <div className="form-group">
-                  <label>Sizing Party Name (Sizer Unit) *</label>
+                  <label>Sizing Party Name</label>
                   <select
                     className="form-control"
                     value={header.sizingId}
@@ -1195,7 +1196,7 @@ export const BeamInwardView = () => {
  
 
                 <div className="form-group">
-                  <label>Order Firm Name</label>
+                  <label>Firm Name</label>
                   <input type="text" className="form-control" value={header.orderFirmName || ''} readOnly placeholder="Auto-filled from linked order" />
                 </div>
 
