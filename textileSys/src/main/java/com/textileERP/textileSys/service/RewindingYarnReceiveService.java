@@ -2,6 +2,7 @@ package com.textileERP.textileSys.service;
 
 import com.textileERP.textileSys.dto.RewindingYarnReceiveDto;
 import com.textileERP.textileSys.dto.RewindingYarnReceiveLineDto;
+import com.textileERP.textileSys.dto.YarnInventoryLinkDto;
 import com.textileERP.textileSys.model.RewindingIssue;
 import com.textileERP.textileSys.model.RewindingYarnReceive;
 import com.textileERP.textileSys.model.RewindingYarnReceiveLine;
@@ -17,6 +18,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Locale;
+import java.util.List;
 
 @Service
 public class RewindingYarnReceiveService {
@@ -47,6 +49,27 @@ public class RewindingYarnReceiveService {
                 .filter(receive -> receive.getRewindingIssue() != null
                         && !Boolean.TRUE.equals(receive.getRewindingIssue().getArchived()))
                 .orElseThrow(() -> new RuntimeException("No yarn receipt found for getpass: " + getpassNo));
+    }
+
+    public List<YarnInventoryLinkDto> getInventoryLinks() {
+        return receiveRepository.findAll().stream()
+                .filter(receive -> receive.getRewindingIssue() != null)
+                .flatMap(receive -> {
+                    boolean active = !Boolean.TRUE.equals(receive.getRewindingIssue().getArchived());
+                    String getpassNo = receive.getRewindingIssue().getGetpassNo();
+                    return java.util.stream.IntStream.range(0, receive.getLines().size())
+                            .mapToObj(index -> {
+                                RewindingYarnReceiveLine line = receive.getLines().get(index);
+                                List<Long> inventoryIds = line.getInventoryYarnInwardId() == null
+                                        ? yarnInwardService.findIdsByBillNo(getpassNo + "-" + index)
+                                        : List.of(line.getInventoryYarnInwardId());
+                                return inventoryIds.stream()
+                                        .map(id -> new YarnInventoryLinkDto(id, active));
+                            })
+                            .flatMap(java.util.function.Function.identity());
+                })
+                .filter(link -> link.inventoryYarnInwardId() != null)
+                .toList();
     }
 
     @Transactional

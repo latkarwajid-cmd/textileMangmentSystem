@@ -10,7 +10,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class YarnInwardService {
@@ -22,6 +26,8 @@ public class YarnInwardService {
     private final PartiesRepository partiesRepository;
     private final YarnStorageLocationRepository yarnStorageLocationRepository;
     private final SizingUnitRepository sizingUnitRepository;
+    private final RewindingYarnReceiveRepository rewindingReceiveRepository;
+    private final YarnReceiveDyeingRepository dyeingReceiveRepository;
 
     public YarnInwardService(
             YarnInwardRepository yarnInwardRepository,
@@ -30,7 +36,9 @@ public class YarnInwardService {
             TickitsRepository tickitsRepository,
             PartiesRepository partiesRepository,
             YarnStorageLocationRepository yarnStorageLocationRepository,
-            SizingUnitRepository sizingUnitRepository) {
+            SizingUnitRepository sizingUnitRepository,
+            RewindingYarnReceiveRepository rewindingReceiveRepository,
+            YarnReceiveDyeingRepository dyeingReceiveRepository) {
 
         this.yarnInwardRepository = yarnInwardRepository;
         this.fabricOrderRepository = fabricOrderRepository;
@@ -39,6 +47,8 @@ public class YarnInwardService {
         this.partiesRepository = partiesRepository;
         this.yarnStorageLocationRepository = yarnStorageLocationRepository;
         this.sizingUnitRepository = sizingUnitRepository;
+        this.rewindingReceiveRepository = rewindingReceiveRepository;
+        this.dyeingReceiveRepository = dyeingReceiveRepository;
     }
 
     // ============================================================
@@ -46,9 +56,83 @@ public class YarnInwardService {
     // ============================================================
 
     public List<YarnInward> getAllYarnInwards() {
-        return yarnInwardRepository.findAll().stream()
+        List<YarnInward> inwards = yarnInwardRepository.findAll();
+        Set<Long> inactiveGeneratedIds = findInactiveGeneratedInventoryIds(inwards);
+        return inwards.stream()
                 .filter(inward -> !Boolean.TRUE.equals(inward.getArchived()))
+                .filter(inward -> !inactiveGeneratedIds.contains(inward.getYarnInwardId()))
                 .toList();
+    }
+
+    private Set<Long> findInactiveGeneratedInventoryIds(List<YarnInward> inwards) {
+        Set<Long> inactiveIds = new HashSet<>();
+        Map<String, List<Long>> idsByBillNo = inwards.stream()
+                .filter(inward -> inward.getBillNo() != null)
+                .collect(Collectors.groupingBy(
+                        inward -> inward.getBillNo().toLowerCase(),
+                        Collectors.mapping(YarnInward::getYarnInwardId, Collectors.toList())
+                ));
+
+        rewindingReceiveRepository.findAll().stream()
+                .filter(receive -> receive.getRewindingIssue() != null
+                        && Boolean.TRUE.equals(receive.getRewindingIssue().getArchived()))
+                .forEach(receive -> {
+                    String getpassNo = receive.getRewindingIssue().getGetpassNo();
+                    for (int index = 0; index < receive.getLines().size(); index++) {
+                        RewindingYarnReceiveLine line = receive.getLines().get(index);
+                        if (line.getInventoryYarnInwardId() != null) {
+                            inactiveIds.add(line.getInventoryYarnInwardId());
+                        } else {
+                            addIdsByBillNo(inactiveIds, idsByBillNo, getpassNo + "-" + index);
+                        }
+                    }
+                });
+
+        dyeingReceiveRepository.findAll().stream()
+                .filter(receipt -> Boolean.TRUE.equals(receipt.getArchived())
+                        || (receipt.getYarnOutDyeing() != null
+                        && Boolean.TRUE.equals(receipt.getYarnOutDyeing().getArchived())))
+                .forEach(receipt -> addIdsByBillNo(
+                        inactiveIds,
+                        idsByBillNo,
+                        receipt.getGatePassNo() + "-DYED-" + receipt.getYarnReceiveDyeingId()
+                ));
+
+        return inactiveIds;
+    }
+
+    private void addIdsByBillNo(Set<Long> ids, Map<String, List<Long>> idsByBillNo, String billNo) {
+        if (billNo != null) {
+            ids.addAll(idsByBillNo.getOrDefault(billNo.toLowerCase(), List.of()));
+        }
+    }
+
+    public List<Long> findIdsByBillNo(String billNo) {
+        if (billNo == null || billNo.isBlank()) {
+            return List.of();
+        }
+        return yarnInwardRepository.findByBillNoIgnoreCase(billNo).stream()
+                .map(YarnInward::getYarnInwardId)
+                .filter(java.util.Objects::nonNull)
+                .toList();
+    }
+
+    @Transactional
+    public void archiveYarnInward(Long id) {
+        YarnInward inward = getYarnInwardById(id);
+        inward.setArchived(true);
+        yarnInwardRepository.save(inward);
+    }
+
+    @Transactional
+    public void archiveYarnInwardByBillNo(String billNo) {
+        if (billNo == null || billNo.isBlank()) {
+            return;
+        }
+        yarnInwardRepository.findByBillNoIgnoreCase(billNo).forEach(inward -> {
+            inward.setArchived(true);
+            yarnInwardRepository.save(inward);
+        });
     }
 
     // ============================================================
@@ -120,10 +204,17 @@ public class YarnInwardService {
         YarnInward yarnInward =
                 getYarnInwardById(id);
 
+        BigDecimal bagsBeforeUpdate = value(yarnInward.getBags());
+
         mapDtoToEntity(
                 request,
                 yarnInward
         );
+
+        BigDecimal bagsAfterUpdate = value(yarnInward.getBags());
+        yarnInward.setType(bagsAfterUpdate.compareTo(bagsBeforeUpdate) < 0
+                ? "REMAINING"
+                : "FRESH");
 
         return yarnInwardRepository.save(
                 yarnInward

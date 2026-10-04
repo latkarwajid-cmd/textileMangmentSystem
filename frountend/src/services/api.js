@@ -169,7 +169,7 @@ export const api = {
   },
 
   rewindingIssues: {
-    getAll: () => request('/api/rewinding-issues'),
+    getAll: () => request('/api/rewinding-issues', { cache: 'no-store' }),
     getById: (id) => request(`/api/rewinding-issues/${id}`),
     getByGetpassNo: (getpassNo) => request(`/api/rewinding-issues/getpass/${encodeURIComponent(getpassNo)}`),
     create: (data) => request('/api/rewinding-issues', { method: 'POST', body: JSON.stringify(data) }),
@@ -188,6 +188,7 @@ export const api = {
   rewindingYarnReceive: {
     getIssue: (getpassNo) => request(`/api/rewinding-yarn-receive/issue/${encodeURIComponent(getpassNo)}`),
     getByGetpass: (getpassNo) => request(`/api/rewinding-yarn-receive/${encodeURIComponent(getpassNo)}`),
+    getInventoryLinks: () => request('/api/rewinding-yarn-receive/inventory-links', { cache: 'no-store' }),
     complete: (data) => request('/api/rewinding-yarn-receive/complete', { method: 'POST', body: JSON.stringify(data) }),
   },
 
@@ -219,7 +220,8 @@ export const api = {
   },
 
   yarnReceiveDyeing: {
-    getAll: () => request('/api/yarn-receive-dyeing'),
+    getAll: () => request('/api/yarn-receive-dyeing', { cache: 'no-store' }),
+    getInventoryLinks: () => request('/api/yarn-receive-dyeing/inventory-links', { cache: 'no-store' }),
     create: (data) => request('/api/yarn-receive-dyeing', { method: 'POST', body: JSON.stringify(data) }),
     update: (id, data) => request(`/api/yarn-receive-dyeing/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id) => request(`/api/yarn-receive-dyeing/${id}`, { method: 'DELETE' }),

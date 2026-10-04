@@ -1,10 +1,12 @@
 package com.textileERP.textileSys.service;
 
 import com.textileERP.textileSys.dto.YarnReceiveDyeingDto;
+import com.textileERP.textileSys.dto.YarnInventoryLinkDto;
 import com.textileERP.textileSys.model.YarnReceiveDyeing;
 import com.textileERP.textileSys.repository.YarnOutDyeingRepository;
 import com.textileERP.textileSys.repository.YarnReceiveDyeingRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.math.BigDecimal;
@@ -25,7 +27,22 @@ public class YarnReceiveDyeingService {
 
     public List<YarnReceiveDyeing> getAll() {
         return repository.findAll().stream()
-                .filter(receipt -> !Boolean.TRUE.equals(receipt.getArchived()))
+                .filter(receipt -> !Boolean.TRUE.equals(receipt.getArchived())
+                        && receipt.getYarnOutDyeing() != null
+                        && !Boolean.TRUE.equals(receipt.getYarnOutDyeing().getArchived()))
+                .toList();
+    }
+
+    public List<YarnInventoryLinkDto> getInventoryLinks() {
+        return repository.findAll().stream()
+                .filter(receipt -> receipt.getYarnOutDyeing() != null)
+                .flatMap(receipt -> {
+                    boolean active = !Boolean.TRUE.equals(receipt.getArchived())
+                            && !Boolean.TRUE.equals(receipt.getYarnOutDyeing().getArchived());
+                    String billNo = receipt.getGatePassNo() + "-DYED-" + receipt.getYarnReceiveDyeingId();
+                    return yarnInwardService.findIdsByBillNo(billNo).stream()
+                            .map(id -> new YarnInventoryLinkDto(id, active));
+                })
                 .toList();
     }
 
@@ -47,11 +64,16 @@ public class YarnReceiveDyeingService {
         return saved;
     }
 
+    @Transactional
     public void delete(Long id) {
         YarnReceiveDyeing receipt = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Yarn receive from dyeing entry not found with id: " + id));
         receipt.setArchived(true);
         repository.save(receipt);
+        yarnInwardService.archiveYarnInwardByBillNo(
+                receipt.getGatePassNo() + "-DYED-" + receipt.getYarnReceiveDyeingId()
+        );
+        updateIssueStatus(receipt.getYarnOutDyeing());
     }
 
     private void map(YarnReceiveDyeingDto dto, YarnReceiveDyeing entity) {
@@ -77,6 +99,7 @@ public class YarnReceiveDyeingService {
 
     private void updateIssueStatus(com.textileERP.textileSys.model.YarnOutDyeing issue) {
         BigDecimal total = repository.findByYarnOutDyeingDyeingOutId(issue.getDyeingOutId()).stream()
+                .filter(receipt -> !Boolean.TRUE.equals(receipt.getArchived()))
                 .map(receipt -> value(receipt.getReceivedWeight()).add(value(receipt.getWastage())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         issue.setStatus(issue.getWeightKg() != null

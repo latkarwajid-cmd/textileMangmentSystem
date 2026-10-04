@@ -5,6 +5,7 @@ import com.textileERP.textileSys.dto.RewindingIssueLineDto;
 import com.textileERP.textileSys.model.RewindingIssue;
 import com.textileERP.textileSys.model.RewindingIssueLine;
 import com.textileERP.textileSys.repository.RewindingIssueRepository;
+import com.textileERP.textileSys.repository.RewindingYarnReceiveRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,12 +18,15 @@ public class RewindingIssueService {
     private final RewindingIssueRepository repository;
     private final YarnInwardService yarnInwardService;
     private final SizingYarnInwardService sizingYarnInwardService;
+    private final RewindingYarnReceiveRepository receiveRepository;
 
     public RewindingIssueService(RewindingIssueRepository repository, YarnInwardService yarnInwardService,
-                                 SizingYarnInwardService sizingYarnInwardService) {
+                                 SizingYarnInwardService sizingYarnInwardService,
+                                 RewindingYarnReceiveRepository receiveRepository) {
         this.repository = repository;
         this.yarnInwardService = yarnInwardService;
         this.sizingYarnInwardService = sizingYarnInwardService;
+        this.receiveRepository = receiveRepository;
     }
 
     public List<RewindingIssue> getAll() {
@@ -68,6 +72,17 @@ public class RewindingIssueService {
     public void delete(Long id) {
         RewindingIssue entity = getById(id);
         restoreLines(entity);
+        receiveRepository.findByRewindingIssueGetpassNoIgnoreCase(entity.getGetpassNo())
+                .ifPresent(receive -> {
+                    for (int index = 0; index < receive.getLines().size(); index++) {
+                        var line = receive.getLines().get(index);
+                        if (line.getInventoryYarnInwardId() != null) {
+                            yarnInwardService.archiveYarnInward(line.getInventoryYarnInwardId());
+                        } else {
+                            yarnInwardService.archiveYarnInwardByBillNo(entity.getGetpassNo() + "-" + index);
+                        }
+                    }
+                });
         entity.setArchived(true);
         repository.save(entity);
     }
