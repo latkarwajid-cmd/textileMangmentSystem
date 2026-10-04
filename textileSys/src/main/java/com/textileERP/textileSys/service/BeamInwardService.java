@@ -48,8 +48,15 @@ public class BeamInwardService {
 
     public List<BeamInward> getAll() {
         return beamInwardRepository.findAll().stream()
-                .filter(beam -> !Boolean.TRUE.equals(beam.getArchived()))
+                .filter(this::isVisible)
                 .toList();
+    }
+
+    private boolean isVisible(BeamInward beam) {
+        boolean orderArchived = beam.getOrder() != null && Boolean.TRUE.equals(beam.getOrder().getArchived());
+        boolean sizingSetDeleted = beam.getSizingSet() != null
+                && "DELETED".equalsIgnoreCase(beam.getSizingSet().getStatus());
+        return !Boolean.TRUE.equals(beam.getArchived()) && !orderArchived && !sizingSetDeleted;
     }
 
     public BeamInward getById(Long id) {
@@ -59,17 +66,17 @@ public class BeamInwardService {
 
     public List<BeamInward> getByOrder(Long orderId) {
         return beamInwardRepository.findByOrderOrderId(orderId).stream()
-                .filter(beam -> !Boolean.TRUE.equals(beam.getArchived())).toList();
+                .filter(this::isVisible).toList();
     }
 
     public List<BeamInward> getBySizingSet(Long sizingSetId) {
         return beamInwardRepository.findBySizingSetSizingSetId(sizingSetId).stream()
-                .filter(beam -> !Boolean.TRUE.equals(beam.getArchived())).toList();
+                .filter(this::isVisible).toList();
     }
 
     public List<BeamInward> getByInwardNo(String inwardNo) {
         return beamInwardRepository.findByInwardNo(inwardNo).stream()
-                .filter(beam -> !Boolean.TRUE.equals(beam.getArchived())).toList();
+                .filter(this::isVisible).toList();
     }
 
     public String generateNextInwardNo() {

@@ -102,19 +102,25 @@ public class RewindingIssueService {
 
     private void restoreLines(RewindingIssue entity) {
         for (RewindingIssueLine line : entity.getLines()) {
-            if (line.getYarnInwardId() != null) {
-                yarnInwardService.restoreIssuedYarn(
-                        line.getYarnInwardId(),
-                        line.getBags(),
-                        line.getCone(),
-                        line.getWeightKg()
-                );
-            } else if (line.getSizingInwardId() != null) {
-                sizingYarnInwardService.restoreIssuedYarn(
-                        line.getSizingInwardId(),
-                        line.getBags(),
-                        line.getWeightKg()
-                );
+            try {
+                if (line.getYarnInwardId() != null) {
+                    yarnInwardService.restoreIssuedYarn(
+                            line.getYarnInwardId(),
+                            line.getBags(),
+                            line.getCone(),
+                            line.getWeightKg()
+                    );
+                } else if (line.getSizingInwardId() != null) {
+                    sizingYarnInwardService.restoreIssuedYarn(
+                            line.getSizingInwardId(),
+                            line.getBags(),
+                            line.getWeightKg()
+                    );
+                }
+            } catch (RuntimeException exception) {
+                if (!exception.getMessage().contains("not found with id:")) {
+                    throw exception;
+                }
             }
         }
     }
