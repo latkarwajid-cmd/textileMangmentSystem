@@ -34,6 +34,18 @@ public class SizingYarnInwardDto {
 
     private BigDecimal conesPerBag;
 
+    private String destinationWarehouse;
+
+    private String countAndTicket;
+
+    private BigDecimal issuedBags;
+
+    private BigDecimal issuedCones;
+
+    private BigDecimal issuedGrossWeight;
+
+    private BigDecimal emptyConeTareGrams;
+
     private Long partyId;
 
     private String remark;

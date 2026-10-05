@@ -175,6 +175,23 @@ const createEmptyHeader = () => ({
   status: 'OPEN'
 });
 
+const SIZING_SET_DRAFT_KEY = 'textile_sizing_set_draft';
+
+const readSizingSetDraft = () => {
+  try {
+    const saved = localStorage.getItem(SIZING_SET_DRAFT_KEY);
+    if (!saved) return null;
+    return JSON.parse(saved);
+  } catch (error) {
+    console.error('Could not restore the sizing set draft:', error);
+    try {
+      localStorage.removeItem(SIZING_SET_DRAFT_KEY);
+    } catch (removeError) {
+      console.error('Could not clear the invalid sizing set draft:', removeError);
+    }
+    return null;
+  }
+};
 
 /* =========================================================
    COMPONENT
@@ -199,6 +216,7 @@ export const SizingSetsView = () => {
     () => parties.filter(party => party.partyType?.toUpperCase() === 'SIZING' && party.status !== false),
     [parties]
   );
+  const [initialDraft] = useState(readSizingSetDraft);
 
 
   /* =========================================================
@@ -227,10 +245,10 @@ export const SizingSetsView = () => {
     useState('');
 
   const [editorOpen, setEditorOpen] =
-    useState(false);
+    useState(() => Boolean(initialDraft?.editorOpen));
 
   const [editingSet, setEditingSet] =
-    useState(null);
+    useState(() => initialDraft?.editingSet || null);
 
   const [saving, setSaving] =
     useState(false);
@@ -278,7 +296,7 @@ export const SizingSetsView = () => {
   ========================================================= */
 
   const [header, setHeader] =
-    useState(createEmptyHeader());
+    useState(() => initialDraft?.header || createEmptyHeader());
 
   useEffect(() => {
     const calculatedEnds = totalEndsFromQuality(header.quality);
@@ -297,7 +315,24 @@ export const SizingSetsView = () => {
   ========================================================= */
 
   const [yarnLines, setYarnLines] =
-    useState([]);
+    useState(() => initialDraft?.yarnLines || []);
+
+  useEffect(() => {
+    if (!editorOpen) {
+      localStorage.removeItem(SIZING_SET_DRAFT_KEY);
+      return;
+    }
+    try {
+      localStorage.setItem(SIZING_SET_DRAFT_KEY, JSON.stringify({
+        editorOpen,
+        editingSet,
+        header,
+        yarnLines,
+      }));
+    } catch (error) {
+      console.error('Could not save the sizing set draft:', error);
+    }
+  }, [editorOpen, editingSet, header, yarnLines]);
 
   const [editingAllocationKey, setEditingAllocationKey] =
     useState(null);

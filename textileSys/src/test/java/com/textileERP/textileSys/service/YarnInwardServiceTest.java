@@ -110,8 +110,8 @@ class YarnInwardServiceTest {
     }
 
     @Test
-    void update_shouldSetTypeToRemainingWhenBagsDecrease() {
-        assertUpdateType("10", "7", "REMAINING");
+    void update_shouldKeepTypeFreshWhenBagsDecrease() {
+        assertUpdateType("10", "7", "FRESH");
     }
 
     @Test
@@ -122,6 +122,25 @@ class YarnInwardServiceTest {
     @Test
     void update_shouldSetTypeToFreshWhenBagCountIsUnchanged() {
         assertUpdateType("10", "10", "FRESH");
+    }
+
+    @Test
+    void update_shouldPreserveDyeingAndRewindingSourceTypes() {
+        for (String sourceType : List.of("DYED", "REWOUND")) {
+            YarnInward existing = new YarnInward();
+            existing.setYarnInwardId(1L);
+            existing.setBags(new BigDecimal("10"));
+            existing.setType(sourceType);
+
+            YarnInwardDto request = new YarnInwardDto();
+            request.setBags(new BigDecimal("7"));
+
+            when(yarnInwardRepository.findById(1L)).thenReturn(Optional.of(existing));
+            when(yarnInwardRepository.save(any(YarnInward.class)))
+                    .thenAnswer(invocation -> invocation.getArgument(0));
+
+            assertEquals(sourceType, service.updateYarnInward(1L, request).getType());
+        }
     }
 
     private void assertUpdateType(String existingBags, String updatedBags, String expectedType) {

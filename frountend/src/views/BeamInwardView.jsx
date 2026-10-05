@@ -152,14 +152,33 @@ const createEmptyReturnRow = (srNo = 1, countTicket = '', countId = '', tickitId
   remark: ''
 });
 
+const BEAM_INWARD_DRAFT_KEY = 'textile_beam_inward_draft';
+
+const readBeamInwardDraft = () => {
+  try {
+    const saved = localStorage.getItem(BEAM_INWARD_DRAFT_KEY);
+    if (!saved) return null;
+    return JSON.parse(saved);
+  } catch (error) {
+    console.error('Could not restore the beam inward draft:', error);
+    try {
+      localStorage.removeItem(BEAM_INWARD_DRAFT_KEY);
+    } catch (removeError) {
+      console.error('Could not clear the invalid beam inward draft:', removeError);
+    }
+    return null;
+  }
+};
+
 export const BeamInwardView = () => {
   const { currentTab, sizingUnits, parties, yarnCounts, tickits, yarnStorageLocations, addToast } = useApp();
+  const [initialDraft] = useState(readBeamInwardDraft);
 
   // Active Main Navigation: 'entry' | 'history' | 'flange-tracker'
   const [activeTab, setActiveTab] = useState('entry');
 
   // Entry Sub-Tabs: 'white-slip' (Beams Grid) | 'pink-slip' (Yarn Reconciliation)
-  const [entrySubTab, setEntrySubTab] = useState('white-slip');
+  const [entrySubTab, setEntrySubTab] = useState(() => initialDraft?.entrySubTab || 'white-slip');
 
   // Master Data & Lists
   const [sizingSets, setSizingSets] = useState([]);
@@ -169,23 +188,57 @@ export const BeamInwardView = () => {
   const [submitting, setSubmitting] = useState(false);
 
   // Form State: Header
-  const [header, setHeader] = useState(createEmptyHeader());
+  const [header, setHeader] = useState(() => initialDraft?.header || createEmptyHeader());
 
   // Form State: Tab 1 (White Slip - Sized Beams Grid)
-  const [beamRows, setBeamRows] = useState([createEmptyBeamRow(1, '1')]);
+  const [beamRows, setBeamRows] = useState(() => initialDraft?.beamRows || [createEmptyBeamRow(1, '1')]);
 
   // Form State: Tab 2 (Pink Slip - Yarn Reconciliation & Balance Return)
-  const [reconciliation, setReconciliation] = useState({
+  const [reconciliation, setReconciliation] = useState(() => initialDraft?.reconciliation || ({
     totalIssuedBags: '',
     totalIssuedCones: '',
     issuedGrossWeight: '',
     emptyConeTareGrams: '60', // 60g per cone default
     conesPerBag: '32'
-  });
+  }));
 
-  const [balanceReturns, setBalanceReturns] = useState([
+  const [balanceReturns, setBalanceReturns] = useState(() => initialDraft?.balanceReturns || [
     createEmptyReturnRow(1)
   ]);
+
+  useEffect(() => {
+    const hasHeaderData = Object.entries(header).some(([field, value]) =>
+      !['inwardNo', 'inwardDate', 'totalBeamsCount'].includes(field)
+      && String(value || '').trim() !== ''
+    );
+    const hasBeamData = beamRows.some(row =>
+      ['flangeNo', 'cuts', 'meter', 'grossWeight', 'tareWeight', 'netWeight', 'storedAt', 'remark']
+        .some(field => String(row[field] || '').trim() !== '')
+    );
+    const hasReconciliationData = ['totalIssuedBags', 'totalIssuedCones', 'issuedGrossWeight']
+      .some(field => String(reconciliation[field] || '').trim() !== '');
+    const hasReturnData = balanceReturns.some(row =>
+      ['countAndTicket', 'bagsReturned', 'conesReturned', 'returnedWeightKg', 'remark']
+        .some(field => String(row[field] || '').trim() !== '')
+    );
+
+    if (!hasHeaderData && !hasBeamData && !hasReconciliationData && !hasReturnData) {
+      localStorage.removeItem(BEAM_INWARD_DRAFT_KEY);
+      return;
+    }
+
+    try {
+      localStorage.setItem(BEAM_INWARD_DRAFT_KEY, JSON.stringify({
+        entrySubTab,
+        header,
+        beamRows,
+        reconciliation,
+        balanceReturns,
+      }));
+    } catch (error) {
+      console.error('Could not save the beam inward draft:', error);
+    }
+  }, [entrySubTab, header, beamRows, reconciliation, balanceReturns]);
 
   // History & Filter State
   const [searchQuery, setSearchQuery] = useState('');
@@ -240,7 +293,7 @@ export const BeamInwardView = () => {
     try {
       const res = await api.beamInward.getNextInwardNo();
       if (res && res.inwardNo) {
-        setHeader(prev => ({ ...prev, inwardNo: res.inwardNo }));
+        setHeader(prev => prev.inwardNo ? prev : { ...prev, inwardNo: res.inwardNo });
       }
     } catch (e) {
       // Fallback: read current beams from the repo directly to avoid stale closure
@@ -249,7 +302,7 @@ export const BeamInwardView = () => {
         const match = String(b.inwardNo || '').match(/(\d+)$/);
         return match ? Math.max(max, parseInt(match[1], 10)) : max;
       }, 0);
-      setHeader(prev => ({ ...prev, inwardNo: `BINW-${String(maxNo + 1).padStart(2, '0')}` }));
+      setHeader(prev => prev.inwardNo ? prev : { ...prev, inwardNo: `BINW-${String(maxNo + 1).padStart(2, '0')}` });
     }
   }, []); // stable — no external state dependencies
 

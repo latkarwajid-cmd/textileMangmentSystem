@@ -8,10 +8,10 @@ import { CalculatorInput } from '../components/CalculatorInput';
 import { getYarnInwardOrigin, sortIssueStockRows } from '../utils/sizingYarnReturn';
 
 const today = () => new Date().toISOString().slice(0, 10);
-const blank = () => ({ challanNo: `WFT-${Date.now()}`, firmName: '', internalGatepassNo: '', partyGatepassNo: '', dispatchDate: today(), beamSerialNo: '', previousSetNo: '', remarks: '' });
+const blank = () => ({ challanNo: `WFT-${Date.now()}`, firmName: '', weaverPartyName: '', internalGatepassNo: '', partyGatepassNo: '', dispatchDate: today(), beamSerialNo: '', previousSetNo: '', remarks: '' });
 
 export const WeftDispatchView = () => {
-  const { addToast } = useApp();
+  const { addToast, parties } = useApp();
   const [sets, setSets] = useState([]); const [records, setRecords] = useState([]);
   const [header, setHeader] = useState(blank()); const [setId, setSetId] = useState('');
   const [stock, setStock] = useState([]); const [items, setItems] = useState([]);
@@ -20,6 +20,9 @@ export const WeftDispatchView = () => {
   const [beams, setBeams] = useState([]);
   useEffect(() => { Promise.allSettled([api.sizingSets.getAll(), api.weftDispatches.getAll()]).then(([s,r]) => { if(s.status==='fulfilled') setSets(Array.isArray(s.value)?s.value.filter(x=>x.status!=='DELETED'):[]); if(r.status==='fulfilled') setRecords(Array.isArray(r.value)?r.value:[]); }); }, []);
   const selectedSet = sets.find(x => String(x.sizingSetId) === String(setId));
+  const weaverParties = parties.filter(party =>
+    party.status !== false && String(party.partyType || '').trim().toUpperCase() === 'WEAVER'
+  );
   const selectedSetFirmName = selectedSet?.order?.supplier?.partyName || selectedSet?.orderFirmName || '';
   useEffect(() => {
     setHeader(previous => ({ ...previous, firmName: selectedSetFirmName }));
@@ -29,7 +32,7 @@ export const WeftDispatchView = () => {
   const openEdit = record => {
     setEditing(record);
     setSetId(String(record.sizingSet?.sizingSetId || sets.find(s => s.setNo === record.setNo)?.sizingSetId || ''));
-    setHeader({challanNo:record.challanNo||'',firmName:record.firmName||'',internalGatepassNo:record.internalGatepassNo||'',partyGatepassNo:record.partyGatepassNo||'',dispatchDate:record.dispatchDate||today(),beamSerialNo:record.beamSerialNo||'',previousSetNo:record.previousSetNo||'',remarks:record.remarks||''});
+    setHeader({challanNo:record.challanNo||'',firmName:record.firmName||'',weaverPartyName:record.weaverPartyName||'',internalGatepassNo:record.internalGatepassNo||'',partyGatepassNo:record.partyGatepassNo||'',dispatchDate:record.dispatchDate||today(),beamSerialNo:record.beamSerialNo||'',previousSetNo:record.previousSetNo||'',remarks:record.remarks||''});
     setItems((record.lines||[]).map(line=>({sourceType:line.sourceType,sourceId:line.sourceId,serial:line.serialLabel,count:line.countName,ticket:line.ticketName,mill:line.millName,shade:line.shade,packageType:line.packageType,issuedBags:Number(line.issuedBags||0),issuedPackages:Number(line.issuedPackages||0),grossWeight:Number(line.grossWeightKg||0),calculatedWeight:Number(line.calculatedWeightKg||0),availableBags:Number(line.issuedBags||0),availableWeight:Number(line.grossWeightKg||0)})));
     setFormOpen(true);
   };
@@ -63,7 +66,7 @@ export const WeftDispatchView = () => {
       <div className="form-group"><label>Set No *</label><select className="form-control" value={setId} onChange={e=>{setSetId(e.target.value);setItems([]);}} required><option value="">Select Set No</option>{sets.map(s=><option key={s.sizingSetId} value={s.sizingSetId}>{s.setNo}</option>)}</select></div>
       <div className="form-group"><label>Firm Name *</label><input className="form-control" value={selectedSetFirmName || header.firmName} readOnly placeholder="Auto-filled from sizing set" required/></div>
       <div className="form-group"><label>Quality Specification</label><input className="form-control" readOnly value={selectedSet?.quality||''}/></div>
-      <div className="form-group"><label>Weaver Party</label><input className="form-control" readOnly value={selectedSet?.order?.party?.partyName||selectedSet?.party?.partyName||editing?.weaverPartyName||''}/></div>
+      <div className="form-group"><label>Weaver Unit *</label><select className="form-control" required value={header.weaverPartyName || ''} onChange={e=>setHeader({...header,weaverPartyName:e.target.value})}><option value="">Select weaver unit</option>{header.weaverPartyName && !weaverParties.some(party=>party.partyName===header.weaverPartyName) && <option value={header.weaverPartyName}>{header.weaverPartyName}</option>}{weaverParties.map(party=><option key={party.partyId} value={party.partyName}>{party.partyName}</option>)}</select></div>
       <div className="form-group"><label>Internal Gatepass No *</label><input className="form-control" required value={header.internalGatepassNo} onChange={e=>setHeader({...header,internalGatepassNo:e.target.value})}/></div>
       <div className="form-group"><label>Dispatch Date *</label><input type="date" className="form-control" required value={header.dispatchDate} onChange={e=>setHeader({...header,dispatchDate:e.target.value})}/></div>
       <div className="form-group"><label>Beam Serial No</label><select className="form-control" value={header.beamSerialNo} onChange={e=>setHeader({...header,beamSerialNo:e.target.value})}><option value="">Select active beam</option>{beams.map(beam=><option key={beam.beamId} value={beam.beamNo||beam.flangeNo||beam.inwardNo}>{[beam.beamNo,beam.flangeNo&&`Flange ${beam.flangeNo}`,beam.status].filter(Boolean).join(' · ')}</option>)}</select></div>

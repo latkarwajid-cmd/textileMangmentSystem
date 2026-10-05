@@ -124,6 +124,10 @@ export const YarnInwardView = () => {
   }, [formData.bags, formData.conePerBag]);
 
   const selectedOrder = fabricOrders.find(o => String(o.orderId) === String(formData.orderId));
+  const yarnSupplierParties = parties.filter(party =>
+    party.status !== false
+    && ['SUPPLIER', 'CUSTOMER'].includes(String(party.partyType || '').trim().toUpperCase())
+  );
   const selectedStorageLocation = yarnStorageLocations.find(location => String(location.storageLocationId) === String(formData.storageLocationId));
   const isSizingStorage = selectedStorageLocation?.locationName?.toLowerCase() === 'sizing';
   const isWeaverStorage = selectedStorageLocation?.locationName?.toLowerCase() === 'weaver';
@@ -355,8 +359,8 @@ export const YarnInwardView = () => {
                     <td>{item.tickit?.tickitName || '-'}</td>
                     <td>{item.weightPerBag ? `${item.weightPerBag} kg` : '-'}</td>
                     <td>
-                      <span className={`badge ${item.type === 'USED' || item.type === 'REMAINING' ? 'badge-warning' : 'badge-success'}`}>
-                        {item.type === 'USED' ? 'REMAINING' : (item.type || 'FRESH')}
+                      <span className={`badge ${['DYED', 'REWOUND'].includes(String(item.type || '').toUpperCase()) ? 'badge-info' : 'badge-success'}`}>
+                        {['DYED', 'REWOUND'].includes(String(item.type || '').toUpperCase()) ? item.type : 'FRESH'}
                       </span>
                     </td>
                     <td>{item.bags ?? '-'}</td>
@@ -465,7 +469,7 @@ export const YarnInwardView = () => {
                 required
               >
                 <option value="">-- Select Yarn Supplier --</option>
-                {parties.map(p => (
+                {yarnSupplierParties.map(p => (
                   <option key={p.partyId} value={p.partyId}>
                     {p.partyName} ({p.partyType || 'Supplier'})
                   </option>

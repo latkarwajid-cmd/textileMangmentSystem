@@ -437,6 +437,12 @@ public class SizingYarnInwardService {
         entity.setItemType(dto.getItemType());
         entity.setConesReturned(dto.getConesReturned());
         entity.setConesPerBag(dto.getConesPerBag());
+        entity.setDestinationWarehouse(dto.getDestinationWarehouse());
+        entity.setCountAndTicket(dto.getCountAndTicket());
+        entity.setIssuedBags(dto.getIssuedBags());
+        entity.setIssuedCones(dto.getIssuedCones());
+        entity.setIssuedGrossWeight(dto.getIssuedGrossWeight());
+        entity.setEmptyConeTareGrams(dto.getEmptyConeTareGrams());
 
         entity.setRemark(
                 dto.getRemark()

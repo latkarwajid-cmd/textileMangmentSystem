@@ -204,17 +204,12 @@ public class YarnInwardService {
         YarnInward yarnInward =
                 getYarnInwardById(id);
 
-        BigDecimal bagsBeforeUpdate = value(yarnInward.getBags());
-
         mapDtoToEntity(
                 request,
                 yarnInward
         );
 
-        BigDecimal bagsAfterUpdate = value(yarnInward.getBags());
-        yarnInward.setType(bagsAfterUpdate.compareTo(bagsBeforeUpdate) < 0
-                ? "REMAINING"
-                : "FRESH");
+        yarnInward.setType(isSpecialSourceType(yarnInward.getType()) ? yarnInward.getType() : "FRESH");
 
         return yarnInwardRepository.save(
                 yarnInward
@@ -450,16 +445,7 @@ public class YarnInwardService {
         // TYPE
         // --------------------------------------------------------
 
-        if (issuedBags.compareTo(
-                BigDecimal.ZERO
-        ) > 0) {
-
-            yarnInward.setType("REMAINING");
-
-        } else {
-
-            yarnInward.setType("FRESH");
-        }
+        yarnInward.setType(isSpecialSourceType(yarnInward.getType()) ? yarnInward.getType() : "FRESH");
 
         return yarnInwardRepository.save(
                 yarnInward
@@ -472,9 +458,12 @@ public class YarnInwardService {
         inward.setBags(value(inward.getBags()).add(value(bags)));
         inward.setYCone(value(inward.getYCone()).add(value(cones)));
         inward.setWeightKg(value(inward.getWeightKg()).add(value(weightKg)));
-        BigDecimal originalBags = inward.getOriginalBags();
-        inward.setType(originalBags != null && inward.getBags().compareTo(originalBags) >= 0 ? "FRESH" : "REMAINING");
+        inward.setType(isSpecialSourceType(inward.getType()) ? inward.getType() : "FRESH");
         return yarnInwardRepository.save(inward);
+    }
+
+    private boolean isSpecialSourceType(String type) {
+        return "DYED".equalsIgnoreCase(type) || "REWOUND".equalsIgnoreCase(type);
     }
 
     private BigDecimal value(BigDecimal amount) {

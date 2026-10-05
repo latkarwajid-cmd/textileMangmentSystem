@@ -19,6 +19,29 @@ const createEmptyReturnRow = (srNo = 1, countAndTicket = '', countId = '', ticki
   remark: ''
 });
 
+const getReturnRemark = remark => String(remark || '')
+  .split(' | ')
+  .filter(part => !/^(Full Bag|Kharad)$/i.test(part.trim()))
+  .filter(part => !/^(Count & Ticket:|Cones Returned:|Destination:|Issued:|Tare:)/i.test(part.trim()))
+  .join(' | ')
+  .trim();
+
+const getReturnRemarkField = (remark, field) => (
+  String(remark || '').match(new RegExp(`${field}:\\s*([^|]+)`, 'i'))?.[1]?.trim() || ''
+);
+
+const getLegacyIssuedValues = remark => {
+  const issued = getReturnRemarkField(remark, 'Issued')
+    .match(/([\d.]+)\s*bags?\s*\/\s*([\d.]+)\s*cones?\s*\/\s*([\d.]+)\s*kg/i);
+  const tare = getReturnRemarkField(remark, 'Tare').match(/([\d.]+)/);
+  return {
+    issuedBags: issued?.[1] || '',
+    issuedCones: issued?.[2] || '',
+    issuedGrossWeight: issued?.[3] || '',
+    emptyConeTareGrams: tare?.[1] || '60',
+  };
+};
+
 export const SizingYarnInwardView = () => {
   const { currentTab, parties, fabricOrders, tickits, yarnCounts, sizingUnits, yarnStorageLocations, addToast } = useApp();
   const [inwardList, setInwardList] = useState([]);
@@ -100,6 +123,7 @@ export const SizingYarnInwardView = () => {
 
   const openEditModal = (item) => {
     setEditingItem(item);
+    const legacyIssued = getLegacyIssuedValues(item.remark);
     setFormData({
       sizingSetId: item.sizingSet?.sizingSetId || '1',
       setNo: item.sizingSet?.setNo || '',
@@ -112,15 +136,32 @@ export const SizingYarnInwardView = () => {
       partyId: item.party?.partyId || '',
       bags: item.bags || '',
       weightKg: item.weightKg || '',
-      remark: item.remark || '',
-      reconciliation: { totalIssuedBags: '', emptyConeTareGrams: '60', conesPerBag: '32', issuedGrossWeight: '' },
+      remark: getReturnRemark(item.remark),
+      reconciliation: {
+        totalIssuedBags: item.issuedBags ?? legacyIssued.issuedBags,
+        emptyConeTareGrams: item.emptyConeTareGrams ?? legacyIssued.emptyConeTareGrams,
+        conesPerBag: item.conesPerBag ?? (
+          Number(legacyIssued.issuedBags) > 0
+            ? String(Number(legacyIssued.issuedCones) / Number(legacyIssued.issuedBags))
+            : '32'
+        ),
+        issuedGrossWeight: item.issuedGrossWeight ?? legacyIssued.issuedGrossWeight,
+      },
       balanceReturns: [createEmptyReturnRow(
         1,
-        '',
+        item.countAndTicket || getReturnRemarkField(item.remark, 'Count & Ticket'),
         item.count?.countId || '',
         item.tickit?.tickitId || '',
         item.itemType || item.remark?.split(' | ')[0] || 'Full Bag'
-      )],
+      )].map(row => ({
+        ...row,
+        bagsReturned: item.bags ?? '',
+        conesReturned: (item.conesReturned ?? getReturnRemarkField(item.remark, 'Cones Returned')) || '',
+        returnedWeightKg: item.weightKg ?? '',
+        destinationWarehouse: item.destinationWarehouse || getReturnRemarkField(item.remark, 'Destination') || 'Main Raw Yarn Warehouse',
+        countAndTicket: item.countAndTicket || getReturnRemarkField(item.remark, 'Count & Ticket'),
+        remark: getReturnRemark(item.remark),
+      })),
     });
     setIsModalOpen(true);
   };
@@ -144,15 +185,13 @@ export const SizingYarnInwardView = () => {
         itemType: row.itemType || null,
         conesReturned: row.conesReturned ? Number(row.conesReturned) : null,
         conesPerBag: formData.reconciliation.conesPerBag ? Number(formData.reconciliation.conesPerBag) : null,
-        remark: [
-          row.itemType,
-          `Count & Ticket: ${row.countAndTicket || '-'}`,
-          `Cones Returned: ${row.conesReturned || 0}`,
-          `Destination: ${row.destinationWarehouse || '-'}`,
-          `Issued: ${formData.reconciliation.totalIssuedBags || 0} bags / ${reconciliationSummary.issuedCones} cones / ${formData.reconciliation.issuedGrossWeight || 0} kg`,
-          `Tare: ${formData.reconciliation.emptyConeTareGrams || 60} g`,
-          row.remark || formData.remark
-        ].filter(Boolean).join(' | '),
+        destinationWarehouse: row.destinationWarehouse || null,
+        countAndTicket: row.countAndTicket || null,
+        issuedBags: formData.reconciliation.totalIssuedBags ? Number(formData.reconciliation.totalIssuedBags) : null,
+        issuedCones: reconciliationSummary.issuedCones ? Number(reconciliationSummary.issuedCones) : null,
+        issuedGrossWeight: formData.reconciliation.issuedGrossWeight ? Number(formData.reconciliation.issuedGrossWeight) : null,
+        emptyConeTareGrams: formData.reconciliation.emptyConeTareGrams ? Number(formData.reconciliation.emptyConeTareGrams) : null,
+        remark: row.remark || formData.remark || null,
       });
 
       if (editingItem) {
