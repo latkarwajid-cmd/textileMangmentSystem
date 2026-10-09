@@ -20,6 +20,17 @@ const createEmptyReturnRow = (srNo = 1, countAndTicket = '', countId = '', ticki
   remark: ''
 });
 
+const getUserRemark = remark => {
+  if (!remark) return '';
+  const parts = remark.split(' | ');
+  const isGeneratedRemark = parts.length >= 5 &&
+    parts[1].startsWith('Count & Ticket:') &&
+    parts[2].startsWith('Cones Returned:') &&
+    parts[3].startsWith('Destination:') &&
+    parts[4].startsWith('Issued:');
+  return isGeneratedRemark ? parts.slice(5).join(' | ') : remark;
+};
+
 export const SizingYarnInwardView = () => {
   const { currentTab, parties, fabricOrders, tickits, yarnCounts, sizingUnits, yarnStorageLocations, addToast } = useApp();
   const [inwardList, setInwardList] = useState([]);
@@ -113,7 +124,7 @@ export const SizingYarnInwardView = () => {
       partyId: item.party?.partyId || '',
       bags: item.bags || '',
       weightKg: item.weightKg || '',
-      remark: item.remark || '',
+      remark: getUserRemark(item.remark),
       reconciliation: { totalIssuedBags: '', emptyConeTareGrams: '60', conesPerBag: '32', issuedGrossWeight: '' },
       balanceReturns: [createEmptyReturnRow(
         1,
@@ -151,14 +162,7 @@ export const SizingYarnInwardView = () => {
         itemType: row.itemType || null,
         conesReturned: row.conesReturned ? Number(row.conesReturned) : null,
         conesPerBag: formData.reconciliation.conesPerBag ? Number(formData.reconciliation.conesPerBag) : null,
-        remark: [
-          row.itemType,
-          `Count & Ticket: ${row.countAndTicket || '-'}`,
-          `Cones Returned: ${row.conesReturned || 0}`,
-          `Destination: ${row.destinationWarehouse || '-'}`,
-          `Issued: ${formData.reconciliation.totalIssuedBags || 0} bags / ${reconciliationSummary.issuedCones} cones / ${formData.reconciliation.issuedGrossWeight || 0} kg`,
-          row.remark || formData.remark
-        ].filter(Boolean).join(' | '),
+        remark: row.remark || formData.remark,
       });
 
       if (editingItem) {
@@ -364,7 +368,7 @@ export const SizingYarnInwardView = () => {
                       {item.weightKg ? `${item.weightKg} kg` : '-'}
                     </td>
                     <td style={{ maxWidth: '180px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {item.remark || '-'}
+                      {getUserRemark(item.remark) || '-'}
                     </td>
                     <td style={{ textAlign: 'right' }}>
                       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
